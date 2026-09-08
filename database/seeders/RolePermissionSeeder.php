@@ -12,170 +12,236 @@ class RolePermissionSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
-        | Super Admin
+        | SUPER ADMIN
         |--------------------------------------------------------------------------
+        |
+        | Super Admin সব active permission পাবে।
+        |
         */
 
-        $this->assignAllPermissions('super-admin');
+        $this->assignAllPermissions('super_admin');
 
-
-        $this->assignAllPermissions('soft-admin');
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin
-        |--------------------------------------------------------------------------
-        */
-
-        $this->assignModules(
-            'support-admin',
-            [
-                'Institution',
-                'User',
-                'Role',
-                'Permission',
-                'Audit Log',
-                'Package',
-                'Subscription',
-                'Software Control',
-                'Settings',
-                'Notification',
-            ]
-        );
 
         /*
         |--------------------------------------------------------------------------
-        | Madrasa Admin
+        | SUPPORT ADMIN
         |--------------------------------------------------------------------------
+        |
+        | Support Admin system-level support ও administration
+        | সম্পর্কিত permission পাবে।
+        |
         */
 
-$this->assignPermissions('madrasa-admin',[
+        $this->assignPermissions('support_admin', [
 
-'dashboard.view',
+            // Dashboard
+            'dashboard.view',
+            'dashboard.analytics',
 
-'student.view',
-'student.create',
-'student.edit',
-'student.delete',
-'student.photo',
-'student.report',
-'student.export',
-'student.import',
+            // Support
+            'support.view',
+            'support.create',
+            'support.edit',
+            'support.delete',
 
-'guardian.view',
-'guardian.create',
-'guardian.edit',
-'guardian.delete',
+            // Ticket
+            'ticket.view',
+            'ticket.create',
+            'ticket.edit',
+            'ticket.delete',
 
-'admission.view',
-'admission.create',
-'admission.edit',
-'admission.delete',
-'admission.approve',
-'admission.reject',
+            // User
+            'user.view',
+            'user.create',
+            'user.edit',
+            'user.delete',
 
-'class.view',
-'class.create',
-'class.edit',
-'class.delete',
+            // Role
+            'role.view',
+            'role.create',
+            'role.edit',
+            'role.delete',
+            'role.permission',
 
-'section.view',
-'section.create',
-'section.edit',
-'section.delete',
+            // Permission
+            'permission.view',
+            'permission.create',
+            'permission.edit',
+            'permission.delete',
 
-'attendance.view',
-'attendance.take',
-'attendance.edit',
-'attendance.report',
+            // System Panel
+            'system-panel.view',
+            'system-panel.create',
+            'system-panel.edit',
+            'system-panel.delete',
 
-'exam.view',
-'exam.create',
-'exam.edit',
-'exam.delete',
+            // Role Panel
+            'role-panel.view',
+            'role-panel.edit',
 
-'result.view',
-'result.publish',
-'result.edit',
+            // System Settings
+            'system-setting.view',
+            'system-setting.edit',
 
-'fee.view',
-'fee.create',
-'fee.edit',
-'fee.collect',
-'fee.report',
+        ]);
 
-'fee-type.view',
-'fee-type.create',
-'fee-type.edit',
-
-'income.view',
-'income.create',
-
-'expense.view',
-'expense.create',
-
-'invoice.view',
-'invoice.print',
-
-'payment.view',
-
-'accounting-report.view',
-
-]);
 
         /*
         |--------------------------------------------------------------------------
-        | Teacher
+        | USER ADMIN
         |--------------------------------------------------------------------------
+        |
+        | User Admin-এর permission সরাসরি role_permissions থেকে আসবে না।
+        |
+        | User Admin তার assigned institution-এর
+        | institution_permissions অনুযায়ী permission পাবে।
+        |
+        | তাই এখানে empty sync করা হচ্ছে।
+        |
         */
 
-$this->assignPermissions('teacher',[
+        $this->assignPermissions('user_admin', []);
 
-'dashboard.view',
-
-'student.view',
-
-'attendance.view',
-'attendance.take',
-'attendance.edit',
-
-'exam.view',
-
-'result.view',
-'result.edit',
-
-]);
 
         /*
         |--------------------------------------------------------------------------
-        | Student
+        | USER
         |--------------------------------------------------------------------------
+        |
+        | Teacher-ও এখন User role-এর অধীনে থাকবে।
+        |
+        | তাই এখানে সাধারণ User + Teacher-এর প্রয়োজনীয়
+        | default permission রাখা হয়েছে।
+        |
         */
 
-$this->assignPermissions('student',[
+        $this->assignPermissions('user', [
 
-'dashboard.view',
+            // Dashboard
+            'dashboard.view',
 
-'result.view',
+            // Student
+            'student.view',
+            'student.photo',
+            'student.report',
 
-]);
+            // Guardian
+            'guardian.view',
+
+            // Class
+            'class.view',
+
+            // Section
+            'section.view',
+
+            // Subject
+            'subject.view',
+
+            // Student Group
+            'student-group.view',
+
+            // Student Card
+            'student-card.view',
+            'student-card.print',
+
+            // Certificate
+            'certificate.view',
+            'certificate.print',
+
+            // Teacher
+            'teacher.view',
+
+            // Attendance
+            'attendance.view',
+            'attendance.take',
+            'attendance.edit',
+            'attendance.report',
+
+            // Exam
+            'exam.view',
+
+            // Exam Type
+            'exam-type.view',
+
+            // Result
+            'result.view',
+            'result.edit',
+            'result.print',
+
+            // Grade
+            'grade.view',
+
+            // Fee
+            'fee.view',
+            'fee.collect',
+
+            // Fee Type
+            'fee-type.view',
+
+            // Payment
+            'payment.view',
+
+            // Accounting Report
+            'accounting-report.view',
+
+            // General Settings
+            'general.view',
+
+            // Help
+            'support.view',
+
+            // Ticket
+            'ticket.view',
+            'ticket.create',
+
+        ]);
+
 
         /*
         |--------------------------------------------------------------------------
-        | Guardian
+        | STUDENT
         |--------------------------------------------------------------------------
+        |
+        | Student শুধুমাত্র নিজের প্রয়োজনীয় basic permission পাবে।
+        |
         */
 
-$this->assignPermissions('guardian',[
+        $this->assignPermissions('student', [
 
-'dashboard.view',
+            // Dashboard
+            'dashboard.view',
 
-'student.view',
+            // Student
+            'student.view',
 
-'result.view',
+            // Student Card
+            'student-card.view',
 
-]);
+            // Attendance
+            'attendance.view',
+
+            // Exam
+            'exam.view',
+
+            // Result
+            'result.view',
+            'result.print',
+
+            // Payment
+            'payment.view',
+
+            // Support
+            'support.view',
+
+        ]);
     }
 
+
+    /**
+     * --------------------------------------------------------------------------
+     * Assign all active permissions to a role.
+     * --------------------------------------------------------------------------
+     */
     protected function assignAllPermissions(string $roleSlug): void
     {
         $role = Role::where('slug', $roleSlug)->first();
@@ -184,42 +250,52 @@ $this->assignPermissions('guardian',[
             return;
         }
 
-        $role->permissions()->sync(
-            Permission::pluck('id')->toArray()
-        );
+        $permissionIds = Permission::where('is_active', true)
+            ->pluck('id')
+            ->toArray();
+
+        $role->permissions()->sync($permissionIds);
     }
 
-    protected function assignModules(string $roleSlug, array $modules): void
-    {
+
+    /**
+     * --------------------------------------------------------------------------
+     * Assign specific permissions to a role.
+     * --------------------------------------------------------------------------
+     */
+    protected function assignPermissions(
+        string $roleSlug,
+        array $permissions
+    ): void {
         $role = Role::where('slug', $roleSlug)->first();
 
         if (!$role) {
             return;
         }
 
-        $permissionIds = Permission::whereIn('module', $modules)
+        /*
+        |--------------------------------------------------------------------------
+        | Empty permissions
+        |--------------------------------------------------------------------------
+        |
+        | user_admin-এর ক্ষেত্রে role_permissions খালি থাকবে।
+        |
+        */
+
+        if (empty($permissions)) {
+            $role->permissions()->sync([]);
+
+            return;
+        }
+
+        $permissionIds = Permission::whereIn(
+            'slug',
+            $permissions
+        )
+            ->where('is_active', true)
             ->pluck('id')
             ->toArray();
 
-        $role->permissions()->syncWithoutDetaching($permissionIds);
+        $role->permissions()->sync($permissionIds);
     }
-
-    protected function assignPermissions(
-    string $roleSlug,
-    array $permissions
-): void {
-
-    $role = Role::where('slug', $roleSlug)->first();
-
-    if (!$role) {
-        return;
-    }
-
-    $permissionIds = Permission::whereIn(
-        'slug',
-        $permissions
-    )->pluck('id');
-
-    $role->permissions()->sync($permissionIds);
-}
 }

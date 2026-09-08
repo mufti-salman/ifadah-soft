@@ -3,15 +3,27 @@
         <button class="btn-icon" type="button" id="sidebarToggle" title="Toggle menu">
           <i class="fas fa-bars"></i>
         </button>
-        @php
-    $defaultTitle = optional(auth()->user()->institution)->name ?? 'Dashboard';
-    $pageTitle = trim($__env->yieldContent('title'));
-    $finalTitle = $pageTitle ?: $defaultTitle;
-      @endphp
+@php
+    $authUser = auth()->user();
 
-      <h6 class="mb-0 fw-bold text-dark">
-          {{ $finalTitle }}
-      </h6>
+    $activeInstitutionId = session('active_institution_id');
+
+    $activeInstitution = $activeInstitutionId
+        ? \App\Models\Madrasa::find($activeInstitutionId)
+        : $authUser?->institution;
+
+    $defaultTitle = $activeInstitution
+        ? ($activeInstitution->name_bn ?: $activeInstitution->name)
+        : 'Dashboard';
+
+    $pageTitle = trim($__env->yieldContent('title'));
+
+    $finalTitle = $pageTitle ?: $defaultTitle;
+@endphp
+
+<h6 class="mb-0 fw-bold text-dark">
+    {{ $finalTitle }}
+</h6>
       </div>
 
       <div class="d-flex align-items-center gap-2">

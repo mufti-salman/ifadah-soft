@@ -1,107 +1,268 @@
-@if(auth()->user()->hasPanel('accounting'))
+@panel('accounting')
 
-<li class="nav-item">
+@php
+    $canAccounting =
+        auth()->user()->hasPermission('income.view')
+        || auth()->user()->hasPermission('fee.view')
+        || auth()->user()->hasPermission('fee.collect')
+        || auth()->user()->hasPermission('fee.report')
+        || auth()->user()->hasPermission('payment.view')
+        || auth()->user()->hasPermission('accounting-report.view');
+@endphp
 
-    <a class="nav-link text-white d-flex justify-content-between {{ request()->routeIs('dashboard.transactions.*','dashboard.fees.*','dashboard.fee-settings.*','dashboard.fee-collection.*','dashboard.fee-report.*','dashboard.reports.*') ? 'active' : '' }}"
-       data-bs-toggle="collapse"
-       data-bs-target="#accountMenu"
-       data-parent="account">
+@if($canAccounting)
 
-        <span>
-            <i class="fas fa-wallet me-2"></i>
-            অ্যাকাউন্টিং
-        </span>
+    <li class="nav-item">
 
-        <i class="fas fa-chevron-down"></i>
+        <a class="nav-link text-white d-flex justify-content-between
+            {{ request()->routeIs(
+                'dashboard.transactions.*',
+                'dashboard.fees.*',
+                'dashboard.fee-settings.*',
+                'dashboard.fee-collection.*',
+                'dashboard.fee-report.*',
+                'dashboard.ledger.*',
+                'dashboard.sub-ledger.*',
+                'dashboard.payment-method.*',
+                'dashboard.cashier.*',
+                'dashboard.reports.*'
+            ) ? 'active' : '' }}"
+           data-bs-toggle="collapse"
+           data-bs-target="#accountMenu"
+           href="#accountMenu">
 
-    </a>
+            <span>
+                <i class="fas fa-wallet me-2"></i>
+                অ্যাকাউন্টিং
+            </span>
 
-    <div class="collapse {{ $open('account.') }}" id="accountMenu">
+            <i class="fas fa-chevron-down"></i>
 
-        <ul class="nav flex-column ms-3">
+        </a>
 
-            @can('income.view')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.transactions.index') }}">
-                    আয়-ব্যয়
-                </a>
-            </li>
-            @endcan
 
-            @can('accounting-report.view')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.reports.income-expense') }}">
-                    আয়-ব্যয় রিপোর্ট
-                </a>
-            </li>
-            @endcan
+        <div class="collapse {{ $open('accounting.') }}"
+             id="accountMenu">
 
-            @can('fee-type.view')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.fees.index') }}">
-                    ছাত্র ফি গ্রুপ
-                </a>
-            </li>
-            @endcan
+            <ul class="nav flex-column ms-3">
 
-            @can('fee.view')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.fee-settings.index') }}">
-                    ফি সেটিং
-                </a>
-            </li>
-            @endcan
 
-            @can('fee.collect')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.fee-collection.index') }}">
-                    ফি গ্রহণ
-                </a>
-            </li>
-            @endcan
+                {{-- আয় / ব্যয় --}}
 
-            @can('income.create')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    অনুদান
-                </a>
-            </li>
-            @endcan
+                @sidebarPermission('income.view')
 
-            @can('fee.report')
-            <li>
-                <a class="nav-link text-white-50"
-                   href="{{ route('dashboard.fee-report.index') }}">
-                    ফি রিপোর্ট
-                </a>
-            </li>
-            @endcan
+                    <li class="nav-item">
 
-            @can('fee.view')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    বকেয়া
-                </a>
-            </li>
-            @endcan
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.transactions.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.transactions.index') }}">
 
-            @can('payment.view')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    হিস্ট্রি
-                </a>
-            </li>
-            @endcan
+                            <i class="fas fa-exchange-alt me-2"></i>
 
-        </ul>
+                            আয় / ব্যয়
 
-    </div>
+                        </a>
 
-</li>
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- ফি সেটিং --}}
+
+                @sidebarPermission('fee.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.fee-settings.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.fee-settings.index') }}">
+
+                            <i class="fas fa-cog me-2"></i>
+
+                            ফি সেটিং
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- ফি গ্রুপ --}}
+
+                @sidebarPermission('fee.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.fees.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.fees.index') }}">
+
+                            <i class="fas fa-layer-group me-2"></i>
+
+                            ফি গ্রুপ
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- ফি গ্রহণ --}}
+
+                @sidebarPermission('fee.collect')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.fee-collection.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.fee-collection.index') }}">
+
+                            <i class="fas fa-hand-holding-usd me-2"></i>
+
+                            ফি গ্রহণ
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- ফি রিপোর্ট --}}
+
+                @sidebarPermission('fee.report')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.fee-report.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.fee-report.index') }}">
+
+                            <i class="fas fa-file-invoice-dollar me-2"></i>
+
+                            ফি রিপোর্ট
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- লেজার --}}
+
+                @sidebarPermission('income.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.ledger.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.ledger.index') }}">
+
+                            <i class="fas fa-book me-2"></i>
+
+                            লেজার
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- সাব লেজার --}}
+
+                @sidebarPermission('income.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.sub-ledger.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.sub-ledger.index') }}">
+
+                            <i class="fas fa-book-open me-2"></i>
+
+                            সাব লেজার
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- পেমেন্ট মেথড --}}
+
+                @sidebarPermission('payment.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.payment-method.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.payment-method.index') }}">
+
+                            <i class="fas fa-credit-card me-2"></i>
+
+                            পেমেন্ট মেথড
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- ক্যাশিয়ার --}}
+
+                @sidebarPermission('payment.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.cashier.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.cashier.index') }}">
+
+                            <i class="fas fa-cash-register me-2"></i>
+
+                            ক্যাশিয়ার
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+                {{-- আয়-ব্যয় রিপোর্ট --}}
+
+                @sidebarPermission('accounting-report.view')
+
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.reports.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.reports.income-expense') }}">
+
+                            <i class="fas fa-chart-line me-2"></i>
+
+                            আয়-ব্যয় রিপোর্ট
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
+
+
+            </ul>
+
+        </div>
+
+    </li>
 
 @endif
+
+@endpanel

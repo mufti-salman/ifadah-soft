@@ -5,54 +5,89 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Role;
 
 class RoleMiddleware
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
-    {
-        // Login Check
-        if (!Auth::check()) {
+    /**
+     * Handle an incoming request.
+     */
+    public function handle(
+        Request $request,
+        Closure $next,
+        ...$roles
+    ): Response {
+        /*
+        |--------------------------------------------------------------------------
+        | Authentication Check
+        |--------------------------------------------------------------------------
+        */
+
+        if (!auth()->check()) {
             return redirect()->route('login');
         }
 
-        $user = Auth::user();
-
-        // User Role
-        $userRole = $user->role;
-
-        if (!$userRole) {
-            abort(403, 'Role not assigned.');
-        }
+        $user = auth()->user();
 
         /*
         |--------------------------------------------------------------------------
-        | Exact Role Match
+        | User Role Check
         |--------------------------------------------------------------------------
         */
-        if (in_array($userRole->slug, $roles)) {
+
+        if (!$user->role) {
+            abort(403, 'আপনার কোনো Role নির্ধারণ করা হয়নি।');
+        }
+
+        $userRole = $user->role->slug;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize Requested Roles
+        |--------------------------------------------------------------------------
+        |
+        | Route থেকে যেসব role পাঠানো হবে সেগুলো normalize করা হচ্ছে।
+        |
+        */
+
+        $roles = collect($roles)
+            ->map(fn ($role) => trim($role))
+            ->filter()
+            ->values()
+            ->toArray();
+
+        /*
+        |--------------------------------------------------------------------------
+        | No Role Restriction
+        |--------------------------------------------------------------------------
+        |
+        | যদি middleware-এ কোনো role না দেওয়া থাকে,
+        | authenticated user-কে allow করা হবে।
+        |
+        */
+
+        if (empty($roles)) {
             return $next($request);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Role Hierarchy Check
+        | Role Match
         |--------------------------------------------------------------------------
         */
 
-        $requiredRoles = Role::whereIn('slug', $roles)->get();
-
-        if ($requiredRoles->isEmpty()) {
-            abort(403, 'Invalid role configuration.');
+        if (!in_array($userRole, $roles, true)) {
+            abort(
+                403,
+                'আপনার Role অনুযায়ী এই পেজে প্রবেশের অনুমতি নেই।'
+            );
         }
 
-        $minimumLevel = $requiredRoles->max('level');
+        /*
+        |--------------------------------------------------------------------------
+        | Continue Request
+        |--------------------------------------------------------------------------
+        */
 
-        if ($userRole->level >= $minimumLevel) {
-            return $next($request);
-        }
-
-        abort(403, 'You do not have permission to access this page.');
+        return $next($request);
     }
 }

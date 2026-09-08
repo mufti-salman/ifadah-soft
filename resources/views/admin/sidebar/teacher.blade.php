@@ -1,77 +1,134 @@
-@if(auth()->user()->hasPanel('teacher'))
+@panel('teacher')
 
-<li class="nav-item">
+@php
+    $canTeacher =
+        auth()->user()->hasPermission('student.view')
+        || auth()->user()->hasPermission('admission.view')
+        || auth()->user()->hasPermission('teacher.view')
+        || auth()->user()->hasPermission('teacher.edit')
+        || auth()->user()->hasPermission('teacher.report');
+@endphp
 
-    <a class="nav-link text-white d-flex justify-content-between {{ request()->routeIs('teacher.*') ? 'active' : '' }}"
-       data-bs-toggle="collapse"
-       data-bs-target="#teacherMenu"
-       data-parent="teacher">
+@if($canTeacher)
 
-        <span>
-            <i class="fas fa-chalkboard-teacher me-2"></i>
-            শিক্ষক
-        </span>
+    <li class="nav-item">
 
-        <i class="fas fa-chevron-down"></i>
+        <a class="nav-link text-white d-flex justify-content-between
+            {{ request()->routeIs(
+                'dashboard.teacher.*',
+                'dashboard.teacher.students.*',
+                'dashboard.teacher.admissions.*'
+            ) ? 'active' : '' }}"
+           data-bs-toggle="collapse"
+           data-bs-target="#teacherMenu"
+           href="#teacherMenu">
 
-    </a>
+            <span>
+                <i class="fas fa-chalkboard-teacher me-2"></i>
+                শিক্ষক
+            </span>
 
-    <div class="collapse {{ $open('teacher.') }}" id="teacherMenu">
+            <i class="fas fa-chevron-down"></i>
 
-        <ul class="nav flex-column ms-3">
+        </a>
 
-            @can('teacher.view')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    শিক্ষক তথ্য
-                </a>
-            </li>
-            @endcan
 
-            @can('teacher.create')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    যোগদান তথ্য
-                </a>
-            </li>
-            @endcan
+        <div class="collapse {{ $open('teacher.') }}" id="teacherMenu">
 
-            @can('teacher.edit')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    ক্লাস এসাইন
-                </a>
-            </li>
-            @endcan
+            <ul class="nav flex-column ms-3">
 
-            @can('teacher.create')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    বেতন সেটিং
-                </a>
-            </li>
-            @endcan
 
-            @can('teacher.edit')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    বেতন প্রদান
-                </a>
-            </li>
-            @endcan
+                {{-- শিক্ষার্থীর তালিকা --}}
+                @sidebarPermission('student.view')
+                    <li class="nav-item">
 
-            @can('teacher.report')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    পারফরমেন্স
-                </a>
-            </li>
-            @endcan
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.teacher.students.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.teacher.students.index') }}">
 
-        </ul>
+                            <i class="fas fa-users me-2"></i>
+                            শিক্ষার্থীর তালিকা
 
-    </div>
+                        </a>
 
-</li>
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- ভর্তি তথ্য --}}
+                @sidebarPermission('admission.view')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.teacher.admissions.*') ? 'active' : '' }}"
+                           href="{{ route('dashboard.teacher.admissions.index') }}">
+
+                            <i class="fas fa-user-plus me-2"></i>
+                            ভর্তি তথ্য
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- শিক্ষক তথ্য --}}
+                @sidebarPermission('teacher.view')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.teacher.info.*') ? 'active' : '' }}"
+                           href="#">
+
+                            <i class="fas fa-user-tie me-2"></i>
+                            শিক্ষক তথ্য
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- ক্লাস এসাইন --}}
+                @sidebarPermission('teacher.edit')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.teacher.assign.*') ? 'active' : '' }}"
+                           href="#">
+
+                            <i class="fas fa-chalkboard me-2"></i>
+                            ক্লাস এসাইন
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- শিক্ষক রিপোর্ট --}}
+                @sidebarPermission('teacher.report')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.teacher.report.*') ? 'active' : '' }}"
+                           href="#">
+
+                            <i class="fas fa-chart-bar me-2"></i>
+                            শিক্ষক রিপোর্ট
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+            </ul>
+
+        </div>
+
+    </li>
 
 @endif
+
+@endpanel

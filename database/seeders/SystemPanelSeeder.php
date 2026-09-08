@@ -2,137 +2,190 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\SystemPanel;
+use Illuminate\Database\Seeder;
 
 class SystemPanelSeeder extends Seeder
 {
+    /**
+     * Seed system panels.
+     */
     public function run(): void
     {
         $panels = [
 
+            /*
+            |--------------------------------------------------------------------------
+            | Dashboard
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Dashboard',
-                'slug' => 'dashboard',
-                'icon' => 'fas fa-home',
-                'description' => 'Dashboard Module',
-                'serial' => 1,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'ড্যাশবোর্ড',
+                'slug'        => 'dashboard',
+                'icon'        => 'dashboard',
+                'description' => 'সিস্টেমের ড্যাশবোর্ড ও সারসংক্ষেপ',
+                'serial'      => 1,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Student Management
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Student',
-                'slug' => 'student',
-                'icon' => 'fas fa-user-graduate',
-                'description' => 'Student Management Module',
-                'serial' => 2,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'শিক্ষার্থী',
+                'slug'        => 'student',
+                'icon'        => 'users',
+                'description' => 'শিক্ষার্থী ও শিক্ষার্থী সম্পর্কিত সকল কার্যক্রম',
+                'serial'      => 2,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Teacher / User Management
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Teacher',
-                'slug' => 'teacher',
-                'icon' => 'fas fa-chalkboard-teacher',
-                'description' => 'Teacher Management Module',
-                'serial' => 3,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'শিক্ষক ও কর্মচারী',
+                'slug'        => 'teacher',
+                'icon'        => 'user-group',
+                'description' => 'শিক্ষক ও কর্মচারীদের ব্যবস্থাপনা',
+                'serial'      => 3,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Attendance
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Attendance',
-                'slug' => 'attendance',
-                'icon' => 'fas fa-calendar-check',
-                'description' => 'Attendance Module',
-                'serial' => 4,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'উপস্থিতি',
+                'slug'        => 'attendance',
+                'icon'        => 'calendar-check',
+                'description' => 'শিক্ষার্থী ও শিক্ষক উপস্থিতি ব্যবস্থাপনা',
+                'serial'      => 4,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Examination
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Exam',
-                'slug' => 'exam',
-                'icon' => 'fas fa-file-alt',
-                'description' => 'Exam Management Module',
-                'serial' => 5,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'পরীক্ষা',
+                'slug'        => 'exam',
+                'icon'        => 'clipboard-list',
+                'description' => 'পরীক্ষা ব্যবস্থাপনা',
+                'serial'      => 5,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Result
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Result',
-                'slug' => 'result',
-                'icon' => 'fas fa-chart-line',
-                'description' => 'Result Management Module',
-                'serial' => 6,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'ফলাফল',
+                'slug'        => 'result',
+                'icon'        => 'chart-bar',
+                'description' => 'পরীক্ষার ফলাফল ব্যবস্থাপনা',
+                'serial'      => 6,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Accounting
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Accounting',
-                'slug' => 'accounting',
-                'icon' => 'fas fa-wallet',
-                'description' => 'Accounting Module',
-                'serial' => 7,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'হিসাবরক্ষণ',
+                'slug'        => 'accounting',
+                'icon'        => 'calculator',
+                'description' => 'আয়, ব্যয়, লেজার ও হিসাব ব্যবস্থাপনা',
+                'serial'      => 7,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Payment
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Payment',
-                'slug' => 'payment',
-                'icon' => 'fas fa-credit-card',
-                'description' => 'Online Payment Module',
-                'serial' => 8,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'পেমেন্ট',
+                'slug'        => 'payment',
+                'icon'        => 'credit-card',
+                'description' => 'ফি, পেমেন্ট ও লেনদেন ব্যবস্থাপনা',
+                'serial'      => 8,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Settings
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Settings',
-                'slug' => 'settings',
-                'icon' => 'fas fa-cogs',
-                'description' => 'Settings Module',
-                'serial' => 9,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'সেটিংস',
+                'slug'        => 'settings',
+                'icon'        => 'settings',
+                'description' => 'প্রতিষ্ঠানের বিভিন্ন সেটিংস',
+                'serial'      => 9,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | Help
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'Help',
-                'slug' => 'help',
-                'icon' => 'fas fa-life-ring',
-                'description' => 'Help & Support Module',
-                'serial' => 10,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'সহায়তা',
+                'slug'        => 'help',
+                'icon'        => 'help-circle',
+                'description' => 'সহায়তা ও সাপোর্ট',
+                'serial'      => 10,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
 
+            /*
+            |--------------------------------------------------------------------------
+            | System
+            |--------------------------------------------------------------------------
+            */
             [
-                'panel_name' => 'System',
-                'slug' => 'system',
-                'icon' => 'fas fa-server',
-                'description' => 'System Administration Module',
-                'serial' => 11,
-                'is_system' => true,
-                'is_active' => true,
+                'panel_name'  => 'সিস্টেম',
+                'slug'        => 'system',
+                'icon'        => 'shield',
+                'description' => 'সিস্টেম পর্যায়ের ব্যবস্থাপনা',
+                'serial'      => 11,
+                'is_system'   => true,
+                'is_active'   => true,
             ],
-
         ];
 
         foreach ($panels as $panel) {
-
             SystemPanel::updateOrCreate(
-
                 [
-                    'slug' => $panel['slug']
+                    'slug' => $panel['slug'],
                 ],
-
                 $panel
-
             );
         }
     }

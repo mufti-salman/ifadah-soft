@@ -2,318 +2,913 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
+
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    /**
+     * ----------------------------------------------------------
+     * Mass Assignable Fields
+     * ----------------------------------------------------------
+     */
     protected $fillable = [
+
+        // Institution
         'institution_id',
+
+        // Role
         'role_id',
-        'institution_user_id',
-        'username',
-        'email',
-        'password',
+
+        // Basic Information
         'name',
         'name_bn',
-        'photo',
-        'cover_photo',
+        'email',
         'phone',
-        'phone2',
-        'phone_owner',
+        'password',
+
+        // User ID
+        'institution_user_id',
+
+        // Login
+        'username',
+        'status',
+
+        // Personal Information
         'gender',
         'date_of_birth',
-        'age',
         'blood_group',
-        'religion',
-        'nid',
-        'birth_certificate',
-        'custom_id',
-        'present_division_id',
-        'present_district_id',
-        'present_upazila_id',
-        'present_union',
-        'present_post_office',
-        'present_village_road',
-        'present_postal_code',
-        'present_address_full',
-        'permanent_division_id',
-        'permanent_district_id',
-        'permanent_upazila_id',
-        'permanent_union',
-        'permanent_post_office',
-        'permanent_village_road',
-        'permanent_postal_code',
-        'permanent_address_full',
+        'nid_no',
+
+        // Address
+        'address',
+        'village',
+        'post_office',
+        'upazila',
+        'district',
+        'division',
+
+        // Family
         'father_name',
-        'father_phone',
         'mother_name',
-        'mother_phone',
         'guardian_name',
-        'guardian_phone',
-        'guardian_relation',
-        'status',
+
+        // Account
         'email_verified_at',
         'last_login_at',
         'last_login_ip',
+
+        // Audit
         'created_by',
         'updated_by',
     ];
 
+    /**
+     * ----------------------------------------------------------
+     * Hidden Attributes
+     * ----------------------------------------------------------
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * ----------------------------------------------------------
+     * Casts
+     * ----------------------------------------------------------
+     */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'date_of_birth' => 'date',
-        'last_login_at' => 'datetime',
-        'status' => 'integer',
-        'age' => 'integer',
+        'last_login_at'     => 'datetime',
+        'date_of_birth'     => 'date',
+        'password'          => 'hashed',
+        'status'            => 'integer',
     ];
 
-    // Relationships
-public function institution()
-{
-    return $this->belongsTo(Madrasa::class, 'institution_id');
-}
+    /**
+     * ----------------------------------------------------------
+     * Institution
+     * ----------------------------------------------------------
+     */
+    public function institution()
+    {
+        return $this->belongsTo(
+            Madrasa::class,
+            'institution_id',
+            'id'
+        );
+    }
 
+    /**
+     * ----------------------------------------------------------
+     * Madrasa
+     * ----------------------------------------------------------
+     *
+     * Backward-compatible alias of institution().
+     */
+    public function madrasa()
+    {
+        return $this->belongsTo(
+            Madrasa::class,
+            'institution_id',
+            'id'
+        );
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Role
+     * ----------------------------------------------------------
+     */
     public function role()
     {
-        return $this->belongsTo(Role::class);
+        return $this->belongsTo(
+            Role::class,
+            'role_id',
+            'id'
+        );
     }
 
+    /**
+     * ----------------------------------------------------------
+     * Student Profile
+     * ----------------------------------------------------------
+     */
     public function student()
     {
-        return $this->hasOne(Student::class);
+        return $this->hasOne(
+            Student::class,
+            'user_id',
+            'id'
+        );
     }
 
+    /**
+     * ----------------------------------------------------------
+     * Teacher Profile
+     * ----------------------------------------------------------
+     *
+     * Teacher is an entity/profile.
+     * Teacher is NOT a separate Role.
+     */
     public function teacher()
     {
-        return $this->hasOne(Teacher::class);
+        return $this->hasOne(
+            Teacher::class,
+            'user_id',
+            'id'
+        );
     }
 
-    public function presentDivision()
-    {
-        return $this->belongsTo(Division::class, 'present_division_id');
-    }
-
-    public function presentDistrict()
-    {
-        return $this->belongsTo(District::class, 'present_district_id');
-    }
-
-    public function presentUpazila()
-    {
-        return $this->belongsTo(Upazila::class, 'present_upazila_id');
-    }
-
-    public function permanentDivision()
-    {
-        return $this->belongsTo(Division::class, 'permanent_division_id');
-    }
-
-    public function permanentDistrict()
-    {
-        return $this->belongsTo(District::class, 'permanent_district_id');
-    }
-
-    public function permanentUpazila()
-    {
-        return $this->belongsTo(Upazila::class, 'permanent_upazila_id');
-    }
-
+    /**
+     * ----------------------------------------------------------
+     * Creator
+     * ----------------------------------------------------------
+     */
     public function creator()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(
+            User::class,
+            'created_by',
+            'id'
+        );
     }
 
+    /**
+     * ----------------------------------------------------------
+     * Updater
+     * ----------------------------------------------------------
+     */
     public function updater()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(
+            User::class,
+            'updated_by',
+            'id'
+        );
     }
 
-    // Accessors
-    public function getFullPresentAddressAttribute()
+    /**
+     * ----------------------------------------------------------
+     * Direct Permissions
+     * ----------------------------------------------------------
+     *
+     * Pivot:
+     * user_permissions
+     *
+     * allow:
+     * 1 = allowed
+     * 0 = denied
+     */
+    public function permissions()
     {
-        $address = [];
-        if ($this->present_village_road) $address[] = $this->present_village_road;
-        if ($this->present_union) $address[] = $this->present_union;
-        if ($this->presentUpazila) $address[] = $this->presentUpazila->name_bn;
-        if ($this->presentDistrict) $address[] = $this->presentDistrict->name_bn;
-        if ($this->presentDivision) $address[] = $this->presentDivision->name_bn;
-        if ($this->present_postal_code) $address[] = $this->present_postal_code;
-        return implode(', ', $address);
+        return $this->belongsToMany(
+            Permission::class,
+            'user_permissions',
+            'user_id',
+            'permission_id'
+        )
+        ->withPivot('allow')
+        ->withTimestamps();
     }
 
-    public function getFullPermanentAddressAttribute()
+    /**
+     * ----------------------------------------------------------
+     * Allowed Direct Permissions
+     * ----------------------------------------------------------
+     */
+    public function allowedPermissions()
     {
-        $address = [];
-        if ($this->permanent_village_road) $address[] = $this->permanent_village_road;
-        if ($this->permanent_union) $address[] = $this->permanent_union;
-        if ($this->permanentUpazila) $address[] = $this->permanentUpazila->name_bn;
-        if ($this->permanentDistrict) $address[] = $this->permanentDistrict->name_bn;
-        if ($this->permanentDivision) $address[] = $this->permanentDivision->name_bn;
-        if ($this->permanent_postal_code) $address[] = $this->permanent_postal_code;
-        return implode(', ', $address);
+        return $this->permissions()
+            ->wherePivot('allow', true);
     }
-public function hasRole(string $role): bool
-{
-    return optional($this->role)->slug === $role;
-}
-    // Role check methods
-public function getIsSuperAdminAttribute()
-{
-    return $this->hasRole('super-admin');
-}
 
-public function getIsSoftAdminAttribute()
-{
-    return $this->hasRole('soft-admin');
-}
-
-public function getIsMadrasaAdminAttribute()
-{
-    return $this->hasRole('madrasa-admin');
-}
-
-public function getIsTeacherAttribute()
-{
-    return $this->hasRole('teacher');
-}
-
-public function getIsStudentAttribute()
-{
-    return $this->hasRole('student');
-}
-
-public function getIsGuardianAttribute()
-{
-    return $this->hasRole('guardian');
-}
-    // Scopes
-    public function scopeActive($query)
+    /**
+     * ----------------------------------------------------------
+     * Role Check
+     * ----------------------------------------------------------
+     */
+    public function hasRole($role)
     {
-        return $query->where('status', 1);
-    }
-
-    public function scopeSearch($query, $search)
-    {
-        return $query->where(function($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhere('name_bn', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%")
-              ->orWhere('username', 'like', "%{$search}%");
-        });
-    }
-
-public static function generateInstitutionUserId($institutionId, $userType)
-{
-    $role = Role::where('slug', $userType)->first();
-
-    if (!$role) {
-        return 100;
-    }
-
-    $lastUser = self::where('institution_id', $institutionId)
-        ->where('role_id', $role->id)
-        ->whereNotNull('institution_user_id')
-        ->orderByRaw('CAST(institution_user_id AS UNSIGNED) DESC')
-        ->first();
-
-    if ($lastUser) {
-        return (int)$lastUser->institution_user_id + 1;
-    }
-
-return match ($userType) {
-    'student'       => 101,
-    'teacher'       => 201,
-    'guardian'      => 301,
-    'madrasa-admin' => 401,
-    'soft-admin'    => 501,
-    'super-admin'   => 601,
-    default         => 100,
-};
-}
-public static function previewInstitutionUserId($institutionId, $roleSlug)  // institution_id -> madrasa_id
-{
-    $baseNumber = match($roleSlug) {
-        'student' => 101,
-        'teacher' => 201,
-        'guardian' => 301,
-        'madrasa-admin' => 401,
-        'soft-admin' => 501,
-        'super-admin' => 601,
-        default => 100,
-    };
-    
-    $lastUser = self::where('institution_id', $institutionId)  // institution_id -> madrasa_id
-        ->where('role_id', Role::where('slug', $roleSlug)->first()?->id)
-        ->orderBy('id', 'desc')
-        ->first();
-    
-    if ($lastUser && $lastUser->institution_user_id) {
-        $lastNumber = (int) $lastUser->institution_user_id;
-        if ($lastNumber >= $baseNumber && $lastNumber < $baseNumber + 100) {
-            return (string) ($lastNumber + 1);
+        if (!$this->role) {
+            return false;
         }
+
+        return $this->role->slug === $role;
     }
-    
-    return (string) $baseNumber;
-}
-    public function getFormattedInstitutionIdAttribute()
+
+    /**
+     * ----------------------------------------------------------
+     * Multiple Role Check
+     * ----------------------------------------------------------
+     */
+    public function hasAnyRole(array $roles)
     {
-        return $this->institution_user_id.' - '.optional($this->role)->role_name;
-    }
-/*
-|--------------------------------------------------------------------------
-| Permissions
-|--------------------------------------------------------------------------
-*/
+        if (!$this->role) {
+            return false;
+        }
 
-public function permissions()
+        return in_array(
+            $this->role->slug,
+            $roles,
+            true
+        );
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Super Admin
+     * ----------------------------------------------------------
+     */
+    public function getIsSuperAdminAttribute()
+    {
+        return $this->hasRole('super_admin');
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Support Admin
+     * ----------------------------------------------------------
+     */
+    public function getIsSupportAdminAttribute()
+    {
+        return $this->hasRole('support_admin');
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * User Admin
+     * ----------------------------------------------------------
+     */
+    public function getIsUserAdminAttribute()
+    {
+        return $this->hasRole('user_admin');
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * User
+     * ----------------------------------------------------------
+     */
+    public function getIsUserAttribute()
+    {
+        return $this->hasRole('user');
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Student
+     * ----------------------------------------------------------
+     */
+    public function getIsStudentAttribute()
+    {
+        return $this->hasRole('student');
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Backward Compatibility: Admin
+     * ----------------------------------------------------------
+     *
+     * Old admin role এখন user_admin-এর equivalent।
+     */
+    public function getIsAdminAttribute()
+    {
+        return $this->is_user_admin;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Backward Compatibility: Madrasa
+     * ----------------------------------------------------------
+     */
+    public function getIsMadrasaAttribute()
+    {
+        return $this->is_user_admin;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Backward Compatibility: Teacher
+     * ----------------------------------------------------------
+     *
+     * Teacher এখন user role।
+     */
+    public function getIsTeacherAttribute()
+    {
+        return $this->is_user;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Guardian
+     * ----------------------------------------------------------
+     *
+     * Guardian আলাদা role নয়।
+     */
+    public function getIsGuardianAttribute()
+    {
+        return false;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Generate Institution User ID
+     * ----------------------------------------------------------
+     *
+     * Prefix:
+     *
+     * Student       = 101
+     * User          = 201
+     * User Admin    = 401
+     * Support Admin = 501
+     * Super Admin   = 601
+     */
+    public static function generateInstitutionUserId(
+        $institutionId,
+        $roleSlug
+    ) {
+        $prefixes = [
+            'student'       => 101,
+            'user'          => 201,
+            'user_admin'    => 401,
+            'support_admin' => 501,
+            'super_admin'   => 601,
+        ];
+
+        $prefix = $prefixes[$roleSlug] ?? 201;
+
+        $lastUser = static::where(
+            'institution_id',
+            $institutionId
+        )
+        ->whereHas('role', function ($query) use ($roleSlug) {
+            $query->where('slug', $roleSlug);
+        })
+        ->orderByDesc('id')
+        ->first();
+
+        if (!$lastUser || !$lastUser->institution_user_id) {
+            return (string) $prefix;
+        }
+
+        $lastId = (int) $lastUser->institution_user_id;
+
+        return (string) ($lastId + 1);
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Preview Institution User ID
+     * ----------------------------------------------------------
+     */
+    public static function previewInstitutionUserId(
+        $institutionId,
+        $roleSlug
+    ) {
+        return static::generateInstitutionUserId(
+            $institutionId,
+            $roleSlug
+        );
+    }
+
+
+/**
+ * ----------------------------------------------------------
+ * Has Permission
+ * ----------------------------------------------------------
+ *
+ * Permission hierarchy:
+ *
+ * Super Admin + System Mode
+ *     → All permissions
+ *
+ * Super Admin + Institution Mode
+ *     → Selected institution permissions
+ *
+ * Support Admin
+ *     → Direct permission / Role permission
+ *
+ * User Admin / User / Student
+ *     → Institution permission
+ *     → Direct permission / Role permission
+ *
+ * Institution permission is the maximum boundary.
+ * ----------------------------------------------------------
+ */
+public function hasPermission(string $permissionSlug): bool
 {
-    return $this->belongsToMany(
-        Permission::class,
-        'user_permissions'
-    )
-    ->withPivot('allow')
-    ->withTimestamps();
+    /*
+    |--------------------------------------------------------------------------
+    | Find Permission
+    |--------------------------------------------------------------------------
+    */
+
+    $permission = Permission::query()
+        ->where('slug', $permissionSlug)
+        ->where('is_active', true)
+        ->first();
+
+    if (!$permission) {
+        return false;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Current Role
+    |--------------------------------------------------------------------------
+    */
+
+    $roleSlug = strtolower(
+        trim(
+            (string) optional($this->role)->slug
+        )
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUPER ADMIN
+    |--------------------------------------------------------------------------
+    |
+    | যদি কোনো institution select করা না থাকে,
+    | তাহলে Super Admin system mode-এ থাকবে এবং
+    | সব permission পাবে।
+    |
+    | যদি institution select করা থাকে,
+    | তাহলে শুধুমাত্র সেই institution-এর permission
+    | অনুযায়ী access পাবে।
+    |
+    */
+
+    if ($roleSlug === 'super_admin') {
+
+        $activeInstitutionId = session(
+            'active_institution_id'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | System Mode
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$activeInstitutionId) {
+            return true;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Institution Mode
+        |--------------------------------------------------------------------------
+        */
+
+        $institution = Madrasa::find(
+            $activeInstitutionId
+        );
+
+        if (!$institution) {
+            return false;
+        }
+
+        return $institution->permissions()
+            ->where('permissions.id', $permission->id)
+            ->where('permissions.is_active', true)
+            ->exists();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUPPORT ADMIN
+    |--------------------------------------------------------------------------
+    |
+    | Support Admin system-level role.
+    | তাই institution permission বাধ্যতামূলক নয়।
+    |
+    */
+
+    if ($roleSlug === 'support_admin') {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Direct User Permission
+        |--------------------------------------------------------------------------
+        */
+
+        $userPermission = $this->permissions()
+            ->where('permissions.id', $permission->id)
+            ->first();
+
+        if ($userPermission) {
+            return (bool) $userPermission->pivot->allow;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Role Permission
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->permissions()
+            ->where('permissions.id', $permission->id)
+            ->where('permissions.is_active', true)
+            ->exists();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTION BASED ROLES
+    |--------------------------------------------------------------------------
+    |
+    | user_admin
+    | user
+    | student
+    |
+    */
+
+    $institutionRoles = [
+        'user_admin',
+        'user',
+        'student',
+    ];
+
+    if (in_array($roleSlug, $institutionRoles, true)) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get Active Institution
+        |--------------------------------------------------------------------------
+        */
+
+        $institution = $this->activeInstitution;
+
+        if (!$institution) {
+            return false;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Institution Permission
+        |--------------------------------------------------------------------------
+        |
+        | প্রথমে নিশ্চিত করতে হবে যে এই institution
+        | permission-টি ব্যবহার করার অনুমতি দিয়েছে।
+        |
+        */
+
+        $institutionHasPermission = $institution
+            ->permissions()
+            ->where('permissions.id', $permission->id)
+            ->where('permissions.is_active', true)
+            ->exists();
+
+        if (!$institutionHasPermission) {
+            return false;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Direct User Permission
+        |--------------------------------------------------------------------------
+        |
+        | Institution permission থাকলে:
+        |
+        | allow = 1 → allowed
+        | allow = 0 → denied
+        |
+        */
+
+        $userPermission = $this->permissions()
+            ->where('permissions.id', $permission->id)
+            ->first();
+
+        if ($userPermission) {
+            return (bool) $userPermission->pivot->allow;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Role Permission
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->permissions()
+            ->where('permissions.id', $permission->id)
+            ->where('permissions.is_active', true)
+            ->exists();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Unknown Role
+    |--------------------------------------------------------------------------
+    */
+
+    return false;
 }
-public function hasPermission(string $permission): bool
+
+
+
+
+    /**
+     * ----------------------------------------------------------
+     * Permission Alias
+     * ----------------------------------------------------------
+     */
+    public function canPermission($permission)
+    {
+        return $this->hasPermission($permission);
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Active Institution
+     * ----------------------------------------------------------
+     *
+     * IMPORTANT:
+     *
+     * Super Admin institution switch করলে login user
+     * পরিবর্তন হবে না।
+     *
+     * শুধু session-এর active institution পরিবর্তন হবে।
+     */
+    public function getActiveInstitutionAttribute()
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin
+        |--------------------------------------------------------------------------
+        */
+        if ($this->is_super_admin) {
+
+            $institutionId = session(
+                'active_institution_id'
+            );
+
+            if ($institutionId) {
+                return Madrasa::find($institutionId);
+            }
+
+            return null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Support Admin
+        |--------------------------------------------------------------------------
+        |
+        | Assigned institution থাকলে সেটা ব্যবহার করবে।
+        | না থাকলে active session institution ব্যবহার করতে পারবে।
+        |
+        */
+        if ($this->is_support_admin) {
+
+            if ($this->institution_id) {
+                return $this->institution;
+            }
+
+            $institutionId = session(
+                'active_institution_id'
+            );
+
+            if ($institutionId) {
+                return Madrasa::find($institutionId);
+            }
+
+            return null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normal Institution User
+        |--------------------------------------------------------------------------
+        */
+        return $this->institution;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Active Institution ID
+     * ----------------------------------------------------------
+     */
+    public function getActiveInstitutionIdAttribute()
+    {
+        return $this->activeInstitution?->id;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Active Institution Name
+     * ----------------------------------------------------------
+     */
+    public function getActiveInstitutionNameAttribute()
+    {
+        return $this->activeInstitution?->display_name;
+    }
+
+/**
+ * --------------------------------------------------------------------------
+ * Check System Panel Access
+ * --------------------------------------------------------------------------
+ *
+ * Panel access is controlled by role_system_panel.
+ *
+ * Super Admin
+ *     → All active panels
+ *
+ * Support Admin
+ *     → Assigned system panels
+ *
+ * User Admin
+ *     → Assigned institution-level panels
+ *
+ * User
+ *     → Assigned institution-level panels
+ *
+ * Student
+ *     → Assigned institution-level panels
+ *
+ * --------------------------------------------------------------------------
+ */
+public function hasPanel(string $panelSlug): bool
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Find Panel
+    |--------------------------------------------------------------------------
+    */
+
+    $panel = SystemPanel::where('slug', $panelSlug)
+        ->where('is_active', true)
+        ->first();
+
+    if (!$panel) {
+        return false;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin
+    |--------------------------------------------------------------------------
+    |
+    | Super Admin সব active panel access করতে পারবে।
+    |
+    */
+
     if ($this->is_super_admin) {
         return true;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | No Role
+    |--------------------------------------------------------------------------
+    */
 
     if (!$this->role) {
         return false;
     }
 
-    return $this->role
-        ->permissions()
-        ->where('slug', $permission)
-        ->where('is_active', true)
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role Panel Access
+    |--------------------------------------------------------------------------
+    |
+    | support_admin, user_admin, user এবং student
+    | role_system_panel table থেকে panel access পাবে।
+    |
+    */
+
+    return $this->role->systemPanels()
+        ->where('system_panels.id', $panel->id)
+        ->where('system_panels.is_active', true)
         ->exists();
 }
-public function hasPanel(string $panel): bool
-{
-    if ($this->is_super_admin) {
-        return true;
+
+    /**
+     * ----------------------------------------------------------
+     * Same Institution Check
+     * ----------------------------------------------------------
+     */
+    public function belongsToInstitution($institutionId)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin
+        |--------------------------------------------------------------------------
+        |
+        | Super Admin active institution অনুযায়ী কাজ করবে।
+        |
+        */
+        if ($this->is_super_admin) {
+            return (int) $this->active_institution_id
+                === (int) $institutionId;
+        }
+
+        return (int) $this->institution_id
+            === (int) $institutionId;
     }
 
-    if (!$this->role) {
-        return false;
+    /**
+     * ----------------------------------------------------------
+     * Is Active
+     * ----------------------------------------------------------
+     */
+    public function getIsActiveAttribute()
+    {
+        return (int) $this->status === 1;
     }
 
-    return $this->role
-        ->systemPanels()
-        ->where('slug', $panel)
-        ->where('is_active', true)
-        ->exists();
-}
+    /**
+     * ----------------------------------------------------------
+     * Is Inactive
+     * ----------------------------------------------------------
+     */
+    public function getIsInactiveAttribute()
+    {
+        return (int) $this->status === 0;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Role Slug
+     * ----------------------------------------------------------
+     */
+    public function getRoleSlugAttribute()
+    {
+        return $this->role?->slug;
+    }
+
+    /**
+     * ----------------------------------------------------------
+     * Role Name
+     * ----------------------------------------------------------
+     */
+    public function getRoleNameAttribute()
+    {
+        return $this->role?->role_name;
+    }
 }

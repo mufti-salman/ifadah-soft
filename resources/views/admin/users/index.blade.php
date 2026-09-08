@@ -1,5 +1,7 @@
 @extends('layouts.admin')
+
 @section('title', 'ইউজার তালিকা')
+
 @section('page')
 
 <style>
@@ -134,12 +136,14 @@
         color: #374151;
         background: #f8faff;
         outline: none;
-        min-width: 150px;
+        min-width: 180px;
         cursor: pointer;
         font-family: 'Hind Siliguri', sans-serif;
         appearance: none;
         -webkit-appearance: none;
+
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+
         background-repeat: no-repeat;
         background-position: right 12px center;
         transition: border-color 0.2s;
@@ -207,7 +211,7 @@
         text-align: left;
     }
 
-    /* ID Badge */
+    /* ─── ID Badge ─── */
     .id-badge {
         background: #eef2fb;
         color: #3b5bdb;
@@ -218,7 +222,7 @@
         display: inline-block;
     }
 
-    /* Name cell */
+    /* ─── Name Cell ─── */
     .name-primary {
         font-weight: 700;
         font-size: 0.95rem;
@@ -231,7 +235,7 @@
         margin-top: 1px;
     }
 
-    /* Phone */
+    /* ─── Phone ─── */
     .phone-cell {
         display: flex;
         align-items: center;
@@ -245,7 +249,8 @@
         font-size: 0.8rem;
     }
 
-    /* Role Badges */
+    /* ─── Role Badges ─── */
+
     .role-badge {
         display: inline-block;
         padding: 5px 14px;
@@ -254,24 +259,29 @@
         font-weight: 600;
     }
 
-    .role-student {
-        background: #ede9fe;
-        color: #6d28d9;
+    .role-super-admin {
+        background: #fee2e2;
+        color: #991b1b;
     }
 
-    .role-teacher {
-        background: #fce7f3;
-        color: #be185d;
+    .role-support-admin {
+        background: #dbeafe;
+        color: #1d4ed8;
     }
 
-    .role-guardian {
+    .role-user-admin {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .role-user {
         background: #d1fae5;
         color: #065f46;
     }
 
-    .role-admin {
-        background: #fef3c7;
-        color: #92400e;
+    .role-student {
+        background: #ede9fe;
+        color: #6d28d9;
     }
 
     .role-default {
@@ -279,7 +289,7 @@
         color: #374151;
     }
 
-    /* Status */
+    /* ─── Status ─── */
     .status-active {
         color: #16a34a;
         font-weight: 600;
@@ -292,7 +302,7 @@
         font-size: 0.88rem;
     }
 
-    /* Action Buttons */
+    /* ─── Action Buttons ─── */
     .action-cell {
         display: flex;
         align-items: center;
@@ -317,7 +327,7 @@
         color: #3b5bdb;
     }
 
-    /* Three-dot dropdown */
+    /* ─── Three Dot Dropdown ─── */
     .dropdown-dot-btn {
         background: transparent;
         border: none;
@@ -356,8 +366,15 @@
     }
 
     @keyframes dropFade {
-        from { opacity: 0; transform: translateY(-6px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .dropdown-menu-custom a,
@@ -390,17 +407,29 @@
         color: #9ca3af;
     }
 
-    .dropdown-menu-custom .item-active i  { color: #16a34a; }
-    .dropdown-menu-custom .item-active     { color: #16a34a; font-weight: 600; }
-    .dropdown-menu-custom .item-delete i  { color: #dc2626; }
-    .dropdown-menu-custom .item-delete     { color: #dc2626; }
+    .dropdown-menu-custom .item-active i {
+        color: #16a34a;
+    }
+
+    .dropdown-menu-custom .item-active {
+        color: #16a34a;
+        font-weight: 600;
+    }
+
+    .dropdown-menu-custom .item-delete i {
+        color: #dc2626;
+    }
+
+    .dropdown-menu-custom .item-delete {
+        color: #dc2626;
+    }
 
     .dropdown-wrapper {
         position: relative;
         display: inline-block;
     }
 
-    /* Pagination */
+    /* ─── Pagination ─── */
     .pagination-bar {
         padding: 14px 20px;
         display: flex;
@@ -414,250 +443,637 @@
         font-size: 0.85rem;
     }
 
-    /* Empty state */
+    /* ─── Empty State ─── */
     .empty-state {
         padding: 50px 20px;
         text-align: center;
         color: #9ca3af;
     }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+
+        .user-page {
+            padding: 20px 12px;
+        }
+
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .btn-new-user {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .search-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-icon-btn,
+        .filter-select {
+            width: 100%;
+        }
+
+        .table-card {
+            overflow-x: auto;
+        }
+
+        .user-table {
+            min-width: 1000px;
+        }
+
+        .pagination-bar {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    }
 </style>
 
 <div class="user-page">
 
-    {{-- ── Header ── --}}
-    <div class="page-header">
-        <div>
-            <h5>ইউজার এন্ট্রি ও ব্যবস্থাপনা</h5>
-            <small>সকল ইউজারদের তালিকা ও তথ্য ব্যবস্থাপনা করুন</small>
-        </div>
-        @if(auth()->user()->role->slug != 'madrasa-admin')
-        <a href="{{ route('dashboard.user.create') }}" class="btn-new-user">
-            <i class="fas fa-user-plus"></i> নতুন ইউজার এন্ট্রি
+{{-- ── Header ── --}}
+<div class="page-header">
+
+    <div>
+        <h5>ইউজার এন্ট্রি ও ব্যবস্থাপনা</h5>
+
+        <small>
+            সকল ইউজারদের তালিকা ও তথ্য ব্যবস্থাপনা করুন
+        </small>
+    </div>
+
+
+    {{-- নতুন ইউজার --}}
+    @if(
+        auth()->user()->is_super_admin ||
+        auth()->user()->is_support_admin ||
+        auth()->user()->is_user_admin
+    )
+
+        <a
+            href="{{ route('dashboard.user.create') }}"
+            class="btn-new-user"
+        >
+            <i class="fas fa-user-plus"></i>
+            নতুন ইউজার এন্ট্রি
         </a>
-        @endif
-    </div>
 
-    {{-- ── Search & Filter ── --}}
-    <div class="search-card">
-        <form action="{{ route('dashboard.user.index') }}" method="GET">
-            <div class="search-wrapper">
+    @endif
 
-                <div class="search-input-group">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" name="search"
-                           placeholder="নাম, আইডি বা মোবাইল দিয়ে খুঁজুন..."
-                           value="{{ request('search') }}">
-                </div>
+</div>
 
-                <button type="submit" class="filter-icon-btn" title="ফিল্টার">
-                    <i class="fas fa-filter"></i>
-                </button>
 
-                <select name="user_type" class="filter-select" onchange="this.form.submit()">
-                    <option value="">সকল ধরণ</option>
-                    <option value="student"      {{ request('user_type') == 'student'      ? 'selected' : '' }}>শিক্ষার্থী</option>
-                    <option value="teacher"      {{ request('user_type') == 'teacher'      ? 'selected' : '' }}>শিক্ষক</option>
-                    <option value="guardian"     {{ request('user_type') == 'guardian'     ? 'selected' : '' }}>অভিভাবক</option>
-                    <option value="madrasa-admin"{{ request('user_type') == 'madrasa-admin'? 'selected' : '' }}>অ্যাডমিন</option>
-                </select>
+{{-- ── Search & Filter ── --}}
+<div class="search-card">
+
+    <form
+        action="{{ route('dashboard.user.index') }}"
+        method="GET"
+    >
+
+        <div class="search-wrapper">
+
+            {{-- Search --}}
+            <div class="search-input-group">
+
+                <i class="fas fa-search search-icon"></i>
+
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="নাম, আইডি বা মোবাইল দিয়ে খুঁজুন..."
+                    value="{{ request('search') }}"
+                >
 
             </div>
-        </form>
-    </div>
 
-    {{-- ── Table ── --}}
-    <div class="table-card">
-        <div class="table-responsive">
-            <table class="user-table">
-<thead>
-    <tr>
-        <th>আইডি</th>
-        <th class="text-start">ইউজার নাম</th>
-        <th>পিতার নাম</th>
-        <th>স্টুডেন্ট আইডি</th>  {{-- নতুন --}}
-        <th>মোবাইল নাম্বার</th>
-        <th>ইউজার ধরণ</th>
-        <th>স্ট্যাটাস</th>  {{-- পরিবর্তন --}}
-        <th>অ্যাকশন</th>
-    </tr>
-</thead>
 
-<tbody>
-    @forelse($users as $user)
-    @php
-        $roleSlug = $user->role->slug ?? '';
-        $isStudent = ($roleSlug == 'student');
-    @endphp
-    <tr>
-        {{-- ID --}}
-        <td><span class="id-badge">{{ $user->id }}</span></td>
+            {{-- Filter Button --}}
+            <button
+                type="submit"
+                class="filter-icon-btn"
+                title="ফিল্টার"
+            >
+                <i class="fas fa-filter"></i>
+            </button>
 
-        {{-- Name --}}
-        <td class="text-start">
-            <div class="name-primary">{{ $user->name_bn ?: $user->name }}</div>
-            @if($user->name_bn)
-            <div class="name-secondary">{{ $user->name }}</div>
-            @endif
-        </td>
 
-        {{-- Father Name (শুধু student) --}}
-        <td>
-            @if($isStudent)
-                {{ $user->father_name ?? '—' }}
-            @else
-                —
-            @endif
-        </td>
+            {{-- Role Filter --}}
+            <select
+                name="user_type"
+                class="filter-select"
+                onchange="this.form.submit()"
+            >
 
-        {{-- Student ID (শুধু student) --}}
-        <td>
-            @if($isStudent && $user->student)
-                <span class="id-badge">{{ $user->institution_user_id }}</span>
-            @else
-                —
-            @endif
-        </td>
+                <option value="">
+                    সকল ধরণ
+                </option>
 
-        {{-- Phone --}}
-        <td>
-            <div class="phone-cell">
-                <i class="fas fa-phone"></i>
-                {{ $user->phone }}
-            </div>
-        </td>
+                <option
+                    value="super_admin"
+                    {{ request('user_type') == 'super_admin' ? 'selected' : '' }}
+                >
+                    সুপার অ্যাডমিন
+                </option>
 
-        {{-- Role --}}
-        <td>
-            @php
-                $roleClass = match($roleSlug) {
-                    'student'       => 'role-student',
-                    'teacher'       => 'role-teacher',
-                    'guardian'      => 'role-guardian',
-                    'madrasa-admin' => 'role-admin',
-                    'soft-admin'    => 'role-admin',
-                    'super-admin'   => 'role-admin',
-                    default         => 'role-default',
-                };
-            @endphp
-            <span class="role-badge {{ $roleClass }}">
-                {{ $user->role->role_name ?? 'N/A' }}
-            </span>
-         </td>
+                <option
+                    value="support_admin"
+                    {{ request('user_type') == 'support_admin' ? 'selected' : '' }}
+                >
+                    সাপোর্ট অ্যাডমিন
+                </option>
 
-        {{-- Status --}}
-        <td>
-            @if($user->status == 1)
-                <span class="status-active">● সক্রিয়</span>
-            @else
-                <span class="status-inactive">● নিষ্ক্রিয়</span>
-            @endif
-         </td>
+                <option
+                    value="user_admin"
+                    {{ request('user_type') == 'user_admin' ? 'selected' : '' }}
+                >
+                    ইউজার অ্যাডমিন
+                </option>
 
-        {{-- Actions --}}
-        <td>
-            <div class="action-cell">
-                <a href="{{ route('dashboard.user.show', $user->id) }}" class="btn-view" title="প্রোফাইল ভিউ">
-                    <i class="fas fa-eye"></i>
-                </a>
+                <option
+                    value="user"
+                    {{ request('user_type') == 'user' ? 'selected' : '' }}
+                >
+                    ইউজার
+                </option>
 
-                <div class="dropdown-wrapper">
-                    <button class="dropdown-dot-btn" onclick="toggleDropdown(this)">⋮</button>
-                    <div class="dropdown-menu-custom">
-                        
-                        {{-- Admission & Fee (শুধু student) --}}
-                        @if($isStudent && $user->student)
-                        <a href="{{ route('dashboard.admissions.index', ['student_id' => $user->student->id]) }}">
-                            <i class="fas fa-graduation-cap"></i>
-                            এডমিশন এন্ড ফি
-                        </a>
-                        @endif
+                <option
+                    value="student"
+                    {{ request('user_type') == 'student' ? 'selected' : '' }}
+                >
+                    শিক্ষার্থী
+                </option>
 
-                        {{-- Profile View --}}
-                        <a href="{{ route('dashboard.user.show', $user->id) }}">
-                            <i class="fas fa-eye"></i>
-                            প্রোফাইল ভিউ
-                        </a>
+            </select>
 
-                        {{-- Edit --}}
-                        <a href="{{ route('dashboard.user.edit', $user->id) }}">
-                            <i class="fas fa-edit"></i>
-                            এডিট করুন
-                        </a>
-
-                        {{-- Toggle Status --}}
-                        <a href="#" class="item-active"
-                           onclick="event.preventDefault(); document.getElementById('toggle-form-{{ $user->id }}').submit();">
-                            <i class="fas fa-power-off"></i>
-                            @if($user->status == 1) নিষ্ক্রিয় করুন @else সক্রিয় করুন @endif
-                        </a>
-
-                        <form id="toggle-form-{{ $user->id }}" 
-                              action="{{ route('dashboard.user.toggle-status', $user->id) }}" 
-                              method="POST" style="display:none;">
-                            @csrf
-                            @method('PATCH')
-                        </form>
-
-                        {{-- Delete --}}
-                        <form action="{{ route('dashboard.user.destroy', $user->id) }}"
-                              method="POST" style="margin:0; padding:0;"
-                              onsubmit="return confirm('এই ইউজার ডিলিট করবেন?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="item-delete">
-                                <i class="fas fa-trash"></i>
-                                ডিলিট করুন
-                            </button>
-                        </form>
-
-                    </div>
-                </div>
-            </div>
-         </td>
-
-    </tr>
-    @empty
-    <tr>
-        <td colspan="8">  {{-- colspan 8 করুন --}}
-            <div class="empty-state">
-                <i class="fas fa-users fa-2x mb-3 d-block"></i>
-                কোনো ইউজার পাওয়া যায়নি
-            </div>
-        </td>
-    </tr>
-    @endforelse
-</tbody>
-
-            </table>
         </div>
 
-        {{-- Pagination --}}
-        <div class="pagination-bar">
-            <small>মোট {{ $users->total() }} জন</small>
-            {{ $users->withQueryString()->links('pagination::bootstrap-5') }}
-        </div>
+    </form>
+
+</div>
+
+
+{{-- ── Table ── --}}
+<div class="table-card">
+
+    <div class="table-responsive">
+
+        <table class="user-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        আইডি
+                    </th>
+
+                    <th class="text-start">
+                        ইউজার নাম
+                    </th>
+
+                    <th>
+                        পিতার নাম
+                    </th>
+
+                    <th>
+                        স্টুডেন্ট আইডি
+                    </th>
+
+                    <th>
+                        মোবাইল নাম্বার
+                    </th>
+
+                    <th>
+                        ইউজার ধরণ
+                    </th>
+
+                    <th>
+                        স্ট্যাটাস
+                    </th>
+
+                    <th>
+                        অ্যাকশন
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                @forelse($users as $user)
+
+                    @php
+
+                        $roleSlug = $user->role->slug ?? '';
+
+                        $isStudent = ($roleSlug === 'student');
+
+                    @endphp
+
+
+                    <tr>
+
+                        {{-- ID --}}
+                        <td>
+
+                            <span class="id-badge">
+                                {{ $user->id }}
+                            </span>
+
+                        </td>
+
+
+                        {{-- Name --}}
+                        <td class="text-start">
+
+                            <div class="name-primary">
+
+                                {{ $user->name_bn ?: $user->name }}
+
+                            </div>
+
+
+                            @if($user->name_bn)
+
+                                <div class="name-secondary">
+
+                                    {{ $user->name }}
+
+                                </div>
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Father Name --}}
+                        <td>
+
+                            @if($isStudent)
+
+                                {{ $user->father_name ?? '—' }}
+
+                            @else
+
+                                —
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Student ID --}}
+                        <td>
+
+                            @if($isStudent && $user->student)
+
+                                <span class="id-badge">
+
+                                    {{ $user->institution_user_id }}
+
+                                </span>
+
+                            @else
+
+                                —
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Phone --}}
+                        <td>
+
+                            <div class="phone-cell">
+
+                                <i class="fas fa-phone"></i>
+
+                                {{ $user->phone }}
+
+                            </div>
+
+                        </td>
+
+
+                        {{-- Role --}}
+                        <td>
+
+                            @php
+
+                                $roleClass = match($roleSlug) {
+
+                                    'super_admin'   => 'role-super-admin',
+
+                                    'support_admin' => 'role-support-admin',
+
+                                    'user_admin'    => 'role-user-admin',
+
+                                    'user'          => 'role-user',
+
+                                    'student'       => 'role-student',
+
+                                    default         => 'role-default',
+
+                                };
+
+                            @endphp
+
+
+                            <span class="role-badge {{ $roleClass }}">
+
+                                {{ $user->role->role_name ?? 'N/A' }}
+
+                            </span>
+
+                        </td>
+
+
+                        {{-- Status --}}
+                        <td>
+
+                            @if((int) $user->status === 1)
+
+                                <span class="status-active">
+                                    ● সক্রিয়
+                                </span>
+
+                            @else
+
+                                <span class="status-inactive">
+                                    ● নিষ্ক্রিয়
+                                </span>
+
+                            @endif
+
+                        </td>
+
+
+                        {{-- Actions --}}
+                        <td>
+
+                            <div class="action-cell">
+
+                                {{-- Profile View --}}
+                                <a
+                                    href="{{ route('dashboard.user.show', $user->id) }}"
+                                    class="btn-view"
+                                    title="প্রোফাইল ভিউ"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+
+                                {{-- Dropdown --}}
+                                <div class="dropdown-wrapper">
+
+                                    <button
+                                        type="button"
+                                        class="dropdown-dot-btn"
+                                        onclick="toggleDropdown(this)"
+                                    >
+                                        ⋮
+                                    </button>
+
+
+                                    <div class="dropdown-menu-custom">
+
+                                        {{-- Admission & Fee --}}
+                                        @if($isStudent && $user->student)
+
+                                            <a
+                                                href="{{ route(
+                                                    'dashboard.admissions.index',
+                                                    ['student_id' => $user->student->id]
+                                                ) }}"
+                                            >
+
+                                                <i class="fas fa-graduation-cap"></i>
+
+                                                এডমিশন এন্ড ফি
+
+                                            </a>
+
+                                        @endif
+
+
+                                        {{-- Profile View --}}
+                                        <a
+                                            href="{{ route(
+                                                'dashboard.user.show',
+                                                $user->id
+                                            ) }}"
+                                        >
+
+                                            <i class="fas fa-eye"></i>
+
+                                            প্রোফাইল ভিউ
+
+                                        </a>
+
+
+                                        {{-- Edit --}}
+                                        <a
+                                            href="{{ route(
+                                                'dashboard.user.edit',
+                                                $user->id
+                                            ) }}"
+                                        >
+
+                                            <i class="fas fa-edit"></i>
+
+                                            এডিট করুন
+
+                                        </a>
+
+
+                                        {{-- Toggle Status --}}
+                                        <a
+                                            href="#"
+                                            class="item-active"
+                                            onclick="
+                                                event.preventDefault();
+                                                document.getElementById(
+                                                    'toggle-form-{{ $user->id }}'
+                                                ).submit();
+                                            "
+                                        >
+
+                                            <i class="fas fa-power-off"></i>
+
+                                            @if((int) $user->status === 1)
+
+                                                নিষ্ক্রিয় করুন
+
+                                            @else
+
+                                                সক্রিয় করুন
+
+                                            @endif
+
+                                        </a>
+
+
+                                        {{-- Toggle Status Form --}}
+                                        <form
+                                            id="toggle-form-{{ $user->id }}"
+                                            action="{{ route(
+                                                'dashboard.user.toggle-status',
+                                                $user->id
+                                            ) }}"
+                                            method="POST"
+                                            style="display:none;"
+                                        >
+
+                                            @csrf
+
+                                            @method('PATCH')
+
+                                        </form>
+
+
+                                        {{-- Delete --}}
+                                        <form
+                                            action="{{ route(
+                                                'dashboard.user.destroy',
+                                                $user->id
+                                            ) }}"
+                                            method="POST"
+                                            style="margin:0; padding:0;"
+                                            onsubmit="
+                                                return confirm(
+                                                    'এই ইউজার ডিলিট করবেন?'
+                                                )
+                                            "
+                                        >
+
+                                            @csrf
+
+                                            @method('DELETE')
+
+
+                                            <button
+                                                type="submit"
+                                                class="item-delete"
+                                            >
+
+                                                <i class="fas fa-trash"></i>
+
+                                                ডিলিট করুন
+
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                @empty
+
+                    <tr>
+
+                        <td colspan="8">
+
+                            <div class="empty-state">
+
+                                <i class="fas fa-users fa-2x mb-3 d-block"></i>
+
+                                কোনো ইউজার পাওয়া যায়নি
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                @endforelse
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    {{-- ── Pagination ── --}}
+    <div class="pagination-bar">
+
+        <small>
+            মোট {{ $users->total() }} জন
+        </small>
+
+        {{ $users->withQueryString()->links('pagination::bootstrap-5') }}
+
     </div>
 
 </div>
 
+</div>
+
 {{-- ── Dropdown JS ── --}}
+
 <script>
+
     function toggleDropdown(btn) {
+
         const menu = btn.nextElementSibling;
-        const allMenus = document.querySelectorAll('.dropdown-menu-custom');
-        allMenus.forEach(m => {
-            if (m !== menu) m.classList.remove('show');
+
+        const allMenus = document.querySelectorAll(
+            '.dropdown-menu-custom'
+        );
+
+        allMenus.forEach(function (m) {
+
+            if (m !== menu) {
+
+                m.classList.remove('show');
+
+            }
+
         });
+
         menu.classList.toggle('show');
     }
 
-    // Close on outside click
+
+    /*
+    |--------------------------------------------------------------------------
+    | Close Dropdown On Outside Click
+    |--------------------------------------------------------------------------
+    */
+
     document.addEventListener('click', function (e) {
+
         if (!e.target.closest('.dropdown-wrapper')) {
-            document.querySelectorAll('.dropdown-menu-custom').forEach(m => m.classList.remove('show'));
+
+            document
+                .querySelectorAll('.dropdown-menu-custom')
+                .forEach(function (menu) {
+
+                    menu.classList.remove('show');
+
+                });
+
         }
+
     });
+
 </script>
 
 @endsection
-

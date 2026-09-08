@@ -12,11 +12,11 @@ class RolePanelSeeder extends Seeder
     {
         /*
         |--------------------------------------------------------------------------
-        | Super Admin
+        | All Panels
         |--------------------------------------------------------------------------
         */
 
-        $this->assignPanels('super-admin', [
+        $allPanels = [
             'dashboard',
             'student',
             'teacher',
@@ -27,26 +27,27 @@ class RolePanelSeeder extends Seeder
             'payment',
             'settings',
             'help',
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin (System সহ)
+        |--------------------------------------------------------------------------
+        */
+
+        $this->assignPanels('super-admin', [
+            ...$allPanels,
             'system',
         ]);
 
         /*
         |--------------------------------------------------------------------------
-        | Soft Admin
+        | Soft Admin (System সহ)
         |--------------------------------------------------------------------------
         */
 
         $this->assignPanels('soft-admin', [
-            'dashboard',
-            'student',
-            'teacher',
-            'attendance',
-            'exam',
-            'result',
-            'accounting',
-            'payment',
-            'settings',
-            'help',
+            ...$allPanels,
             'system',
         ]);
 
@@ -56,18 +57,7 @@ class RolePanelSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $this->assignPanels('madrasa-admin', [
-            'dashboard',
-            'student',
-            'teacher',
-            'attendance',
-            'exam',
-            'result',
-            'accounting',
-            'payment',
-            'settings',
-            'help',
-        ]);
+        $this->assignPanels('madrasa-admin', $allPanels);
 
         /*
         |--------------------------------------------------------------------------
@@ -75,13 +65,7 @@ class RolePanelSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $this->assignPanels('teacher', [
-            'dashboard',
-            'student',
-            'attendance',
-            'exam',
-            'result',
-        ]);
+        $this->assignPanels('teacher', $allPanels);
 
         /*
         |--------------------------------------------------------------------------
@@ -89,21 +73,9 @@ class RolePanelSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $this->assignPanels('student', [
-            'dashboard',
-            'result',
-        ]);
+        $this->assignPanels('student', $allPanels);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Guardian
-        |--------------------------------------------------------------------------
-        */
-
-        $this->assignPanels('guardian', [
-            'dashboard',
-            'result',
-        ]);
+        // Guardian লাগবে না
     }
 
     protected function assignPanels(string $roleSlug, array $panelSlugs): void

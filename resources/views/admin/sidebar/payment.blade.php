@@ -1,53 +1,102 @@
-@if(auth()->user()->hasPanel('payment'))
+@panel('payment')
 
-<li class="nav-item">
+@php
+    $canPayment =
+        auth()->user()->hasPermission('online-payment.view')
+        || auth()->user()->hasPermission('online-payment.create')
+        || auth()->user()->hasPermission('online-payment.process')
+        || auth()->user()->hasPermission('online-payment.verify')
+        || auth()->user()->hasPermission('online-payment.report')
+        || auth()->user()->hasPermission('payment.view')
+        || auth()->user()->hasPermission('payment.create')
+        || auth()->user()->hasPermission('payment.edit')
+        || auth()->user()->hasPermission('payment.delete');
+@endphp
 
-    <a class="nav-link text-white d-flex justify-content-between {{ request()->routeIs('payment.*') ? 'active' : '' }}"
-       data-bs-toggle="collapse"
-       data-bs-target="#paymentMenu"
-       data-parent="payment">
+@if($canPayment)
 
-        <span>
-            <i class="fas fa-credit-card me-2"></i>
-            অনলাইন পেমেন্ট
-        </span>
+    <li class="nav-item">
 
-        <i class="fas fa-chevron-down"></i>
+        <a class="nav-link text-white d-flex justify-content-between
+            {{ request()->routeIs(
+                'dashboard.payment.*',
+                'dashboard.online-payment.*'
+            ) ? 'active' : '' }}"
+           data-bs-toggle="collapse"
+           data-bs-target="#paymentMenu"
+           href="#paymentMenu">
 
-    </a>
+            <span>
+                <i class="fas fa-credit-card me-2"></i>
+                অনলাইন পেমেন্ট
+            </span>
 
-    <div class="collapse {{ $open('payment.') }}" id="paymentMenu">
+            <i class="fas fa-chevron-down"></i>
 
-        <ul class="nav flex-column ms-3">
+        </a>
 
-            @can('online-payment.create')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    সাবস্ক্রিপশন
-                </a>
-            </li>
-            @endcan
 
-            @can('online-payment.process')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    স্টুডেন্ট পেমেন্ট
-                </a>
-            </li>
-            @endcan
+        <div class="collapse {{ $open('payment.') }}"
+             id="paymentMenu">
 
-            @can('online-payment.report')
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    পেমেন্ট হিস্ট্রি
-                </a>
-            </li>
-            @endcan
+            <ul class="nav flex-column ms-3">
 
-        </ul>
+                {{-- সাবস্ক্রিপশন --}}
+                @sidebarPermission('online-payment.view')
+                    <li class="nav-item">
 
-    </div>
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.payment.subscription.*') ? 'active' : '' }}"
+                           href="#">
 
-</li>
+                            <i class="fas fa-sync-alt me-2"></i>
+                            সাবস্ক্রিপশন
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- স্টুডেন্ট পেমেন্ট --}}
+                @sidebarPermission('payment.view')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.payment.student.*') ? 'active' : '' }}"
+                           href="#">
+
+                            <i class="fas fa-user-graduate me-2"></i>
+                            স্টুডেন্ট পেমেন্ট
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- পেমেন্ট হিস্ট্রি --}}
+                @sidebarPermission('online-payment.report')
+                    <li class="nav-item">
+
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.payment.history.*') ? 'active' : '' }}"
+                           href="#">
+
+                            <i class="fas fa-history me-2"></i>
+                            পেমেন্ট হিস্ট্রি
+
+                        </a>
+
+                    </li>
+                @endsidebarPermission
+
+            </ul>
+
+        </div>
+
+    </li>
 
 @endif
+
+@endpanel

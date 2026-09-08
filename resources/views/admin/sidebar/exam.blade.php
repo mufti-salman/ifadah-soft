@@ -1,101 +1,134 @@
-@if(auth()->user()->hasPanel('exam'))
+@panel('exam')
 
-<li class="nav-item">
+@php
+    $canExam =
+        auth()->user()->hasPermission('exam-type.view')
+        || auth()->user()->hasPermission('exam.view')
+        || auth()->user()->hasPermission('exam.create')
+        || auth()->user()->hasPermission('exam.schedule')
+        || auth()->user()->hasPermission('exam.routine')
+        || auth()->user()->hasPermission('exam.edit');
+@endphp
 
-    <a class="nav-link text-white d-flex justify-content-between {{ request()->routeIs('exam.*') ? 'active' : '' }}"
-       data-bs-toggle="collapse"
-       data-bs-target="#examMenu"
-       data-parent="exam">
+@if($canExam)
 
-        <span>
-            <i class="fas fa-file-alt me-2"></i>
-            পরীক্ষা
-        </span>
+    <li class="nav-item">
 
-        <i class="fas fa-chevron-down"></i>
+        <a class="nav-link text-white d-flex justify-content-between
+            {{ request()->routeIs('dashboard.exam.*') ? 'active' : '' }}"
+           data-bs-toggle="collapse"
+           data-bs-target="#examMenu"
+           href="#examMenu">
 
-    </a>
+            <span>
+                <i class="fas fa-file-alt me-2"></i>
+                পরীক্ষা
+            </span>
 
-    <div class="collapse {{ $open('exam.') }}" id="examMenu">
+            <i class="fas fa-chevron-down"></i>
 
-        <ul class="nav flex-column ms-3">
+        </a>
 
-            @if(auth()->user()->hasPermission('exam-type.view'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    পরীক্ষার নাম
-                </a>
-            </li>
-            @endif
+        <div class="collapse {{ $open('exam.') }}" id="examMenu">
 
-            @if(auth()->user()->hasPermission('exam.create'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    পরীক্ষার ফি
-                </a>
-            </li>
-            @endif
+            <ul class="nav flex-column ms-3">
 
-            @if(auth()->user()->hasPermission('exam.edit'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    কন্ডিশন
-                </a>
-            </li>
-            @endif
+                {{-- পরীক্ষার ধরন --}}
+                @sidebarPermission('exam-type.view')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam-type.*') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-tags me-2"></i>
+                            পরীক্ষার ধরন
+                        </a>
+                    </li>
+                @endsidebarPermission
 
-            @if(auth()->user()->hasPermission('exam.edit'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    মেধা কন্ডিশন
-                </a>
-            </li>
-            @endif
 
-            @if(auth()->user()->hasPermission('exam.schedule'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    প্রবেশপত্র
-                </a>
-            </li>
-            @endif
+                {{-- পরীক্ষার তালিকা --}}
+                @sidebarPermission('exam.view')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.index') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-list me-2"></i>
+                            পরীক্ষার তালিকা
+                        </a>
+                    </li>
+                @endsidebarPermission
 
-            @if(auth()->user()->hasPermission('exam.routine'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    রুটিন
-                </a>
-            </li>
-            @endif
 
-            @if(auth()->user()->hasPermission('exam.view'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    নিয়ম
-                </a>
-            </li>
-            @endif
+                {{-- নতুন পরীক্ষা --}}
+                @sidebarPermission('exam.create')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.create') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            নতুন পরীক্ষা
+                        </a>
+                    </li>
+                @endsidebarPermission
 
-            @if(auth()->user()->hasPermission('exam.view'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    রিপোর্ট
-                </a>
-            </li>
-            @endif
 
-            @if(auth()->user()->hasPermission('exam.edit'))
-            <li>
-                <a class="nav-link text-white-50" href="#">
-                    সেটিং
-                </a>
-            </li>
-            @endif
+                {{-- পরীক্ষার সময়সূচী --}}
+                @sidebarPermission('exam.schedule')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.schedule.*') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            পরীক্ষার সময়সূচী
+                        </a>
+                    </li>
+                @endsidebarPermission
 
-        </ul>
 
-    </div>
+                {{-- পরীক্ষার রুটিন --}}
+                @sidebarPermission('exam.routine')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.routine.*') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-calendar-week me-2"></i>
+                            পরীক্ষার রুটিন
+                        </a>
+                    </li>
+                @endsidebarPermission
 
-</li>
+
+                {{-- পরীক্ষা সেটিং --}}
+                @sidebarPermission('exam.edit')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.settings.*') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-cog me-2"></i>
+                            পরীক্ষা সেটিং
+                        </a>
+                    </li>
+                @endsidebarPermission
+
+
+                {{-- পরীক্ষার রিপোর্ট --}}
+                @sidebarPermission('exam.view')
+                    <li class="nav-item">
+                        <a class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.exam.report.*') ? 'active' : '' }}"
+                           href="#">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            পরীক্ষার রিপোর্ট
+                        </a>
+                    </li>
+                @endsidebarPermission
+
+            </ul>
+
+        </div>
+
+    </li>
 
 @endif
+
+@endpanel

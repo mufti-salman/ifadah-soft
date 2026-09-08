@@ -13,163 +13,596 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // এখানে শুধু module এবং তার actions সংরক্ষণ করব
+        /*
+        |--------------------------------------------------------------------------
+        | Permission Modules
+        |--------------------------------------------------------------------------
+        | module        = Admin Panel-এ বাংলা নামে দেখাবে
+        | permission    = Admin Panel-এ বাংলা নামে দেখাবে
+        | slug          = System-এর জন্য English থাকবে
+        |--------------------------------------------------------------------------
+        */
+
         $modules = [
 
             /*
             |--------------------------------------------------------------------------
-            | Dashboard Module
+            | Dashboard
             |--------------------------------------------------------------------------
             */
             'dashboard' => [
-                'Dashboard' => ['view', 'analytics', 'export'],
+
+                'ড্যাশবোর্ড' => [
+                    'view',
+                    'analytics',
+                    'export',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Student Module
+            | Student
             |--------------------------------------------------------------------------
             */
             'student' => [
-                'Student' => ['view', 'create', 'edit', 'delete', 'photo', 'report', 'export', 'import'],
-                'Guardian' => ['view', 'create', 'edit', 'delete'],
-                'Admission' => ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
-                'Class' => ['view', 'create', 'edit', 'delete'],
-                'Section' => ['view', 'create', 'edit', 'delete'],
+
+                'শিক্ষার্থী' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'photo',
+                    'report',
+                    'export',
+                    'import',
+                ],
+
+                'অভিভাবক' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'ভর্তি' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'approve',
+                    'reject',
+                ],
+
+                'শ্রেণি' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'শাখা' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'বিষয়' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'শিক্ষার্থী গ্রুপ' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'শিক্ষার্থী কার্ড' => [
+                    'view',
+                    'print',
+                ],
+
+                'সনদপত্র' => [
+                    'view',
+                    'create',
+                    'print',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Teacher Module
+            | Teacher
             |--------------------------------------------------------------------------
             */
             'teacher' => [
-                'Teacher' => ['view', 'create', 'edit', 'delete', 'photo', 'report', 'export', 'import'],
+
+                'শিক্ষক' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'photo',
+                    'report',
+                    'export',
+                    'import',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Attendance Module
+            | Attendance
             |--------------------------------------------------------------------------
             */
             'attendance' => [
-                'Attendance' => ['view', 'take', 'edit', 'delete', 'report', 'export'],
+
+                'উপস্থিতি' => [
+                    'view',
+                    'take',
+                    'edit',
+                    'delete',
+                    'report',
+                    'export',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Exam Module
+            | Exam
             |--------------------------------------------------------------------------
             */
             'exam' => [
-                'Exam' => ['view', 'create', 'edit', 'delete', 'schedule', 'routine'],
-                'Exam Type' => ['view', 'create', 'edit', 'delete'],
+
+                'পরীক্ষা' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'schedule',
+                    'routine',
+                ],
+
+                'পরীক্ষার ধরন' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Result Module
+            | Result
             |--------------------------------------------------------------------------
             */
             'result' => [
-                'Result' => ['view', 'publish', 'edit', 'delete', 'export', 'print'],
-                'Grade' => ['view', 'create', 'edit', 'delete'],
+
+                'ফলাফল' => [
+                    'view',
+                    'publish',
+                    'edit',
+                    'delete',
+                    'export',
+                    'print',
+                ],
+
+                'গ্রেড' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Accounting Module
+            | Accounting
             |--------------------------------------------------------------------------
             */
             'accounting' => [
-                'Fee' => ['view', 'create', 'edit', 'delete', 'collect', 'report', 'export'],
-                'Fee Type' => ['view', 'create', 'edit', 'delete'],
-                'Income' => ['view', 'create', 'edit', 'delete'],
-                'Expense' => ['view', 'create', 'edit', 'delete'],
-                'Invoice' => ['view', 'create', 'edit', 'delete', 'print'],
-                'Payment' => ['view', 'create', 'edit', 'delete'],
-                'Report' => ['view', 'export', 'print'],
+
+                'বেতন ও ফি' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'collect',
+                    'report',
+                    'export',
+                ],
+
+                'ফি-এর ধরন' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'আয়' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'ব্যয়' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'চালান' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'print',
+                ],
+
+                'পেমেন্ট' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'হিসাব প্রতিবেদন' => [
+                    'view',
+                    'export',
+                    'print',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Payment Module
+            | Payment
             |--------------------------------------------------------------------------
             */
             'payment' => [
-                'Online Payment' => ['view', 'create', 'process', 'verify', 'report'],
-                'Payment Gateway' => ['view', 'create', 'edit', 'delete'],
+
+                'অনলাইন পেমেন্ট' => [
+                    'view',
+                    'create',
+                    'process',
+                    'verify',
+                    'report',
+                ],
+
+                'পেমেন্ট গেটওয়ে' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Settings Module
+            | Settings
             |--------------------------------------------------------------------------
             */
             'settings' => [
-                'General' => ['view', 'edit'],
-                'Academic' => ['view', 'create', 'edit', 'delete'],
-                'Institution' => ['view', 'create', 'edit', 'delete'],
-                'Month' => ['view', 'create', 'edit', 'delete'],
-                'Language' => ['view', 'edit'],
-                'Theme' => ['view', 'edit'],
-                'Backup' => ['view', 'create', 'restore', 'delete'],
+
+                'সাধারণ সেটিংস' => [
+                    'view',
+                    'edit',
+                ],
+
+                'একাডেমিক সেটিংস' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'প্রতিষ্ঠান' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'মাস' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'ভাষা' => [
+                    'view',
+                    'edit',
+                ],
+
+                'থিম' => [
+                    'view',
+                    'edit',
+                ],
+
+                'ব্যাকআপ' => [
+                    'view',
+                    'create',
+                    'restore',
+                    'delete',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | Help Module
+            | Help
             |--------------------------------------------------------------------------
             */
             'help' => [
-                'Support' => ['view', 'create', 'edit', 'delete'],
-                'FAQ' => ['view', 'create', 'edit', 'delete'],
-                'Ticket' => ['view', 'create', 'edit', 'delete'],
+
+                'সহায়তা' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'সাধারণ জিজ্ঞাসা' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'টিকিট' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
             ],
 
             /*
             |--------------------------------------------------------------------------
-            | System Module
+            | System
             |--------------------------------------------------------------------------
             */
             'system' => [
-                'User' => ['view', 'create', 'edit', 'delete', 'photo', 'report'],
-                'Role' => ['view', 'create', 'edit', 'delete', 'permission'],
-                'Permission' => ['view', 'create', 'edit', 'delete'],
-                'System Panel' => ['view', 'create', 'edit', 'delete'],
-                'Activity Log' => ['view', 'export', 'delete'],
-                'System Setting' => ['view', 'edit'],
+
+                'ব্যবহারকারী' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'photo',
+                    'report',
+                ],
+
+                'ভূমিকা' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                    'permission',
+                ],
+
+                'অনুমতি' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'সিস্টেম প্যানেল' => [
+                    'view',
+                    'create',
+                    'edit',
+                    'delete',
+                ],
+
+                'ভূমিকা প্যানেল' => [
+                    'view',
+                    'edit',
+                ],
+
+                'কার্যক্রমের লগ' => [
+                    'view',
+                    'export',
+                    'delete',
+                ],
+
+                'সিস্টেম সেটিংস' => [
+                    'view',
+                    'edit',
+                ],
+
             ],
 
         ];
 
-        $serial = 1; // Serial counter
+        $serial = 1;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Action Translation
+        |--------------------------------------------------------------------------
+        */
+        $actionNames = [
+
+            'view'      => 'দেখুন',
+            'create'    => 'যোগ করুন',
+            'edit'      => 'সম্পাদনা করুন',
+            'delete'    => 'মুছে ফেলুন',
+
+            'photo'     => 'ছবি পরিচালনা করুন',
+            'report'    => 'প্রতিবেদন দেখুন',
+            'export'    => 'রপ্তানি করুন',
+            'import'    => 'আমদানি করুন',
+
+            'approve'   => 'অনুমোদন করুন',
+            'reject'    => 'প্রত্যাখ্যান করুন',
+
+            'print'     => 'প্রিন্ট করুন',
+
+            'take'      => 'উপস্থিতি নিন',
+
+            'schedule'  => 'সময়সূচি পরিচালনা করুন',
+            'routine'   => 'রুটিন পরিচালনা করুন',
+
+            'publish'   => 'প্রকাশ করুন',
+
+            'collect'   => 'আদায় করুন',
+
+            'analytics' => 'বিশ্লেষণ দেখুন',
+
+            'process'   => 'প্রক্রিয়াকরণ করুন',
+            'verify'    => 'যাচাই করুন',
+
+            'restore'   => 'পুনরুদ্ধার করুন',
+
+            'permission' => 'অনুমতি পরিচালনা করুন',
+
+        ];
 
         foreach ($modules as $panelSlug => $modulesData) {
-            
-            // Panel খুঁজে বের করি
+
+            /*
+            |--------------------------------------------------------------------------
+            | Panel খুঁজে বের করা
+            |--------------------------------------------------------------------------
+            */
             $panel = SystemPanel::where('slug', $panelSlug)->first();
 
-            // Panel না থাকলে skip করি
             if (!$panel) {
                 continue;
             }
 
-            foreach ($modulesData as $module => $actions) {
+            foreach ($modulesData as $moduleName => $actions) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Module-এর English System Slug
+                |--------------------------------------------------------------------------
+                |
+                | বাংলা module name database-এ থাকবে,
+                | কিন্তু permission slug English থাকবে।
+                |
+                |--------------------------------------------------------------------------
+                */
+
+                $moduleSlugMap = [
+
+                    // Student
+                    'শিক্ষার্থী'        => 'student',
+                    'অভিভাবক'          => 'guardian',
+                    'ভর্তি'            => 'admission',
+                    'শ্রেণি'            => 'class',
+                    'শাখা'             => 'section',
+                    'বিষয়'             => 'subject',
+                    'শিক্ষার্থী গ্রুপ'   => 'student-group',
+                    'শিক্ষার্থী কার্ড'  => 'student-card',
+                    'সনদপত্র'           => 'certificate',
+
+                    // Teacher
+                    'শিক্ষক'            => 'teacher',
+
+                    // Attendance
+                    'উপস্থিতি'          => 'attendance',
+
+                    // Exam
+                    'পরীক্ষা'           => 'exam',
+                    'পরীক্ষার ধরন'      => 'exam-type',
+
+                    // Result
+                    'ফলাফল'             => 'result',
+                    'গ্রেড'             => 'grade',
+
+                    // Accounting
+                    'বেতন ও ফি'         => 'fee',
+                    'ফি-এর ধরন'         => 'fee-type',
+                    'আয়'               => 'income',
+                    'ব্যয়'              => 'expense',
+                    'চালান'             => 'invoice',
+                    'পেমেন্ট'           => 'payment',
+                    'হিসাব প্রতিবেদন'   => 'accounting-report',
+
+                    // Payment
+                    'অনলাইন পেমেন্ট'    => 'online-payment',
+                    'পেমেন্ট গেটওয়ে'   => 'payment-gateway',
+
+                    // Settings
+                    'সাধারণ সেটিংস'     => 'general',
+                    'একাডেমিক সেটিংস'   => 'academic',
+                    'প্রতিষ্ঠান'         => 'institution',
+                    'মাস'               => 'month',
+                    'ভাষা'              => 'language',
+                    'থিম'               => 'theme',
+                    'ব্যাকআপ'           => 'backup',
+
+                    // Help
+                    'সহায়তা'           => 'support',
+                    'সাধারণ জিজ্ঞাসা'   => 'faq',
+                    'টিকিট'             => 'ticket',
+
+                    // System
+                    'ব্যবহারকারী'       => 'user',
+                    'ভূমিকা'            => 'role',
+                    'অনুমতি'            => 'permission',
+                    'সিস্টেম প্যানেল'   => 'system-panel',
+                    'ভূমিকা প্যানেল'    => 'role-panel',
+                    'কার্যক্রমের লগ'    => 'activity-log',
+                    'সিস্টেম সেটিংস'    => 'system-setting',
+
+                    // Dashboard
+                    'ড্যাশবোর্ড'        => 'dashboard',
+                ];
+
+                $moduleSlug = $moduleSlugMap[$moduleName] ?? strtolower(
+                    str_replace(' ', '-', $moduleName)
+                );
 
                 foreach ($actions as $action) {
 
-                    // Slug বানাই: panel.module.action
-                    $slug = strtolower(
-                        str_replace(' ', '-', $module)
-                        . '.'
-                        . $action
-                    );
-                    // অথবা চাইলে এভাবেও করতে পার: panel.action (যেমন student.view)
-                    // $slug = strtolower($panelSlug . '.' . $action);
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Stable Permission Slug
+                    |--------------------------------------------------------------------------
+                    |
+                    | Example:
+                    |
+                    | student.view
+                    | student.create
+                    | student.edit
+                    | student.delete
+                    |
+                    |--------------------------------------------------------------------------
+                    */
 
-                    // Permission name তৈরি করি (যথাযথ formatting সহ)
-                    $permissionName = ucwords(str_replace('.', ' ', $slug));
+                    $slug = $moduleSlug . '.' . $action;
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | বাংলা Permission Name
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $actionName = $actionNames[$action] ?? ucfirst($action);
+
+                    $permissionName = $moduleName . ' ' . $actionName;
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Permission Save
+                    |--------------------------------------------------------------------------
+                    */
 
                     Permission::updateOrCreate(
                         [
@@ -177,17 +610,21 @@ class PermissionSeeder extends Seeder
                         ],
                         [
                             'system_panel_id' => $panel->id,
-                            'module' => $module,
+
+                            'module' => $moduleName,
+
                             'permission_name' => $permissionName,
+
                             'description' => null,
+
                             'is_system' => true,
-                            'is_active' => true,  // ✅ status → is_active
-                            'serial' => $serial++, // ✅ Serial যোগ করলাম
+
+                            'is_active' => true,
+
+                            'serial' => $serial++,
                         ]
                     );
-
                 }
-
             }
         }
     }

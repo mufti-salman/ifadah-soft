@@ -18,11 +18,11 @@ class FundController extends Controller
                 'name' => 'required|string|max:255'
             ]);
 
-            $madrasaId = auth()->user()->madrasa_id ?? 1;
+            $institutionId = auth()->user()->institution_id ?? 1;
             $userId = auth()->id();
 
             Log::info('Creating fund with:', [
-                'madrasa_id' => $madrasaId,
+                'institution_id' => $institutionId,
                 'user_id' => $userId,
                 'name' => $request->name
             ]);

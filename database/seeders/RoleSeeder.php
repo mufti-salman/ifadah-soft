@@ -2,237 +2,297 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Madrasa;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\Madrasa;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class RoleSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         /*
         |--------------------------------------------------------------------------
-        | Roles Create - Level অনুযায়ী সাজানো (High to Low)
+        | System Roles
         |--------------------------------------------------------------------------
-        | Super Admin = 6 (সর্বোচ্চ)
-        | Soft Admin = 5
-        | Madrasa Admin = 4
-        | Teacher = 3
-        | Student = 2
-        | Guardian = 1 (সর্বনিম্ন)
+        |
+        | Role Hierarchy:
+        |
+        | 5 = Super Admin
+        | 4 = Support Admin
+        | 3 = User Admin
+        | 2 = User
+        | 1 = Student
+        |
+        |--------------------------------------------------------------------------
         */
 
         $roles = [
+
             [
-                'role_name' => 'Super Admin',
-                'slug' => 'super-admin',
-                'level' => 6,
-                'is_system' => 1,
+                'role_name'  => 'সুপার অ্যাডমিন',
+                'slug'       => 'super_admin',
+                'level'      => 5,
+                'is_system'  => true,
+                'description'=> 'সম্পূর্ণ সিস্টেমের সর্বোচ্চ প্রশাসনিক ভূমিকা।',
             ],
+
             [
-                'role_name' => 'Soft Admin',
-                'slug' => 'soft-admin',
-                'level' => 5,
-                'is_system' => 1,
+                'role_name'  => 'সাপোর্ট অ্যাডমিন',
+                'slug'       => 'support_admin',
+                'level'      => 4,
+                'is_system'  => true,
+                'description'=> 'সিস্টেম সাপোর্ট ও অনুমোদিত প্রশাসনিক কার্যক্রম পরিচালনা করে।',
             ],
+
             [
-                'role_name' => 'Madrasa Admin',
-                'slug' => 'madrasa-admin',
-                'level' => 4,
-                'is_system' => 1,
+                'role_name'  => 'ইউজার অ্যাডমিন',
+                'slug'       => 'user_admin',
+                'level'      => 3,
+                'is_system'  => true,
+                'description'=> 'নিজ প্রতিষ্ঠানের ব্যবহারকারী, শিক্ষার্থী ও প্রতিষ্ঠানের কার্যক্রম পরিচালনা করে।',
             ],
+
             [
-                'role_name' => 'Teacher',
-                'slug' => 'teacher',
-                'level' => 3,
-                'is_system' => 1,
+                'role_name'  => 'ইউজার',
+                'slug'       => 'user',
+                'level'      => 2,
+                'is_system'  => true,
+                'description'=> 'প্রতিষ্ঠানের সাধারণ ব্যবহারকারী, শিক্ষক ও কর্মচারীর ভূমিকা।',
             ],
+
             [
-                'role_name' => 'Student',
-                'slug' => 'student',
-                'level' => 2,
-                'is_system' => 1,
+                'role_name'  => 'শিক্ষার্থী',
+                'slug'       => 'student',
+                'level'      => 1,
+                'is_system'  => true,
+                'description'=> 'প্রতিষ্ঠানের শিক্ষার্থীর ভূমিকা।',
             ],
-            [
-                'role_name' => 'Guardian',
-                'slug' => 'guardian',
-                'level' => 1,
-                'is_system' => 1,
-            ],
+
         ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create / Update Roles
+        |--------------------------------------------------------------------------
+        */
 
         foreach ($roles as $roleData) {
             Role::updateOrCreate(
-                ['slug' => $roleData['slug']],
                 [
-                    'role_name'  => $roleData['role_name'],
-                    'level'      => $roleData['level'],
-                    'is_system'  => $roleData['is_system'],
-                    'description'=> $this->getRoleDescription($roleData['slug']),
-                ]
+                    'slug' => $roleData['slug'],
+                ],
+                $roleData
             );
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Get Role IDs
+        | Get Roles
         |--------------------------------------------------------------------------
         */
 
-        $superAdminRoleId   = Role::where('slug', 'super-admin')->value('id');
-        $softAdminRoleId    = Role::where('slug', 'soft-admin')->value('id');
-        $madrasaAdminRoleId = Role::where('slug', 'madrasa-admin')->value('id');
+        $superAdminRole = Role::where('slug', 'super_admin')->firstOrFail();
+        $supportAdminRole = Role::where('slug', 'support_admin')->firstOrFail();
+        $userAdminRole = Role::where('slug', 'user_admin')->firstOrFail();
+        $userRole = Role::where('slug', 'user')->firstOrFail();
+        $studentRole = Role::where('slug', 'student')->firstOrFail();
 
         /*
         |--------------------------------------------------------------------------
-        | Super Admin Create
+        | Institution 1
         |--------------------------------------------------------------------------
         */
 
-        $superAdmin = User::updateOrCreate(
-            ['email' => 'superadmin@gmail.com'],
+        $institutionOne = Madrasa::updateOrCreate(
             [
-                'institution_user_id' => '601',
-                'name'       => 'Super Admin',
-                'name_bn'    => 'সুপার অ্যাডমিন',
-                'username'   => 'superadmin',
-                'phone'      => '01700000000',
-                'password'   => Hash::make('fahim'),
-                'role_id'    => $superAdminRoleId,
-                'institution_id' => null,
-                'status'     => 1,
+                'madrasa_code' => 'ALHUDA001',
+            ],
+            [
+                'name'         => 'Al Huda Islamic Academy',
+                'name_bn'      => 'আল হুদা ইসলামিক একাডেমি',
+                'email'        => 'info@alhuda.edu.bd',
+                'phone'        => '01700000001',
+                'address'      => 'Khulna, Bangladesh',
+                'status'       => 1,
             ]
         );
 
         /*
         |--------------------------------------------------------------------------
-        | Madrasa 1 Create (আল-হুদা ইসলামি একাডেমি)
+        | Institution 2
         |--------------------------------------------------------------------------
         */
 
-        $madrasa = Madrasa::updateOrCreate(
-            ['madrasa_code' => 'ALHUDA001'],
+        $institutionTwo = Madrasa::updateOrCreate(
             [
-                'name'                  => 'আল-হুদা ইসলামি একাডেমি',
-                'name_bn'               => 'আল-হুদা ইসলামি একাডেমি',
-                'email'                 => 'info@alhuda.edu.bd',
-                'phone'                 => '01700000001',
-                'address'               => 'ধানমন্ডি, ঢাকা',
-                'eiin_no'               => '123456',
-                'status'                => 1,
-                'created_by'            => $superAdmin->id,
+                'madrasa_code' => 'DARUL001',
+            ],
+            [
+                'name'         => 'Darul Uloom Madrasa',
+                'name_bn'      => 'দারুল উলুম মাদরাসা',
+                'email'        => 'info@darululum.edu.bd',
+                'phone'        => '01700000002',
+                'address'      => 'Khulna, Bangladesh',
+                'status'       => 1,
             ]
         );
 
         /*
         |--------------------------------------------------------------------------
-        | Soft Admin Create (আল-হুদা)
+        | Super Admin
+        |--------------------------------------------------------------------------
+        |
+        | Super Admin-এর কোনো institution থাকবে না।
+        | সে প্রয়োজন অনুযায়ী active_institution_id session ব্যবহার করবে।
+        |
         |--------------------------------------------------------------------------
         */
 
         User::updateOrCreate(
-            ['email' => 'softadmin@alhuda.edu.bd'],
             [
-                'institution_user_id' => '501',
-                'name'       => 'Soft Admin',
-                'name_bn'    => 'সফট অ্যাডমিন',
-                'username'   => 'softadmin',
-                'phone'      => '01700000001',
-                'password'   => Hash::make('fahim'),
-                'role_id'    => $softAdminRoleId,
-                'institution_id' => $madrasa->id,
-                'status'     => 1,
+                'email' => 'superadmin@gmail.com',
+            ],
+            [
+                'institution_id'     => null,
+                'role_id'            => $superAdminRole->id,
+                'name'               => 'Super Admin',
+                'name_bn'            => 'সুপার অ্যাডমিন',
+                'phone'              => '01700000000',
+                'password'           => Hash::make('fahim'),
+                'institution_user_id'=> null,
+                'username'           => 'superadmin',
+                'status'             => 1,
             ]
         );
 
         /*
         |--------------------------------------------------------------------------
-        | Madrasa Admin Create (আল-হুদা)
+        | Support Admin
+        |--------------------------------------------------------------------------
+        |
+        | Support Admin system-level role।
+        | প্রয়োজন হলে institution context session থেকে নিতে পারবে।
+        |
         |--------------------------------------------------------------------------
         */
 
         User::updateOrCreate(
-            ['email' => 'admin@alhuda.edu.bd'],
             [
+                'email' => 'supportadmin@gmail.com',
+            ],
+            [
+                'institution_id'      => null,
+                'role_id'             => $supportAdminRole->id,
+                'name'                => 'Support Admin',
+                'name_bn'             => 'সাপোর্ট অ্যাডমিন',
+                'phone'               => '01700000003',
+                'password'            => Hash::make('fahim'),
+                'institution_user_id' => null,
+                'username'            => 'supportadmin',
+                'status'              => 1,
+            ]
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Institution 1 - User Admin
+        |--------------------------------------------------------------------------
+        */
+
+        User::updateOrCreate(
+            [
+                'email' => 'admin@alhuda.edu.bd',
+            ],
+            [
+                'institution_id'      => $institutionOne->id,
+                'role_id'             => $userAdminRole->id,
+                'name'                => 'Al Huda Admin',
+                'name_bn'             => 'আল হুদা অ্যাডমিন',
+                'phone'               => '01700000004',
+                'password'            => Hash::make('fahim'),
                 'institution_user_id' => '401',
-                'name'       => 'Madrasa Admin',
-                'name_bn'    => 'মাদ্রাসা অ্যাডমিন',
-                'username'   => 'madrasaadmin',
-                'phone'      => '01700000002',
-                'password'   => Hash::make('fahim'),
-                'role_id'    => $madrasaAdminRoleId,
-                'institution_id' => $madrasa->id,
-                'status'     => 1,
+                'username'            => 'alhuda_admin',
+                'status'              => 1,
             ]
         );
 
         /*
         |--------------------------------------------------------------------------
-        | Madrasa 2 Create (দারুল উলুম ইসলামিয়া মাদ্রাসা)
+        | Institution 1 - User / Teacher / Staff
         |--------------------------------------------------------------------------
-        */
-
-        $madrasa2 = Madrasa::updateOrCreate(
-            ['madrasa_code' => 'DARUL001'],
-            [
-                'name'                  => 'দারুল উলুম ইসলামিয়া মাদ্রাসা',
-                'name_bn'               => 'দারুল উলুম ইসলামিয়া মাদ্রাসা',
-                'email'                 => 'info@darululum.edu.bd',
-                'phone'                 => '01800000001',
-                'address'               => 'মিরপুর, ঢাকা',
-                'eiin_no'               => '789012',
-                'status'                => 1,
-                'created_by'            => $superAdmin->id,
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Soft Admin Create (দারুল উলুম)
+        |
+        | Teacher আলাদা Role নয়।
+        | Teacher এবং Staff উভয়ই "user" role ব্যবহার করবে।
+        |
         |--------------------------------------------------------------------------
         */
 
         User::updateOrCreate(
-            ['email' => 'softadmin@darululum.edu.bd'],
             [
-                'institution_user_id' => '502',
-                'name'       => 'Soft Admin - Darul Uloom',
-                'name_bn'    => 'সফট অ্যাডমিন - দারুল উলুম',
-                'username'   => 'softadmin2',
-                'phone'      => '01800000001',
-                'password'   => Hash::make('fahim'),
-                'role_id'    => $softAdminRoleId,
-                'institution_id' => $madrasa2->id,
-                'status'     => 1,
+                'email' => 'user@alhuda.edu.bd',
+            ],
+            [
+                'institution_id'      => $institutionOne->id,
+                'role_id'             => $userRole->id,
+                'name'                => 'Al Huda User',
+                'name_bn'             => 'আল হুদা ব্যবহারকারী',
+                'phone'               => '01700000005',
+                'password'            => Hash::make('fahim'),
+                'institution_user_id' => '201',
+                'username'            => 'alhuda_user',
+                'status'              => 1,
             ]
         );
-    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Role Description
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Institution 1 - Student
+        |--------------------------------------------------------------------------
+        */
 
-    private function getRoleDescription($slug)
-    {
-        $descriptions = [
-            'super-admin' =>
-                'পুরো সিস্টেমের সর্বোচ্চ কর্তৃত্ব।',
-            'soft-admin' =>
-                'নির্দিষ্ট মাদ্রাসা পরিচালনা করতে পারে।',
-            'madrasa-admin' =>
-                'মাদ্রাসার দৈনন্দিন কার্যক্রম পরিচালনা করে।',
-            'teacher' =>
-                'শিক্ষাদান ও একাডেমিক কার্যক্রম পরিচালনা করে।',
-            'student' =>
-                'নিজের একাডেমিক তথ্য দেখতে পারে।',
-            'guardian' =>
-                'সন্তানের তথ্য দেখতে পারে।',
-        ];
+        User::updateOrCreate(
+            [
+                'email' => 'student@alhuda.edu.bd',
+            ],
+            [
+                'institution_id'      => $institutionOne->id,
+                'role_id'             => $studentRole->id,
+                'name'                => 'Al Huda Student',
+                'name_bn'             => 'আল হুদা শিক্ষার্থী',
+                'phone'               => '01700000006',
+                'password'            => Hash::make('fahim'),
+                'institution_user_id' => '101',
+                'username'            => 'alhuda_student',
+                'status'              => 1,
+            ]
+        );
 
-        return $descriptions[$slug] ?? 'Role Description';
+        /*
+        |--------------------------------------------------------------------------
+        | Institution 2 - User Admin
+        |--------------------------------------------------------------------------
+        */
+
+        User::updateOrCreate(
+            [
+                'email' => 'admin@darululum.edu.bd',
+            ],
+            [
+                'institution_id'      => $institutionTwo->id,
+                'role_id'             => $userAdminRole->id,
+                'name'                => 'Darul Uloom Admin',
+                'name_bn'             => 'দারুল উলুম অ্যাডমিন',
+                'phone'               => '01700000007',
+                'password'            => Hash::make('fahim'),
+                'institution_user_id' => '401',
+                'username'            => 'darul_admin',
+                'status'              => 1,
+            ]
+        );
     }
 }
