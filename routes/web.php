@@ -101,9 +101,6 @@ Route::prefix('dashboard')
         |--------------------------------------------------------------------------
         | 2. PROFILE
         |--------------------------------------------------------------------------
-        |
-        | Available for all authenticated dashboard users.
-        |
         */
 
         Route::prefix('profile')->group(function () {
@@ -181,10 +178,23 @@ Route::prefix('dashboard')
             ->middleware('permission:user.view')
             ->group(function () {
 
+                /*
+                |--------------------------------------------------------------------------
+                | User List
+                |--------------------------------------------------------------------------
+                */
+
                 Route::get(
                     '/',
                     [UserController::class, 'index']
                 )->name('user.index');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create User
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     'create',
@@ -193,6 +203,13 @@ Route::prefix('dashboard')
                     ->middleware('permission:user.create')
                     ->name('user.create');
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | Store User
+                |--------------------------------------------------------------------------
+                */
+
                 Route::post(
                     'store',
                     [UserController::class, 'store']
@@ -200,17 +217,41 @@ Route::prefix('dashboard')
                     ->middleware('permission:user.create')
                     ->name('user.store');
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | User Search
+                |--------------------------------------------------------------------------
+                */
+
                 Route::get(
                     'search',
                     [UserController::class, 'search']
                 )->name('user.search');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Advanced Search
+                |--------------------------------------------------------------------------
+                */
 
                 Route::get(
                     'advanced-search',
                     [UserController::class, 'advancedSearch']
                 )->name('user.advanced-search');
 
-                Route::post(
+
+                /*
+                |--------------------------------------------------------------------------
+                | Preview Institution User ID
+                |--------------------------------------------------------------------------
+                |
+                | Create Blade AJAX uses GET request.
+                |
+                */
+
+                Route::get(
                     'preview-id',
                     [UserController::class, 'previewId']
                 )
@@ -218,12 +259,31 @@ Route::prefix('dashboard')
                     ->name('user.preview-id');
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | User Specific Routes
+                |--------------------------------------------------------------------------
+                */
+
                 Route::prefix('{id}')->group(function () {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Show User
+                    |--------------------------------------------------------------------------
+                    */
 
                     Route::get(
                         '/',
                         [UserController::class, 'show']
                     )->name('user.show');
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Edit User
+                    |--------------------------------------------------------------------------
+                    */
 
                     Route::get(
                         'edit',
@@ -232,6 +292,13 @@ Route::prefix('dashboard')
                         ->middleware('permission:user.edit')
                         ->name('user.edit');
 
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Update User
+                    |--------------------------------------------------------------------------
+                    */
+
                     Route::put(
                         '/',
                         [UserController::class, 'update']
@@ -239,12 +306,26 @@ Route::prefix('dashboard')
                         ->middleware('permission:user.edit')
                         ->name('user.update');
 
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Delete User
+                    |--------------------------------------------------------------------------
+                    */
+
                     Route::delete(
                         '/',
                         [UserController::class, 'destroy']
                     )
                         ->middleware('permission:user.delete')
                         ->name('user.destroy');
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Toggle Status
+                    |--------------------------------------------------------------------------
+                    */
 
                     Route::patch(
                         'toggle-status',
@@ -673,139 +754,138 @@ Route::prefix('dashboard')
         |
         */
 
-Route::prefix('institutions')
-    ->middleware('permission:institution.view')
-    ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Institution List
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            '/',
-            [InstitutionController::class, 'index']
-        )->name('institutions.index');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Institution
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post(
-            '/',
-            [InstitutionController::class, 'store']
-        )
-            ->middleware([
-                'role:super_admin',
-                'permission:institution.create',
-            ])
-            ->name('institutions.store');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Switch Active Institution
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post(
-            '/switch',
-            [InstitutionController::class, 'switchInstitution']
-        )
-            ->middleware('role:super_admin')
-            ->name('institutions.switch');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Institution Information
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            '/info',
-            [InstitutionController::class, 'info']
-        )
+        Route::prefix('institutions')
             ->middleware('permission:institution.view')
-            ->name('institution.info');
+            ->group(function () {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Institution List
+                |--------------------------------------------------------------------------
+                */
+
+                Route::get(
+                    '/',
+                    [InstitutionController::class, 'index']
+                )->name('institutions.index');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Exit Institution Mode
-        |--------------------------------------------------------------------------
-        */
+                /*
+                |--------------------------------------------------------------------------
+                | Create Institution
+                |--------------------------------------------------------------------------
+                */
 
-        Route::post(
-            '/exit',
-            [InstitutionController::class, 'exit']
-        )
-            ->middleware('role:super_admin')
-            ->name('institutions.exit');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Enter Institution
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post(
-            '/{id}/enter',
-            [InstitutionController::class, 'enter']
-        )
-            ->middleware('role:super_admin')
-            ->name('institutions.enter');
+                Route::post(
+                    '/',
+                    [InstitutionController::class, 'store']
+                )
+                    ->middleware([
+                        'role:super_admin',
+                        'permission:institution.create',
+                    ])
+                    ->name('institutions.store');
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Institution Specific Routes
-        |--------------------------------------------------------------------------
-        */
+                /*
+                |--------------------------------------------------------------------------
+                | Switch Active Institution
+                |--------------------------------------------------------------------------
+                */
 
-        Route::prefix('{id}')->group(function () {
-
-            Route::get(
-                '/edit',
-                [InstitutionController::class, 'edit']
-            )
-                ->middleware([
-                    'role:super_admin',
-                    'permission:institution.edit',
-                ])
-                ->name('institutions.edit');
+                Route::post(
+                    '/switch',
+                    [InstitutionController::class, 'switchInstitution']
+                )
+                    ->middleware('role:super_admin')
+                    ->name('institutions.switch');
 
 
-            Route::put(
-                '/',
-                [InstitutionController::class, 'update']
-            )
-                ->middleware([
-                    'role:super_admin',
-                    'permission:institution.edit',
-                ])
-                ->name('institutions.update');
+                /*
+                |--------------------------------------------------------------------------
+                | Institution Information
+                |--------------------------------------------------------------------------
+                */
+
+                Route::get(
+                    '/info',
+                    [InstitutionController::class, 'info']
+                )
+                    ->middleware('permission:institution.view')
+                    ->name('institution.info');
 
 
-            Route::delete(
-                '/',
-                [InstitutionController::class, 'destroy']
-            )
-                ->middleware([
-                    'role:super_admin',
-                    'permission:institution.delete',
-                ])
-                ->name('institutions.destroy');
+                /*
+                |--------------------------------------------------------------------------
+                | Exit Institution Mode
+                |--------------------------------------------------------------------------
+                */
 
-        });
+                Route::post(
+                    '/exit',
+                    [InstitutionController::class, 'exit']
+                )
+                    ->middleware('role:super_admin')
+                    ->name('institutions.exit');
 
-    });
 
+                /*
+                |--------------------------------------------------------------------------
+                | Enter Institution
+                |--------------------------------------------------------------------------
+                */
+
+                Route::post(
+                    '/{id}/enter',
+                    [InstitutionController::class, 'enter']
+                )
+                    ->middleware('role:super_admin')
+                    ->name('institutions.enter');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Institution Specific Routes
+                |--------------------------------------------------------------------------
+                */
+
+                Route::prefix('{id}')->group(function () {
+
+                    Route::get(
+                        '/edit',
+                        [InstitutionController::class, 'edit']
+                    )
+                        ->middleware([
+                            'role:super_admin',
+                            'permission:institution.edit',
+                        ])
+                        ->name('institutions.edit');
+
+
+                    Route::put(
+                        '/',
+                        [InstitutionController::class, 'update']
+                    )
+                        ->middleware([
+                            'role:super_admin',
+                            'permission:institution.edit',
+                        ])
+                        ->name('institutions.update');
+
+
+                    Route::delete(
+                        '/',
+                        [InstitutionController::class, 'destroy']
+                    )
+                        ->middleware([
+                            'role:super_admin',
+                            'permission:institution.delete',
+                        ])
+                        ->name('institutions.destroy');
+
+                });
+
+            });
 
 
         /*
@@ -1167,20 +1247,23 @@ Route::prefix('institutions')
                         Route::get(
                             'print',
                             [FeeReportController::class, 'print']
-                        )->middleware('permission:accounting-report.print')
-                         ->name('fee-report.print');
+                        )
+                            ->middleware('permission:accounting-report.print')
+                            ->name('fee-report.print');
 
                         Route::get(
                             'pdf',
                             [FeeReportController::class, 'pdf']
-                        )->middleware('permission:accounting-report.export')
-                         ->name('fee-report.pdf');
+                        )
+                            ->middleware('permission:accounting-report.export')
+                            ->name('fee-report.pdf');
 
                         Route::get(
                             'excel',
                             [FeeReportController::class, 'excel']
-                        )->middleware('permission:accounting-report.export')
-                         ->name('fee-report.excel');
+                        )
+                            ->middleware('permission:accounting-report.export')
+                            ->name('fee-report.excel');
 
                     });
 
@@ -1321,9 +1404,6 @@ Route::prefix('institutions')
         |--------------------------------------------------------------------------
         | 18. STUDENT ACCESS
         |--------------------------------------------------------------------------
-        |
-        | Student is a role.
-        |
         */
 
         Route::prefix('student')
@@ -1442,16 +1522,6 @@ Route::prefix('institutions')
 |
 */
 
-/*
-|--------------------------------------------------------------------------
-| Support Admin Management
-|--------------------------------------------------------------------------
-|
-| Support Admin শুধুমাত্র Super Admin manage করতে পারবে।
-| Support Admin-এর actual permissions user_permissions table-এ থাকবে।
-|
-*/
-
 Route::prefix('support-admins')
     ->name('dashboard.support-admins.')
     ->middleware([
@@ -1562,6 +1632,7 @@ Route::prefix('support-admins')
         )->name('destroy');
 
     });
+
 
 /*
 |--------------------------------------------------------------------------

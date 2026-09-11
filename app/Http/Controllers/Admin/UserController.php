@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Role;
@@ -50,14 +51,6 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         | Institution Restriction
         |--------------------------------------------------------------------------
-        |
-        | Super Admin:
-        |     সব institution-এর user দেখতে পারবে।
-        |
-        | Other users:
-        |     নিজের institution-এর user দেখতে পারবে।
-        |
-        |--------------------------------------------------------------------------
         */
 
         if (!$authUser->is_super_admin) {
@@ -72,16 +65,6 @@ class UserController extends Controller
         /*
         |--------------------------------------------------------------------------
         | System Role Visibility
-        |--------------------------------------------------------------------------
-        |
-        | Super Admin ছাড়া অন্য কেউ system-level admin দেখতে পারবে না।
-        |
-        | System roles:
-        |
-        | super_admin
-        | support_admin
-        | user_admin
-        |
         |--------------------------------------------------------------------------
         */
 
@@ -197,12 +180,6 @@ class UserController extends Controller
         $divisions = Division::all();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Return View
-        |--------------------------------------------------------------------------
-        */
-
         return view(
             'admin.users.index',
             compact(
@@ -227,28 +204,22 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         | User Types
         |--------------------------------------------------------------------------
-        |
-        | RoleSeeder অনুযায়ী role slug ব্যবহার করা হয়েছে।
-        |
-        |--------------------------------------------------------------------------
         */
 
         $userTypes = [
 
-            'student' => 'শিক্ষার্থী',
+            'student' =>
+                'শিক্ষার্থী',
 
-            'user' => 'ইউজার',
+            'user' =>
+                'ইউজার',
 
         ];
 
 
         /*
         |--------------------------------------------------------------------------
-        | User Admin
-        |--------------------------------------------------------------------------
-        |
-        | Super Admin User Admin তৈরি করতে পারবে।
-        |
+        | Super Admin User Types
         |--------------------------------------------------------------------------
         */
 
@@ -256,20 +227,6 @@ class UserController extends Controller
 
             $userTypes['user_admin'] =
                 'ইউজার অ্যাডমিন';
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin
-        |--------------------------------------------------------------------------
-        |
-        | Super Admin Support Admin তৈরি করতে পারবে।
-        |
-        |--------------------------------------------------------------------------
-        */
-
-        if ($authUser->is_super_admin) {
 
             $userTypes['support_admin'] =
                 'সাপোর্ট অ্যাডমিন';
@@ -278,18 +235,7 @@ class UserController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Super Admin
-        |--------------------------------------------------------------------------
-        |
-        | Super Admin নিজে Super Admin তৈরি করবে না।
-        |
-        |--------------------------------------------------------------------------
-        */
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Institution List
+        | Institutions
         |--------------------------------------------------------------------------
         */
 
@@ -298,10 +244,11 @@ class UserController extends Controller
 
         if ($authUser->is_super_admin) {
 
-            $institutions = Madrasa::where(
-                'status',
-                1
-            )
+            $institutions =
+                Madrasa::where(
+                    'status',
+                    1
+                )
                 ->orderBy('id')
                 ->get();
 
@@ -309,10 +256,11 @@ class UserController extends Controller
 
             if ($authUser->institution_id) {
 
-                $institutions = Madrasa::where(
-                    'id',
-                    $authUser->institution_id
-                )
+                $institutions =
+                    Madrasa::where(
+                        'id',
+                        $authUser->institution_id
+                    )
                     ->where(
                         'status',
                         1
@@ -328,10 +276,11 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $roles = Role::orderBy(
-            'level',
-            'desc'
-        )->get();
+        $roles =
+            Role::orderBy(
+                'level',
+                'desc'
+            )->get();
 
 
         /*
@@ -340,9 +289,10 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $divisions = Division::with([
-            'districts.upazilas'
-        ])->get();
+        $divisions =
+            Division::with([
+                'districts.upazilas'
+            ])->get();
 
 
         /*
@@ -351,7 +301,15 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        /*
+        | IMPORTANT:
+        | Super Admin-এর create page-এ selected institution থাকতে পারে।
+        | তাই active institution থাকলে সেটা আগে ব্যবহার করা হবে।
+        */
+
         $institutionId =
+            session('active_institution_id')
+            ??
             $authUser->institution_id;
 
 
@@ -365,11 +323,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | System-level users
-            |--------------------------------------------------------------------------
-            |
-            | System user-এর institution ID লাগে না।
-            |
+            | System-level Roles
             |--------------------------------------------------------------------------
             */
 
@@ -378,7 +332,7 @@ class UserController extends Controller
                     $type,
                     [
                         'support_admin',
-                        'user_admin'
+                        'user_admin',
                     ],
                     true
                 )
@@ -389,6 +343,12 @@ class UserController extends Controller
                 continue;
             }
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Institution User Preview
+            |--------------------------------------------------------------------------
+            */
 
             $previewIds[$type] =
                 User::previewInstitutionUserId(
@@ -404,10 +364,11 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $academicYears = AcademicYear::where(
-            'status',
-            1
-        )
+        $academicYears =
+            AcademicYear::where(
+                'status',
+                1
+            )
             ->orderBy(
                 'name',
                 'desc'
@@ -421,17 +382,12 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $classes = Classes::where(
-            'status',
-            1
-        )->get();
+        $classes =
+            Classes::where(
+                'status',
+                1
+            )->get();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Return View
-        |--------------------------------------------------------------------------
-        */
 
         return view(
             'admin.users.create',
@@ -457,9 +413,9 @@ class UserController extends Controller
     {
         $authUser = auth()->user();
 
-
         DB::beginTransaction();
 
+        $photoPath = null;
 
         try {
 
@@ -488,22 +444,12 @@ class UserController extends Controller
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Role Slug
-            |--------------------------------------------------------------------------
-            */
-
             $roleSlug = $role->slug;
 
 
             /*
             |--------------------------------------------------------------------------
             | Protected System Roles
-            |--------------------------------------------------------------------------
-            |
-            | শুধু Super Admin system-level admin তৈরি করতে পারবে।
-            |
             |--------------------------------------------------------------------------
             */
 
@@ -512,7 +458,7 @@ class UserController extends Controller
                     $roleSlug,
                     [
                         'support_admin',
-                        'user_admin'
+                        'user_admin',
                     ],
                     true
                 )
@@ -533,7 +479,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Super Admin Creation Protection
+            | Super Admin Protection
             |--------------------------------------------------------------------------
             */
 
@@ -556,7 +502,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Student Check
+            | Student
             |--------------------------------------------------------------------------
             */
 
@@ -566,15 +512,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Institution User
-            |--------------------------------------------------------------------------
-            |
-            | Super Admin:
-            |     Form থেকে institution নেবে।
-            |
-            | Others:
-            |     নিজের institution ব্যবহার করবে।
-            |
+            | Institution
             |--------------------------------------------------------------------------
             */
 
@@ -596,10 +534,6 @@ class UserController extends Controller
             |--------------------------------------------------------------------------
             | Institution Requirement
             |--------------------------------------------------------------------------
-            |
-            | Student এবং normal User অবশ্যই institution-এর অধীনে থাকবে।
-            |
-            |--------------------------------------------------------------------------
             */
 
             $institutionRequired =
@@ -607,7 +541,7 @@ class UserController extends Controller
                     $roleSlug,
                     [
                         'student',
-                        'user'
+                        'user',
                     ],
                     true
                 );
@@ -779,7 +713,7 @@ class UserController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Present Address
+                | Address
                 |--------------------------------------------------------------------------
                 */
 
@@ -822,12 +756,6 @@ class UserController extends Controller
                     'max:20',
                 ],
 
-                /*
-                |--------------------------------------------------------------------------
-                | Permanent Address
-                |--------------------------------------------------------------------------
-                */
-
                 'permanent_division_id' => [
                     'nullable',
                     'integer',
@@ -865,6 +793,23 @@ class UserController extends Controller
                     'nullable',
                     'string',
                     'max:20',
+                ],
+
+                /*
+                |--------------------------------------------------------------------------
+                | CODE SETTING
+                |--------------------------------------------------------------------------
+                */
+
+                'code_generation_type' => [
+                    'nullable',
+                    'in:auto,manual',
+                ],
+
+                'custom_id' => [
+                    'nullable',
+                    'string',
+                    'max:100',
                 ],
             ];
 
@@ -943,6 +888,180 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | CODE GENERATION TYPE
+            |--------------------------------------------------------------------------
+            */
+
+            $generationType =
+                $validated['code_generation_type']
+                ??
+                'auto';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CUSTOM CODE
+            |--------------------------------------------------------------------------
+            */
+
+            $customId =
+                trim(
+                    (string) (
+                        $validated['custom_id']
+                        ??
+                        ''
+                    )
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | System Roles
+            |--------------------------------------------------------------------------
+            |
+            | support_admin / user_admin-এর জন্য institution code থাকবে না।
+            |
+            |--------------------------------------------------------------------------
+            */
+
+            $isSystemRole =
+                in_array(
+                    $roleSlug,
+                    [
+                        'support_admin',
+                        'user_admin',
+                        'super_admin',
+                    ],
+                    true
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | System Role Code Handling
+            |--------------------------------------------------------------------------
+            */
+
+            if ($isSystemRole) {
+
+                $generationType =
+                    'auto';
+
+                $customId = '';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MANUAL CODE
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $generationType === 'manual'
+                &&
+                $institutionRequired
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Manual Code Required
+                |--------------------------------------------------------------------------
+                */
+
+                if ($customId === '') {
+
+                    DB::rollBack();
+
+                    return back()
+                        ->with(
+                            'error',
+                            'ম্যানুয়াল User Code লিখুন।'
+                        )
+                        ->withInput();
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Manual Code Format
+                |--------------------------------------------------------------------------
+                |
+                | শুধুমাত্র সংখ্যা রাখা হচ্ছে।
+                |
+                |--------------------------------------------------------------------------
+                */
+
+                if (!preg_match('/^\d+$/', $customId)) {
+
+                    DB::rollBack();
+
+                    return back()
+                        ->with(
+                            'error',
+                            'User Code শুধুমাত্র সংখ্যা হতে হবে।'
+                        )
+                        ->withInput();
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Duplicate Check
+                |--------------------------------------------------------------------------
+                */
+
+                $codeExists =
+                    User::where(
+                        'institution_id',
+                        $institutionId
+                    )
+                    ->where(
+                        'institution_user_id',
+                        $customId
+                    )
+                    ->exists();
+
+
+                if ($codeExists) {
+
+                    DB::rollBack();
+
+                    return back()
+                        ->with(
+                            'error',
+                            'এই User Code ইতোমধ্যে এই প্রতিষ্ঠানে ব্যবহার করা হয়েছে।'
+                        )
+                        ->withInput();
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTO CODE
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANT:
+            |
+            | Auto হলে custom_id-এর উপর কোনো নির্ভরতা থাকবে না।
+            | Backend নিজে নতুন Auto ID generate করবে।
+            |
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $generationType === 'auto'
+                &&
+                $institutionRequired
+            ) {
+
+                $customId = '';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
             | Username
             |--------------------------------------------------------------------------
             */
@@ -960,9 +1079,6 @@ class UserController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $photoPath = null;
-
-
             if ($request->hasFile('photo')) {
 
                 $photoPath =
@@ -979,15 +1095,6 @@ class UserController extends Controller
             |--------------------------------------------------------------------------
             | Institution User ID
             |--------------------------------------------------------------------------
-            |
-            | System-level users:
-            |
-            | support_admin
-            | user_admin
-            |
-            | এদের institution ID থাকবে না।
-            |
-            |--------------------------------------------------------------------------
             */
 
             $institutionUserId = null;
@@ -995,17 +1102,43 @@ class UserController extends Controller
 
             if ($institutionId) {
 
-                $institutionUserId =
-                    User::generateInstitutionUserId(
-                        $institutionId,
-                        $roleSlug
-                    );
+                /*
+                |--------------------------------------------------------------------------
+                | MANUAL
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $generationType === 'manual'
+                    &&
+                    $customId !== ''
+                ) {
+
+                    $institutionUserId =
+                        $customId;
+
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | AUTO
+                |--------------------------------------------------------------------------
+                */
+
+                else {
+
+                    $institutionUserId =
+                        User::generateInstitutionUserId(
+                            $institutionId,
+                            $roleSlug
+                        );
+                }
             }
 
 
             /*
             |--------------------------------------------------------------------------
-            | User Create
+            | USER CREATE
             |--------------------------------------------------------------------------
             */
 
@@ -1013,6 +1146,19 @@ class UserController extends Controller
 
                 'institution_user_id' =>
                     $institutionUserId,
+
+                /*
+                |--------------------------------------------------------------------------
+                | IMPORTANT
+                |--------------------------------------------------------------------------
+                |
+                | Manual / Auto কোনভাবে code তৈরি হয়েছে সেটা এখানে save হবে।
+                |
+                |--------------------------------------------------------------------------
+                */
+
+                'code_generation_type' =>
+                    $generationType,
 
                 'institution_id' =>
                     $institutionId,
@@ -1174,7 +1320,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Student Create
+            | STUDENT CREATE
             |--------------------------------------------------------------------------
             */
 
@@ -1186,7 +1332,7 @@ class UserController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Generate Student ID
+                | Student ID
                 |--------------------------------------------------------------------------
                 */
 
@@ -1199,7 +1345,7 @@ class UserController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | Create Student
+                | Student Record
                 |--------------------------------------------------------------------------
                 */
 
@@ -1290,13 +1436,11 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Delete Uploaded Photo If Failed
+            | Delete Uploaded Photo
             |--------------------------------------------------------------------------
             */
 
             if (
-                isset($photoPath)
-                &&
                 $photoPath
                 &&
                 Storage::disk('public')
@@ -1329,18 +1473,6 @@ class UserController extends Controller
         $institutionId,
         $academicYearId = null
     ) {
-        /*
-        |--------------------------------------------------------------------------
-        | Base Query
-        |--------------------------------------------------------------------------
-        |
-        | IMPORTANT:
-        | Student table-এ institution_id ব্যবহার করা হচ্ছে।
-        | তাই এখানে madrasa_id ব্যবহার করা যাবে না।
-        |
-        |--------------------------------------------------------------------------
-        */
-
         $query = Student::where(
             'institution_id',
             $institutionId
@@ -1374,16 +1506,11 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $lastStudent = $query
-            ->latest('id')
-            ->first();
+        $lastStudent =
+            $query
+                ->latest('id')
+                ->first();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Starting Number
-        |--------------------------------------------------------------------------
-        */
 
         $newNumber = 1;
 
@@ -1542,12 +1669,6 @@ class UserController extends Controller
         $authUser = auth()->user();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Load User
-        |--------------------------------------------------------------------------
-        */
-
         $user = User::with([
             'role',
             'institution',
@@ -1659,10 +1780,11 @@ class UserController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $roles = Role::orderBy(
-            'level',
-            'desc'
-        )->get();
+        $roles =
+            Role::orderBy(
+                'level',
+                'desc'
+            )->get();
 
 
         /*
@@ -1688,11 +1810,11 @@ class UserController extends Controller
                 'status',
                 1
             )
-                ->orderBy(
-                    'name',
-                    'desc'
-                )
-                ->get();
+            ->orderBy(
+                'name',
+                'desc'
+            )
+            ->get();
 
 
         /*
@@ -1728,11 +1850,11 @@ class UserController extends Controller
                     'class_id',
                     $user->student->class_id
                 )
-                    ->where(
-                        'status',
-                        1
-                    )
-                    ->get();
+                ->where(
+                    'status',
+                    1
+                )
+                ->get();
         }
 
 
@@ -1791,7 +1913,8 @@ class UserController extends Controller
         $authUser = auth()->user();
 
 
-        $user = User::findOrFail($id);
+        $user =
+            User::findOrFail($id);
 
 
         /*
@@ -1839,7 +1962,7 @@ class UserController extends Controller
                 $role->slug,
                 [
                     'support_admin',
-                    'user_admin'
+                    'user_admin',
                 ],
                 true
             )
@@ -1913,16 +2036,14 @@ class UserController extends Controller
                 'required',
                 'string',
                 'max:30',
-                'unique:users,phone,' .
-                $user->id,
+                'unique:users,phone,' . $user->id,
             ],
 
             'email' => [
                 'nullable',
                 'email',
                 'max:255',
-                'unique:users,email,' .
-                $user->id,
+                'unique:users,email,' . $user->id,
             ],
 
             'gender' => [
@@ -1981,7 +2102,7 @@ class UserController extends Controller
                 $role->slug,
                 [
                     'student',
-                    'user'
+                    'user',
                 ],
                 true
             )
@@ -2018,10 +2139,15 @@ class UserController extends Controller
         }
 
 
-        $request->validate($rules);
+        $request->validate(
+            $rules
+        );
 
 
         DB::beginTransaction();
+
+        $photoPath =
+            $user->photo;
 
 
         try {
@@ -2032,17 +2158,15 @@ class UserController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $photoPath =
-                $user->photo;
-
-
             if ($request->hasFile('photo')) {
 
                 if (
                     $user->photo
                     &&
                     Storage::disk('public')
-                        ->exists($user->photo)
+                        ->exists(
+                            $user->photo
+                        )
                 ) {
 
                     Storage::disk('public')
@@ -2143,6 +2267,12 @@ class UserController extends Controller
                 'guardian_relation' =>
                     $request->guardian_relation,
 
+                /*
+                |--------------------------------------------------------------------------
+                | Present Address
+                |--------------------------------------------------------------------------
+                */
+
                 'present_division_id' =>
                     $request->present_division_id,
 
@@ -2169,6 +2299,12 @@ class UserController extends Controller
                         $request,
                         'present'
                     ),
+
+                /*
+                |--------------------------------------------------------------------------
+                | Permanent Address
+                |--------------------------------------------------------------------------
+                */
 
                 'permanent_division_id' =>
                     $request->permanent_division_id,
@@ -2227,7 +2363,9 @@ class UserController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            $user->update($data);
+            $user->update(
+                $data
+            );
 
 
             /*
@@ -2267,7 +2405,6 @@ class UserController extends Controller
 
                     'updated_by' =>
                         auth()->id(),
-
                 ];
 
 
@@ -2303,7 +2440,7 @@ class UserController extends Controller
 
                 /*
                 |--------------------------------------------------------------------------
-                | If Role Changed From Student
+                | Remove Student Record
                 |--------------------------------------------------------------------------
                 */
 
@@ -2329,6 +2466,30 @@ class UserController extends Controller
         } catch (\Exception $e) {
 
             DB::rollBack();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Newly Uploaded Photo
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $photoPath
+                &&
+                $photoPath !== $user->photo
+                &&
+                Storage::disk('public')
+                    ->exists(
+                        $photoPath
+                    )
+            ) {
+
+                Storage::disk('public')
+                    ->delete(
+                        $photoPath
+                    );
+            }
 
 
             return back()
@@ -2405,7 +2566,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Student Delete
+            | Student
             |--------------------------------------------------------------------------
             */
 
@@ -2417,7 +2578,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Photo Delete
+            | Photo
             |--------------------------------------------------------------------------
             */
 
@@ -2425,7 +2586,9 @@ class UserController extends Controller
                 $user->photo
                 &&
                 Storage::disk('public')
-                    ->exists($user->photo)
+                    ->exists(
+                        $user->photo
+                    )
             ) {
 
                 Storage::disk('public')
@@ -2437,7 +2600,7 @@ class UserController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | User Delete
+            | User
             |--------------------------------------------------------------------------
             */
 
@@ -2634,13 +2797,13 @@ class UserController extends Controller
                 'division_id',
                 $divisionId
             )
-                ->orderBy(
-                    'name_bn'
-                )
-                ->get([
-                    'id',
-                    'name_bn'
-                ])
+            ->orderBy(
+                'name_bn'
+            )
+            ->get([
+                'id',
+                'name_bn',
+            ])
         );
     }
 
@@ -2660,13 +2823,13 @@ class UserController extends Controller
                 'district_id',
                 $districtId
             )
-                ->orderBy(
-                    'name_bn'
-                )
-                ->get([
-                    'id',
-                    'name_bn'
-                ])
+            ->orderBy(
+                'name_bn'
+            )
+            ->get([
+                'id',
+                'name_bn',
+            ])
         );
     }
 
@@ -2686,17 +2849,17 @@ class UserController extends Controller
                 'class_id',
                 $classId
             )
-                ->where(
-                    'status',
-                    1
-                )
-                ->orderBy(
-                    'section_name'
-                )
-                ->get([
-                    'id',
-                    'section_name'
-                ])
+            ->where(
+                'status',
+                1
+            )
+            ->orderBy(
+                'section_name'
+            )
+            ->get([
+                'id',
+                'section_name',
+            ])
         );
     }
 
@@ -2872,12 +3035,14 @@ class UserController extends Controller
     ) {
 
         $userType =
-            $request->user_type;
+            $request->input(
+                'user_type'
+            );
 
 
         /*
         |--------------------------------------------------------------------------
-        | System-level Roles
+        | System Roles
         |--------------------------------------------------------------------------
         */
 
@@ -2886,7 +3051,8 @@ class UserController extends Controller
                 $userType,
                 [
                     'support_admin',
-                    'user_admin'
+                    'user_admin',
+                    'super_admin',
                 ],
                 true
             )
@@ -2911,9 +3077,13 @@ class UserController extends Controller
         */
 
         $institutionId =
-            $request->institution_id
+            $request->input(
+                'institution_id'
+            )
             ??
-            $request->madrasa_id
+            session(
+                'active_institution_id'
+            )
             ??
             auth()->user()->institution_id;
 
@@ -2926,7 +3096,7 @@ class UserController extends Controller
                     false,
 
                 'preview_id' =>
-                    '100',
+                    null,
 
             ]);
         }
@@ -2953,7 +3123,7 @@ class UserController extends Controller
                     false,
 
                 'preview_id' =>
-                    '100',
+                    null,
 
             ]);
         }
@@ -2961,7 +3131,16 @@ class UserController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Last User
+        | LAST AUTO USER
+        |--------------------------------------------------------------------------
+        |
+        | VERY IMPORTANT:
+        |
+        | এখানে শুধু code_generation_type = auto
+        | user-গুলোকে ধরা হবে।
+        |
+        | Manual 1001 / 5000 / 9999 এখানে count হবে না।
+        |
         |--------------------------------------------------------------------------
         */
 
@@ -2970,31 +3149,35 @@ class UserController extends Controller
                 'institution_id',
                 $institutionId
             )
-                ->where(
-                    'role_id',
-                    $role->id
-                )
-                ->whereNotNull(
-                    'institution_user_id'
-                )
-                ->orderByRaw(
-                    'CAST(institution_user_id AS UNSIGNED) DESC'
-                )
-                ->first();
+            ->where(
+                'role_id',
+                $role->id
+            )
+            ->where(
+                'code_generation_type',
+                'auto'
+            )
+            ->whereNotNull(
+                'institution_user_id'
+            )
+            ->orderByRaw(
+                'CAST(institution_user_id AS UNSIGNED) DESC'
+            )
+            ->first();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Generate
+        | Generate Preview
         |--------------------------------------------------------------------------
         */
 
         if ($lastUser) {
 
             $previewId =
-                (int)
-                $lastUser->institution_user_id
-                + 1;
+                ((int)
+                    $lastUser->institution_user_id
+                ) + 1;
 
         } else {
 

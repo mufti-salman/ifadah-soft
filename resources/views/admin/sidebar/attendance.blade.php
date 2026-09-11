@@ -1,13 +1,18 @@
 @panel('attendance')
 
 @php
+
+    $user = auth()->user();
+
     $canAttendance =
-        auth()->user()->hasPermission('attendance.view')
-        || auth()->user()->hasPermission('attendance.take')
-        || auth()->user()->hasPermission('attendance.edit')
-        || auth()->user()->hasPermission('attendance.report')
-        || auth()->user()->hasPermission('attendance.export');
+        $user->hasPermission('attendance.view')
+        || $user->hasPermission('attendance.take')
+        || $user->hasPermission('attendance.edit')
+        || $user->hasPermission('attendance.report')
+        || $user->hasPermission('attendance.export');
+
 @endphp
+
 
 @if($canAttendance)
 
@@ -183,5 +188,6 @@
     </li>
 
 @endif
+
 
 @endpanel

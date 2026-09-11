@@ -16,6 +16,7 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
+
     /**
      * Bootstrap any application services.
      */
@@ -92,21 +93,21 @@ class AppServiceProvider extends ServiceProvider
         | Sidebar Permission Directive
         |--------------------------------------------------------------------------
         |
-        | Sidebar authenticated users-এর জন্য visible থাকবে।
+        | Usage:
         |
-        | Actual permission check:
+        | @sidebarPermission('student.view')
+        |     ...
+        | @endsidebarPermission
         |
-        | @permission(...)
-        |
-        | অথবা
-        |
-        | @can(...)
+        | প্রতিটি sidebar submenu নিজের permission অনুযায়ী
+        | show / hide হবে।
         |
         */
 
-        Blade::if('sidebarPermission', function () {
+        Blade::if('sidebarPermission', function ($permission) {
 
-            return auth()->check();
+            return auth()->check()
+                && auth()->user()->hasPermission($permission);
 
         });
     }

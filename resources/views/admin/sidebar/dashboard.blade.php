@@ -1,38 +1,61 @@
 @panel('dashboard')
 
 @php
+
+    $user = auth()->user();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Menu Visibility
+    |--------------------------------------------------------------------------
+
+    */
+
     $canDashboard =
-        auth()->user()->hasPermission('dashboard.view')
-        || auth()->user()->hasPermission('user.view')
-        || auth()->user()->hasPermission('month.view')
-        || auth()->user()->hasPermission('user.photo')
-        || auth()->user()->hasPermission('user.report')
-        || auth()->user()->hasPermission('user.edit')
+        $user->hasPermission('dashboard.view')
+        || $user->hasPermission('user.create')
+        || $user->hasPermission('user.view')
+        || $user->hasPermission('month.view')
+        || $user->hasPermission('user.photo')
+        || $user->hasPermission('user.report')
+        || $user->hasPermission('user.edit')
+        || $user->hasPermission('institution.view')
         || (
-            auth()->user()->is_super_admin
-            && auth()->user()->hasPermission('role.view')
-            && auth()->user()->hasPermission('permission.view')
+            $user->is_super_admin
+            && $user->hasPermission('role.view')
+            && $user->hasPermission('permission.view')
         );
+
 @endphp
+
 
 @if($canDashboard)
 
     <li class="nav-item">
 
-        <a class="nav-link text-white d-flex justify-content-between
+        {{-- Parent Menu --}}
+
+        <a
+            class="nav-link text-white d-flex justify-content-between
             {{ request()->routeIs(
                 'dashboard.index',
                 'dashboard.user.*',
                 'dashboard.month.*',
+                'dashboard.institution.*',
                 'dashboard.role-permissions.*'
             ) ? 'active' : '' }}"
-           data-bs-toggle="collapse"
-           data-bs-target="#dashboardMenu"
-           href="#dashboardMenu">
+
+            data-bs-toggle="collapse"
+            data-bs-target="#dashboardMenu"
+            href="#dashboardMenu"
+        >
 
             <span>
+
                 <i class="fas fa-home me-2"></i>
+
                 ড্যাশবোর্ড
+
             </span>
 
             <i class="fas fa-chevron-down"></i>
@@ -40,21 +63,30 @@
         </a>
 
 
-        <div class="collapse {{ $open('dashboard.') }}"
-             id="dashboardMenu">
+        {{-- Sub Menu --}}
+
+        <div
+            class="collapse {{ $open('dashboard.') }}"
+            id="dashboardMenu"
+        >
 
             <ul class="nav flex-column ms-3">
 
 
-                {{-- Dashboard --}}
+                {{-- =====================================================
+                | Dashboard
+                ====================================================== --}}
 
                 @sidebarPermission('dashboard.view')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{ request()->routeIs('dashboard.index') ? 'active' : '' }}"
-                           href="{{ route('dashboard.index') }}">
+
+                            href="{{ route('dashboard.index') }}"
+                        >
 
                             <i class="fas fa-chart-pie me-2"></i>
 
@@ -67,15 +99,21 @@
                 @endsidebarPermission
 
 
-                {{-- নতুন ব্যবহারকারী --}}
+
+                {{-- =====================================================
+                | নতুন ব্যবহারকারী
+                ====================================================== --}}
 
                 @sidebarPermission('user.create')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{ request()->routeIs('dashboard.user.create') ? 'active' : '' }}"
-                           href="{{ route('dashboard.user.create') }}">
+
+                            href="{{ route('dashboard.user.create') }}"
+                        >
 
                             <i class="fas fa-user-plus me-2"></i>
 
@@ -88,15 +126,21 @@
                 @endsidebarPermission
 
 
-                {{-- ব্যবহারকারী তালিকা --}}
+
+                {{-- =====================================================
+                | ব্যবহারকারী তালিকা
+                ====================================================== --}}
 
                 @sidebarPermission('user.view')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{ request()->routeIs('dashboard.user.index') ? 'active' : '' }}"
-                           href="{{ route('dashboard.user.index') }}">
+
+                            href="{{ route('dashboard.user.index') }}"
+                        >
 
                             <i class="fas fa-users me-2"></i>
 
@@ -109,15 +153,21 @@
                 @endsidebarPermission
 
 
-                {{-- মাস সেটিং --}}
+
+                {{-- =====================================================
+                | মাস সেটিং
+                ====================================================== --}}
 
                 @sidebarPermission('month.view')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{ request()->routeIs('dashboard.month.*') ? 'active' : '' }}"
-                           href="{{ route('dashboard.month.index') }}">
+
+                            href="{{ route('dashboard.month.index') }}"
+                        >
 
                             <i class="fas fa-calendar-alt me-2"></i>
 
@@ -130,14 +180,19 @@
                 @endsidebarPermission
 
 
-                {{-- ব্যবহারকারী ছবি --}}
+
+                {{-- =====================================================
+                | ব্যবহারকারী ছবি
+                ====================================================== --}}
 
                 @sidebarPermission('user.photo')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50"
-                           href="#">
+                        <a
+                            class="nav-link text-white-50"
+                            href="#"
+                        >
 
                             <i class="fas fa-image me-2"></i>
 
@@ -150,14 +205,19 @@
                 @endsidebarPermission
 
 
-                {{-- ব্যবহারকারী রিপোর্ট --}}
+
+                {{-- =====================================================
+                | ব্যবহারকারী রিপোর্ট
+                ====================================================== --}}
 
                 @sidebarPermission('user.report')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50"
-                           href="#">
+                        <a
+                            class="nav-link text-white-50"
+                            href="#"
+                        >
 
                             <i class="fas fa-chart-bar me-2"></i>
 
@@ -170,14 +230,19 @@
                 @endsidebarPermission
 
 
-                {{-- ব্যবহারকারী পারমিশন --}}
+
+                {{-- =====================================================
+                | ব্যবহারকারী পারমিশন
+                ====================================================== --}}
 
                 @sidebarPermission('user.edit')
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50"
-                           href="#">
+                        <a
+                            class="nav-link text-white-50"
+                            href="#"
+                        >
 
                             <i class="fas fa-user-lock me-2"></i>
 
@@ -189,15 +254,29 @@
 
                 @endsidebarPermission
 
-                {{-- প্রতিষ্ঠানের তথ্য --}}
 
-@sidebarPermission('institution.view')
+
+                {{-- =====================================================
+                | প্রতিষ্ঠানের তথ্য
+                ====================================================== --}}
+
+                @sidebarPermission('institution.view')
+
+
+@if(
+    $user->is_super_admin
+    && session('institution_mode') === true
+    && session()->has('active_institution_id')
+)
 
     <li class="nav-item">
 
-        <a class="nav-link text-white-50
+        <a
+            class="nav-link text-white-50
             {{ request()->routeIs('dashboard.institution.info') ? 'active' : '' }}"
-           href="{{ route('dashboard.institution.info') }}">
+
+            href="{{ route('dashboard.institution.info') }}"
+        >
 
             <i class="fas fa-school me-2"></i>
 
@@ -207,22 +286,32 @@
 
     </li>
 
-@endsidebarPermission
+@endif
+
+                @endsidebarPermission
 
 
-                {{-- Role / Institution Permission Manager --}}
+
+                {{-- =====================================================
+                | Institution Permission Manager
+                |
+                | শুধুমাত্র Super Admin
+                ====================================================== --}}
 
                 @if(
-                    auth()->user()->is_super_admin
-                    && auth()->user()->hasPermission('role.view')
-                    && auth()->user()->hasPermission('permission.view')
+                    $user->is_super_admin
+                    && $user->hasPermission('role.view')
+                    && $user->hasPermission('permission.view')
                 )
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{ request()->routeIs('dashboard.role-permissions.*') ? 'active' : '' }}"
-                           href="{{ route('dashboard.role-permissions.index') }}">
+
+                            href="{{ route('dashboard.role-permissions.index') }}"
+                        >
 
                             <i class="fas fa-user-shield me-2"></i>
 
@@ -242,5 +331,6 @@
     </li>
 
 @endif
+
 
 @endpanel
