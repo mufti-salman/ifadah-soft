@@ -630,7 +630,7 @@
                 <tr>
 
                     <th>
-                        আইডি
+                       স্টুডেন্ট আইডি
                     </th>
 
                     <th class="text-start">
@@ -639,10 +639,6 @@
 
                     <th>
                         পিতার নাম
-                    </th>
-
-                    <th>
-                        স্টুডেন্ট আইডি
                     </th>
 
                     <th>
@@ -681,12 +677,22 @@
 
                     <tr>
 
-                        {{-- ID --}}
+                        {{-- Student ID --}}
                         <td>
 
-                            <span class="id-badge">
-                                {{ $user->id }}
-                            </span>
+                            @if($isStudent && $user->student)
+
+                                <span class="id-badge">
+
+                                    {{ $user->institution_user_id }}
+
+                                </span>
+
+                            @else
+
+                                —
+
+                            @endif
 
                         </td>
 
@@ -720,26 +726,6 @@
                             @if($isStudent)
 
                                 {{ $user->father_name ?? '—' }}
-
-                            @else
-
-                                —
-
-                            @endif
-
-                        </td>
-
-
-                        {{-- Student ID --}}
-                        <td>
-
-                            @if($isStudent && $user->student)
-
-                                <span class="id-badge">
-
-                                    {{ $user->institution_user_id }}
-
-                                </span>
 
                             @else
 

@@ -239,66 +239,6 @@
 
 
                 {{-- ======================================================
-                    লেজার
-                ======================================================= --}}
-
-                @if(
-                    $user->hasPermission('income.view')
-                    || $user->hasPermission('expense.view')
-                )
-
-                    <li class="nav-item">
-
-                        <a class="nav-link text-white-50
-                            {{
-                                request()->routeIs(
-                                    'dashboard.ledger.*'
-                                ) ? 'active' : ''
-                            }}"
-                           href="{{ route('dashboard.ledger.index') }}">
-
-                            <i class="fas fa-book me-2"></i>
-
-                            লেজার
-
-                        </a>
-
-                    </li>
-
-                @endif
-
-
-                {{-- ======================================================
-                    সাব লেজার
-                ======================================================= --}}
-
-                @if(
-                    $user->hasPermission('income.view')
-                    || $user->hasPermission('expense.view')
-                )
-
-                    <li class="nav-item">
-
-                        <a class="nav-link text-white-50
-                            {{
-                                request()->routeIs(
-                                    'dashboard.sub-ledger.*'
-                                ) ? 'active' : ''
-                            }}"
-                           href="{{ route('dashboard.sub-ledger.index') }}">
-
-                            <i class="fas fa-book-open me-2"></i>
-
-                            সাব লেজার
-
-                        </a>
-
-                    </li>
-
-                @endif
-
-
-                {{-- ======================================================
                     পেমেন্ট মেথড
                 ======================================================= --}}
 
@@ -317,33 +257,6 @@
                             <i class="fas fa-credit-card me-2"></i>
 
                             পেমেন্ট মেথড
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-                {{-- ======================================================
-                    ক্যাশিয়ার
-                ======================================================= --}}
-
-                @sidebarPermission('payment.view')
-
-                    <li class="nav-item">
-
-                        <a class="nav-link text-white-50
-                            {{
-                                request()->routeIs(
-                                    'dashboard.cashier.*'
-                                ) ? 'active' : ''
-                            }}"
-                           href="{{ route('dashboard.cashier.index') }}">
-
-                            <i class="fas fa-cash-register me-2"></i>
-
-                            ক্যাশিয়ার
 
                         </a>
 

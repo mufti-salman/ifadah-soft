@@ -38,22 +38,15 @@ class Permission extends Model
      * ----------------------------------------------------------
      */
     protected $casts = [
-        'is_system'  => 'boolean',
-        'is_active'  => 'boolean',
-        'serial'     => 'integer',
+        'is_system' => 'boolean',
+        'is_active' => 'boolean',
+        'serial' => 'integer',
     ];
 
     /**
      * ----------------------------------------------------------
      * System Panel
      * ----------------------------------------------------------
-     *
-     * Example:
-     * student.view
-     * student.create
-     * student.edit
-     *
-     * Each permission can belong to a System Panel.
      */
     public function systemPanel()
     {
@@ -68,11 +61,6 @@ class Permission extends Model
      * ----------------------------------------------------------
      * Roles
      * ----------------------------------------------------------
-     *
-     * Permissions assigned to roles.
-     *
-     * Pivot:
-     * role_permissions
      */
     public function roles()
     {
@@ -88,15 +76,6 @@ class Permission extends Model
      * ----------------------------------------------------------
      * Users
      * ----------------------------------------------------------
-     *
-     * Direct permissions assigned to individual users.
-     *
-     * Pivot:
-     * user_permissions
-     *
-     * allow:
-     * 1 = Allowed
-     * 0 = Denied
      */
     public function users()
     {
@@ -114,17 +93,6 @@ class Permission extends Model
      * ----------------------------------------------------------
      * Institutions
      * ----------------------------------------------------------
-     *
-     * Permissions assigned to an institution by Super Admin.
-     *
-     * Pivot:
-     * institution_permissions
-     *
-     * This is especially important for:
-     *
-     * user_admin
-     * user
-     * student
      */
     public function institutions()
     {
@@ -180,9 +148,6 @@ class Permission extends Model
      * ----------------------------------------------------------
      * Module Scope
      * ----------------------------------------------------------
-     *
-     * Example:
-     * Permission::byModule('student')->get();
      */
     public function scopeByModule($query, $module)
     {

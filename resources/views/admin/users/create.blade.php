@@ -59,7 +59,6 @@
         color: #1a1a2e;
     }
 
-    /* Code Setting Button */
     .btn-code-setting {
         display: inline-flex;
         align-items: center;
@@ -256,7 +255,6 @@
         gap: 10px;
     }
 
-    /* Student Section */
     .student-fields {
         display: none;
         background: #f5f7ff;
@@ -384,10 +382,6 @@
         color: #4b5563;
         width: 100%;
     }
-
-    /* ==========================================
-       CODE SETTING MODAL
-    ========================================== */
 
     .code-modal-overlay {
         position: fixed;
@@ -598,6 +592,21 @@
         margin-top: 10px;
     }
 
+    .manual-preview-info {
+        display: none;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #047857;
+        border-radius: 10px;
+        padding: 11px 13px;
+        font-size: 0.78rem;
+        margin-top: 10px;
+    }
+
+    .manual-preview-info.show {
+        display: block;
+    }
+
     @media (max-width: 992px) {
         .form-grid {
             grid-template-columns: 1fr 1fr;
@@ -667,7 +676,6 @@
 
     <div class="reg-card">
 
-        {{-- HEADER --}}
         <div class="reg-card-header">
 
             <div class="header-left">
@@ -680,7 +688,6 @@
 
             </div>
 
-            {{-- CODE SETTING BUTTON --}}
             <button type="button"
                     class="btn-code-setting"
                     id="openCodeSetting">
@@ -696,7 +703,6 @@
 
         <div class="reg-card-body">
 
-            {{-- VALIDATION ERROR --}}
             @if ($errors->any())
 
                 <div class="alert-danger-custom">
@@ -716,7 +722,6 @@
             @endif
 
 
-            {{-- SUCCESS / ERROR MESSAGE --}}
             @if(session('error'))
 
                 <div class="alert-danger-custom">
@@ -728,43 +733,40 @@
 
             <form action="{{ route('dashboard.user.store') }}"
                   method="POST"
-                  enctype="multipart/form-data">
+                  enctype="multipart/form-data"
+                  id="userCreateForm">
 
                 @csrf
 
 
-                {{-- IMPORTANT --}}
                 <input type="hidden"
-                       name="role_id"
-                       id="role_id"
-                       value="{{ old('role_id') }}">
+                       name="institution_id"
+                       id="institution_id"
+                       value="{{ auth()->user()->institution_id ?? auth()->user()->madrasa_id ?? 1 }}">
 
-<input type="hidden"
-       name="institution_id"
-       id="institution_id"
-       value="{{ auth()->user()->institution_id ?? auth()->user()->madrasa_id ?? 1 }}">
 
-                {{-- =========================================
-                     MAIN GRID
-                ========================================== --}}
+                <input type="hidden"
+                       name="code_generation_type"
+                       id="code_generation_type"
+                       value="{{ old('code_generation_type', 'auto') }}">
+
 
                 <div class="form-grid">
 
 
-                    {{-- =========================================
-                         LEFT COLUMN
-                    ========================================== --}}
-
                     <div class="col-fields">
 
 
-                        {{-- USER TYPE --}}
                         <div class="field-group">
 
                             <label class="form-label">
+
                                 ব্যবহারকারীর ধরণ
+
                                 <span class="req">*</span>
+
                             </label>
+
 
                             <select name="user_type"
                                     id="user_type"
@@ -774,6 +776,7 @@
                                 <option value="">
                                     নির্বাচন করুন
                                 </option>
+
 
                                 @foreach($userTypes as $key => $type)
 
@@ -791,17 +794,19 @@
                         </div>
 
 
-                        {{-- ID + GENDER --}}
                         <div class="mini-grid-2">
 
 
-                            {{-- USER ID --}}
                             <div class="field-group">
 
                                 <label class="form-label">
+
                                     আইডি
+
                                     <span class="req">*</span>
+
                                 </label>
+
 
                                 <input type="text"
                                        name="custom_id"
@@ -814,16 +819,30 @@
                                               font-weight:600;
                                               color:#1e3a8a;">
 
+
+                                <small id="codeModeHint"
+                                       style="display:block;
+                                              margin-top:5px;
+                                              color:#6b7280;
+                                              font-size:0.70rem;">
+
+                                    Auto Code
+
+                                </small>
+
                             </div>
 
 
-                            {{-- GENDER --}}
                             <div class="field-group">
 
                                 <label class="form-label">
+
                                     লিঙ্গ
+
                                     <span class="req">*</span>
+
                                 </label>
+
 
                                 <div class="gender-row">
 
@@ -857,13 +876,16 @@
                         </div>
 
 
-                        {{-- NAME --}}
                         <div class="field-group">
 
                             <label class="form-label">
+
                                 নাম
+
                                 <span class="req">*</span>
+
                             </label>
+
 
                             <input type="text"
                                    name="name_bn"
@@ -875,12 +897,12 @@
                         </div>
 
 
-                        {{-- FATHER --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 পিতার নাম
                             </label>
+
 
                             <input type="text"
                                    name="father_name"
@@ -891,12 +913,12 @@
                         </div>
 
 
-                        {{-- MOTHER --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 মাতার নাম
                             </label>
+
 
                             <input type="text"
                                    name="mother_name"
@@ -907,100 +929,18 @@
                         </div>
 
 
-                        {{-- =========================================
-                             STUDENT ONLY FIELDS
-                        ========================================== --}}
-
-                        <div id="studentFields"
-                             class="student-fields">
-
-                            <div class="student-fields-title">
-
-                                <i class="fas fa-graduation-cap"></i>
-
-                                শিক্ষার্থীর তথ্য
-
-                            </div>
-
-
-                            <div class="student-fields-grid">
-
-
-                                {{-- CLASS --}}
-                                <div class="field-group">
-
-                                    <label class="form-label">
-                                        শ্রেণি
-                                    </label>
-
-                                    <select name="class_id"
-                                            id="class_id"
-                                            class="form-select">
-
-                                        <option value="">
-                                            নির্বাচন করুন
-                                        </option>
-
-                                        @if(isset($classes))
-
-                                            @foreach($classes as $class)
-
-                                                <option value="{{ $class->id }}"
-                                                    {{ old('class_id') == $class->id ? 'selected' : '' }}>
-
-                                                    {{ $class->name_bn ?? $class->name ?? $class->class_name }}
-
-                                                </option>
-
-                                            @endforeach
-
-                                        @endif
-
-                                    </select>
-
-                                </div>
-
-
-                                {{-- SECTION --}}
-                                <div class="field-group">
-
-                                    <label class="form-label">
-                                        শাখা
-                                    </label>
-
-                                    <select name="section_id"
-                                            id="section_id"
-                                            class="form-select">
-
-                                        <option value="">
-                                            নির্বাচন করুন
-                                        </option>
-
-                                    </select>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
                     </div>
 
-
-                    {{-- =========================================
-                         MIDDLE COLUMN
-                    ========================================== --}}
 
                     <div class="col-fields">
 
 
-                        {{-- BLOOD GROUP --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 রক্তের গ্রুপ
                             </label>
+
 
                             <select name="blood_group"
                                     class="form-select">
@@ -1008,6 +948,7 @@
                                 <option value="">
                                     নির্বাচন করুন
                                 </option>
+
 
                                 @foreach(['A+','A-','B+','B-','O+','O-','AB+','AB-'] as $bg)
 
@@ -1025,7 +966,6 @@
                         </div>
 
 
-                        {{-- DOB + AGE --}}
                         <div class="mini-grid-2">
 
                             <div class="field-group">
@@ -1033,6 +973,7 @@
                                 <label class="form-label">
                                     জন্ম তারিখ
                                 </label>
+
 
                                 <input type="date"
                                        name="date_of_birth"
@@ -1049,6 +990,7 @@
                                     বয়স
                                 </label>
 
+
                                 <input type="number"
                                        name="age"
                                        id="age"
@@ -1063,12 +1005,12 @@
                         </div>
 
 
-                        {{-- NID --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 NID/জন্ম নিবন্ধন নং
                             </label>
+
 
                             <input type="text"
                                    name="nid"
@@ -1079,13 +1021,16 @@
                         </div>
 
 
-                        {{-- PHONE 1 --}}
                         <div class="field-group">
 
                             <label class="form-label">
+
                                 মোবাইল 1
+
                                 <span class="req">*</span>
+
                             </label>
+
 
                             <div class="phone-group">
 
@@ -1131,12 +1076,12 @@
                         </div>
 
 
-                        {{-- PHONE 2 --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 মোবাইল 2
                             </label>
+
 
                             <div class="phone-group">
 
@@ -1181,12 +1126,12 @@
                         </div>
 
 
-                        {{-- EMAIL --}}
                         <div class="field-group">
 
                             <label class="form-label">
                                 ই-মেইল
                             </label>
+
 
                             <input type="email"
                                    name="email"
@@ -1199,14 +1144,9 @@
                     </div>
 
 
-                    {{-- =========================================
-                         RIGHT COLUMN - ADDRESS
-                    ========================================== --}}
-
                     <div class="address-col">
 
 
-                        {{-- PERMANENT ADDRESS --}}
                         <div class="address-card">
 
                             <div class="address-card-header">
@@ -1228,7 +1168,6 @@
                                 <div class="addr-mini-grid">
 
 
-                                    {{-- DIVISION --}}
                                     <div class="field-group">
 
                                         <select name="permanent_division_id"
@@ -1238,6 +1177,7 @@
                                             <option value="">
                                                 বিভাগ
                                             </option>
+
 
                                             @foreach($divisions as $div)
 
@@ -1255,7 +1195,6 @@
                                     </div>
 
 
-                                    {{-- DISTRICT --}}
                                     <div class="field-group">
 
                                         <select name="permanent_district_id"
@@ -1276,7 +1215,6 @@
                                 <div class="addr-mini-grid">
 
 
-                                    {{-- UPAZILA --}}
                                     <div class="field-group">
 
                                         <select name="permanent_upazila_id"
@@ -1292,7 +1230,6 @@
                                     </div>
 
 
-                                    {{-- POST OFFICE --}}
                                     <div class="field-group">
 
                                         <input type="text"
@@ -1306,7 +1243,6 @@
                                 </div>
 
 
-                                {{-- VILLAGE --}}
                                 <div class="field-group">
 
                                     <input type="text"
@@ -1322,7 +1258,6 @@
                         </div>
 
 
-                        {{-- PRESENT ADDRESS --}}
                         <div class="address-card">
 
                             <div class="address-card-header">
@@ -1350,11 +1285,9 @@
 
                             <div class="addr-fields">
 
-
                                 <div class="addr-mini-grid">
 
 
-                                    {{-- DIVISION --}}
                                     <div class="field-group">
 
                                         <select name="present_division_id"
@@ -1364,6 +1297,7 @@
                                             <option value="">
                                                 বিভাগ
                                             </option>
+
 
                                             @foreach($divisions as $div)
 
@@ -1381,7 +1315,6 @@
                                     </div>
 
 
-                                    {{-- DISTRICT --}}
                                     <div class="field-group">
 
                                         <select name="present_district_id"
@@ -1402,7 +1335,6 @@
                                 <div class="addr-mini-grid">
 
 
-                                    {{-- UPAZILA --}}
                                     <div class="field-group">
 
                                         <select name="present_upazila_id"
@@ -1418,7 +1350,6 @@
                                     </div>
 
 
-                                    {{-- POST OFFICE --}}
                                     <div class="field-group">
 
                                         <input type="text"
@@ -1432,7 +1363,6 @@
                                 </div>
 
 
-                                {{-- VILLAGE --}}
                                 <div class="field-group">
 
                                     <input type="text"
@@ -1452,7 +1382,6 @@
                 </div>
 
 
-                {{-- FOOTER --}}
                 <div class="reg-card-footer">
 
                     <a href="{{ route('dashboard.user.index') }}"
@@ -1474,6 +1403,7 @@
 
                 </div>
 
+
             </form>
 
         </div>
@@ -1483,17 +1413,12 @@
 </div>
 
 
-{{-- ============================================================
-     CODE SETTING MODAL
-============================================================ --}}
-
 <div class="code-modal-overlay"
      id="codeSettingModal">
 
     <div class="code-modal">
 
 
-        {{-- MODAL HEADER --}}
         <div class="code-modal-header">
 
             <div class="code-modal-title">
@@ -1522,11 +1447,9 @@
         </div>
 
 
-        {{-- MODAL BODY --}}
         <div class="code-modal-body">
 
 
-            {{-- USER TYPE --}}
             <div class="code-form-section">
 
                 <div class="code-section-title">
@@ -1534,27 +1457,27 @@
                 </div>
 
 
-<select id="code_setting_user_type"
-        class="form-select">
+                <select id="code_setting_user_type"
+                        class="form-select">
 
-    <option value="">
-        নির্বাচন করুন
-    </option>
+                    <option value="">
+                        নির্বাচন করুন
+                    </option>
 
-    @foreach($userTypes as $key => $type)
 
-        <option value="{{ $key }}">
-            {{ $type }}
-        </option>
+                    @foreach($userTypes as $key => $type)
 
-    @endforeach
+                        <option value="{{ $key }}">
+                            {{ $type }}
+                        </option>
 
-</select>
+                    @endforeach
+
+                </select>
 
             </div>
 
 
-            {{-- CODE TYPE --}}
             <div class="code-form-section">
 
                 <div class="code-section-title">
@@ -1604,18 +1527,33 @@
                 </div>
 
 
-                {{-- MANUAL CODE --}}
                 <div class="manual-code-field"
                      id="manualCodeField">
 
                     <label class="form-label">
+
                         ইউজার কোড:
+
                     </label>
+
 
                     <input type="text"
                            id="manual_user_code"
                            class="form-control"
-                           placeholder="যেমন: 1001">
+                           inputmode="numeric"
+                           autocomplete="off"
+                           placeholder="খালি রাখলে role অনুযায়ী পরবর্তী কোড হবে">
+
+
+                    <div class="manual-preview-info"
+                         id="manualPreviewInfo">
+
+                        <i class="fas fa-check-circle"></i>
+
+                        কোড খালি রাখলে সিস্টেম নির্বাচিত role অনুযায়ী
+                        পরবর্তী available manual code তৈরি করবে।
+
+                    </div>
 
                 </div>
 
@@ -1625,70 +1563,23 @@
 
                     <i class="fas fa-info-circle"></i>
 
-                    অটো নির্বাচন করলে সিস্টেম নির্ধারিত সিরিয়াল অনুযায়ী
-                    ইউজার কোড তৈরি করবে।
+                    অটো নির্বাচন করলে সিস্টেম নির্ধারিত
+                    role অনুযায়ী serial code তৈরি করবে।
+
+                    <br>
+
+                    Student: <strong>101+</strong> &nbsp; |
+                    User: <strong>201+</strong> &nbsp; |
+                    User Admin: <strong>301+</strong> &nbsp; |
+                    Support Admin: <strong>401+</strong>
 
                 </div>
 
             </div>
-
-
-            {{-- GENDER --}}
-            <div class="code-form-section">
-
-                <div class="code-section-title">
-                    লিঙ্গ:
-                </div>
-
-
-                <div class="code-radio-group">
-
-
-                    <div class="code-radio-card">
-
-                        <input type="radio"
-                               name="code_gender"
-                               id="code_gender_male"
-                               value="male"
-                               checked>
-
-                        <label for="code_gender_male">
-
-                            <i class="fas fa-male"></i>
-
-                            পুরুষ
-
-                        </label>
-
-                    </div>
-
-
-                    <div class="code-radio-card">
-
-                        <input type="radio"
-                               name="code_gender"
-                               id="code_gender_female"
-                               value="female">
-
-                        <label for="code_gender_female">
-
-                            <i class="fas fa-female"></i>
-
-                            মহিলা
-
-                        </label>
-
-                    </div>
-
-                </div>
-
-            </div>
-
 
         </div>
 
 
-        {{-- MODAL FOOTER --}}
         <div class="code-modal-footer">
 
             <button type="button"
@@ -1716,46 +1607,68 @@
 
 </div>
 
-
 @push('scripts')
 
 <script>
 
 $(document).ready(function () {
 
+    /* ============================================================
+       CODE START MAP
+       ============================================================ */
+
+    var codeStartMap = {
+        student: 101,
+        user: 201,
+        user_admin: 301,
+        support_admin: 401
+    };
+
+
+    /* ============================================================
+       CODE SETTING STATE
+       ============================================================ */
+
+    var modalOriginalSetting = null;
+
+    var currentMainManualCode = '';
+
+    var currentMainManualCodeExplicit = false;
+
+    var mainManualPreviewOnly = false;
+
+    var modalManualCodeTouched = false;
+
 
     /* ============================================================
        AGE CALCULATE
-    ============================================================ */
+       ============================================================ */
 
     function calculateAge() {
 
         var birthDate = $('#date_of_birth').val();
 
         if (!birthDate) {
-
             $('#age').val('');
-
             return;
         }
-
 
         var today = new Date();
 
         var birth = new Date(birthDate);
 
-
         if (birth > today) {
 
             $('#age').val('');
 
-            alert('জন্ম তারিখ ভবিষ্যতের হতে পারে না!');
+            alert(
+                'জন্ম তারিখ ভবিষ্যতের হতে পারে না!'
+            );
 
             $('#date_of_birth').val('');
 
             return;
         }
-
 
         var age =
             today.getFullYear() -
@@ -1765,7 +1678,6 @@ $(document).ready(function () {
             today.getMonth() -
             birth.getMonth();
 
-
         if (
             m < 0 ||
             (
@@ -1773,21 +1685,14 @@ $(document).ready(function () {
                 today.getDate() < birth.getDate()
             )
         ) {
-
             age--;
-
         }
-
 
         if (age < 0) {
-
             age = 0;
-
         }
 
-
         $('#age').val(age);
-
     }
 
 
@@ -1798,36 +1703,159 @@ $(document).ready(function () {
 
 
     if ($('#date_of_birth').val()) {
-
         calculateAge();
-
     }
 
 
     /* ============================================================
-       ROLE MAP
-    ============================================================ */
+       GET INSTITUTION ID
+       ============================================================ */
 
-    var roleMap = {
+    function getInstitutionId() {
 
-        'student': 5,
-
-        'teacher': 4,
-
-        'guardian': 6,
-
-        'madrasa-admin': 3,
-
-        'soft-admin': 2,
-
-        'super-admin': 1
-
-    };
+        return $('#institution_id').val() || '';
+    }
 
 
     /* ============================================================
-       AUTO USER ID
-    ============================================================ */
+       GET SAVED CODE SETTING
+       ============================================================ */
+
+    function getSavedCodeSetting() {
+
+        try {
+
+            var saved =
+                sessionStorage.getItem(
+                    'user_code_setting'
+                );
+
+            if (!saved) {
+                return null;
+            }
+
+            return JSON.parse(saved);
+
+        } catch (e) {
+
+            console.error(
+                'Code setting parse error:',
+                e
+            );
+
+            return null;
+        }
+    }
+
+
+    /* ============================================================
+       UPDATE MAIN HIDDEN CODE TYPE
+       ============================================================ */
+
+    function updateHiddenCodeType(type) {
+
+        $('#code_generation_type')
+            .val(type || 'auto');
+    }
+
+
+    /* ============================================================
+       GET ROLE START CODE
+       ============================================================ */
+
+    function getRoleStart(userType) {
+
+        return codeStartMap[userType] || 101;
+    }
+
+
+    /* ============================================================
+       GET CURRENT MAIN CODE SETTING
+       ============================================================ */
+
+    function getCurrentMainCodeSetting() {
+
+        return {
+
+            user_type:
+                $('#user_type').val() || '',
+
+            generation_type:
+                $('#code_generation_type').val() ||
+                'auto',
+
+            /*
+             * শুধু Main Form-এর explicit manual code।
+             * Modal-এর value এখানে আসবে না।
+             */
+            manual_code:
+                currentMainManualCode || ''
+        };
+    }
+
+
+    /* ============================================================
+       SET AUTO MODE UI
+       ============================================================ */
+
+    function setAutoModeUI() {
+
+        $('#manualCodeField')
+            .removeClass('show');
+
+        $('#manualPreviewInfo')
+            .removeClass('show');
+
+        $('#autoCodeInfo')
+            .show();
+
+        $('#codeModeHint')
+            .text('Auto Code')
+            .css(
+                'color',
+                '#6b7280'
+            );
+    }
+
+
+    /* ============================================================
+       SET MANUAL MODE UI
+       ============================================================ */
+
+    function setManualModeUI() {
+
+        var userType =
+            $('#user_type').val();
+
+        $('#manualCodeField')
+            .addClass('show');
+
+        $('#manualPreviewInfo')
+            .addClass('show');
+
+        $('#autoCodeInfo')
+            .hide();
+
+        $('#manual_user_code')
+            .attr(
+                'placeholder',
+                'খালি রাখলে ' +
+                getRoleStart(userType) +
+                ' থেকে পরবর্তী কোড হবে'
+            );
+
+        $('#codeModeHint')
+            .text('Manual Code')
+            .css(
+                'color',
+                '#047857'
+            );
+    }
+
+
+    /* ============================================================
+       AUTO USER ID PREVIEW
+       ============================================================ */
 
     function autoFillId(
         userType,
@@ -1836,127 +1864,398 @@ $(document).ready(function () {
 
         if (!userType) {
 
-            $('#custom_id').val('');
-
-            $('#custom_id').attr(
-                'placeholder',
-                'প্রথমে ইউজার ধরণ নির্বাচন করুন'
-            );
+            $('#custom_id')
+                .val('')
+                .attr(
+                    'placeholder',
+                    'প্রথমে ইউজার ধরণ নির্বাচন করুন'
+                );
 
             return;
         }
 
+        var roleStart =
+            getRoleStart(userType);
 
-        $('#custom_id').val('Loading...');
-
+        $('#custom_id')
+            .val('লোড হচ্ছে...')
+            .attr(
+                'placeholder',
+                'অটো কোড লোড হচ্ছে...'
+            );
 
         $.ajax({
 
-            url: '{{ url('/dashboard/user/preview-id') }}',
+            url:
+                '{{ route('dashboard.user.preview-id') }}',
 
-            type: 'POST',
+            type: 'GET',
 
             data: {
 
                 user_type: userType,
 
-                madrasa_id: institutionId,
+                institution_id: institutionId,
 
-                _token:
-                    $('meta[name="csrf-token"]').attr('content')
-                    || '{{ csrf_token() }}'
-
+                generation_type: 'auto'
             },
 
             dataType: 'json',
 
-
             success: function (response) {
 
+                console.log(
+                    'Auto User Code Preview:',
+                    response
+                );
+
                 if (
+                    response &&
                     response.success &&
                     response.preview_id
                 ) {
 
-                    $('#custom_id').val(
-                        response.preview_id
-                    );
+                    var previewId =
+                        parseInt(
+                            response.preview_id,
+                            10
+                        );
+
+                    if (
+                        !isNaN(previewId) &&
+                        previewId >= roleStart
+                    ) {
+
+                        $('#custom_id')
+                            .val(
+                                response.preview_id
+                            );
+
+                        return;
+                    }
+
+                    $('#custom_id')
+                        .val(roleStart);
 
                     return;
                 }
 
-
-                var defaultId = '100';
-
-
-                if (userType === 'student') {
-
-                    defaultId = '101';
-
-                } else if (userType === 'teacher') {
-
-                    defaultId = '201';
-
-                } else if (userType === 'guardian') {
-
-                    defaultId = '301';
-
-                } else if (userType === 'madrasa-admin') {
-
-                    defaultId = '401';
-
-                } else if (userType === 'soft-admin') {
-
-                    defaultId = '501';
-
-                }
-
-
-                $('#custom_id').val(defaultId);
-
+                $('#custom_id')
+                    .val(roleStart);
             },
 
+            error: function (xhr) {
 
-            error: function () {
+                console.error(
+                    'Auto User Code Preview Error:',
+                    xhr.responseJSON ||
+                    xhr.responseText
+                );
 
-                var defaultId = '100';
+                $('#custom_id')
+                    .val(roleStart);
+            }
+        });
+    }
 
 
-                if (userType === 'student') {
+    /* ============================================================
+       MANUAL USER ID PREVIEW - MAIN FORM
+       ============================================================
 
-                    defaultId = '101';
+       IMPORTANT:
 
-                } else if (userType === 'teacher') {
+       এখানে Manual preview শুধুমাত্র Backend থেকে আসবে।
 
-                    defaultId = '201';
+       Backend যদি 501 দেয়:
+           501
 
-                } else if (userType === 'guardian') {
+       Backend যদি 801 দেয়:
+           801
 
-                    defaultId = '301';
+       Backend error হলে আর 101 দেখানো হবে না।
 
-                } else if (userType === 'madrasa-admin') {
+       ============================================================ */
 
-                    defaultId = '401';
+    function manualFillId(
+        userType,
+        institutionId
+    ) {
 
-                } else if (userType === 'soft-admin') {
+        if (!userType) {
 
-                    defaultId = '501';
+            $('#custom_id')
+                .val('')
+                .attr(
+                    'placeholder',
+                    'প্রথমে ইউজার ধরণ নির্বাচন করুন'
+                );
 
+            return;
+        }
+
+        $('#custom_id')
+            .val('লোড হচ্ছে...')
+            .attr(
+                'placeholder',
+                'পরবর্তী Manual Code লোড হচ্ছে...'
+            );
+
+        $.ajax({
+
+            url:
+                '{{ route('dashboard.user.preview-id') }}',
+
+            type: 'GET',
+
+            data: {
+
+                user_type: userType,
+
+                institution_id: institutionId,
+
+                generation_type: 'manual'
+            },
+
+            dataType: 'json',
+
+            success: function (response) {
+
+                console.log(
+                    'Manual User Code Preview:',
+                    response
+                );
+
+                if (
+                    response &&
+                    response.success &&
+                    response.preview_id
+                ) {
+
+                    var previewId =
+                        parseInt(
+                            response.preview_id,
+                            10
+                        );
+
+                    if (
+                        !isNaN(previewId) &&
+                        previewId >= getRoleStart(userType)
+                    ) {
+
+                        /*
+                         * শুধু Preview হিসেবে দেখানো হচ্ছে।
+                         * currentMainManualCode-এ save করা হচ্ছে না।
+                         */
+                        $('#custom_id')
+                            .val(
+                                response.preview_id
+                            )
+                            .attr(
+                                'placeholder',
+                                'পরবর্তী Manual Code'
+                            );
+
+                        return;
+                    }
                 }
 
+                /*
+                 * Backend valid code না দিলে
+                 * ভুল করে 101/201/301/401 দেখাবো না।
+                 */
+                $('#custom_id')
+                    .val('')
+                    .attr(
+                        'placeholder',
+                        'Manual Code পাওয়া যায়নি'
+                    );
+            },
 
-                $('#custom_id').val(defaultId);
+            error: function (xhr) {
 
+                console.error(
+                    'Manual User Code Preview Error:',
+                    xhr.responseJSON ||
+                    xhr.responseText
+                );
+
+                /*
+                 * AJAX fail হলে ভুল fallback code
+                 * দেখানো হবে না।
+                 */
+                $('#custom_id')
+                    .val('')
+                    .attr(
+                        'placeholder',
+                        'পরবর্তী Manual Code লোড করা যায়নি'
+                    );
             }
-
         });
+    }
 
+
+    /* ============================================================
+       MANUAL CODE PREVIEW - MODAL ONLY
+       ============================================================ */
+
+    function previewManualCodeInModal(
+        userType,
+        institutionId
+    ) {
+
+        if (!userType) {
+
+            $('#manualPreviewInfo')
+                .text('');
+
+            return;
+        }
+
+        $('#manualPreviewInfo')
+            .text(
+                'পরবর্তী Manual Code লোড হচ্ছে...'
+            );
+
+        $.ajax({
+
+            url:
+                '{{ route('dashboard.user.preview-id') }}',
+
+            type: 'GET',
+
+            data: {
+
+                user_type: userType,
+
+                institution_id: institutionId,
+
+                generation_type: 'manual'
+            },
+
+            dataType: 'json',
+
+            success: function (response) {
+
+                console.log(
+                    'Manual Modal Preview:',
+                    response
+                );
+
+                if (
+                    response &&
+                    response.success &&
+                    response.preview_id
+                ) {
+
+                    var previewId =
+                        parseInt(
+                            response.preview_id,
+                            10
+                        );
+
+                    if (
+                        !isNaN(previewId) &&
+                        previewId >= getRoleStart(userType)
+                    ) {
+
+                        $('#manualPreviewInfo')
+                            .text(
+                                'পরবর্তী Manual Code: ' +
+                                response.preview_id
+                            );
+
+                        return;
+                    }
+                }
+
+                /*
+                 * Backend valid preview না দিলে
+                 * আর 101/201/301/401 দেখাবে না।
+                 */
+                $('#manualPreviewInfo')
+                    .text(
+                        'পরবর্তী Manual Code পাওয়া যায়নি।'
+                    );
+            },
+
+            error: function (xhr) {
+
+                console.error(
+                    'Manual Modal Preview Error:',
+                    xhr.responseJSON ||
+                    xhr.responseText
+                );
+
+                $('#manualPreviewInfo')
+                    .text(
+                        'পরবর্তী Manual Code লোড করা যায়নি।'
+                    );
+            }
+        });
+    }
+
+
+    /* ============================================================
+       MANUAL MODE MAIN FORM
+       ============================================================ */
+
+    function prepareManualMainId() {
+
+        var userType =
+            $('#user_type').val();
+
+        if (!userType) {
+
+            $('#custom_id')
+                .val('');
+
+            return;
+        }
+
+        /*
+         * Explicit Manual Code থাকলে
+         * সেটাই Main Form-এ থাকবে।
+         */
+        if (
+            currentMainManualCodeExplicit &&
+            currentMainManualCode
+        ) {
+
+            $('#custom_id')
+                .val(currentMainManualCode)
+                .attr(
+                    'placeholder',
+                    'ম্যানুয়াল কোড'
+                );
+
+            mainManualPreviewOnly = false;
+
+            return;
+        }
+
+        /*
+         * Blank Manual:
+         *
+         * Backend থেকে last saved manual + 1
+         * preview হবে।
+         */
+        currentMainManualCode = '';
+
+        currentMainManualCodeExplicit = false;
+
+        mainManualPreviewOnly = true;
+
+        manualFillId(
+            userType,
+            getInstitutionId()
+        );
     }
 
 
     /* ============================================================
        USER TYPE CHANGE
-    ============================================================ */
+       ============================================================ */
 
     $('#user_type').on(
         'change',
@@ -1966,15 +2265,14 @@ $(document).ready(function () {
                 $(this).val();
 
             var institutionId =
-                $('#institution_id').val() || 1;
+                getInstitutionId();
 
+            currentMainManualCode = '';
 
-            $('#role_id').val(
-                roleMap[userType] || ''
-            );
+            currentMainManualCodeExplicit = false;
 
+            mainManualPreviewOnly = false;
 
-            /* Student Fields */
 
             if (userType === 'student') {
 
@@ -1985,39 +2283,149 @@ $(document).ready(function () {
 
                 $('#studentFields')
                     .removeClass('show');
-
             }
 
 
-            if (userType) {
+            if (!userType) {
 
-                autoFillId(
-                    userType,
-                    institutionId
+                $('#custom_id')
+                    .val('');
+
+                $('#codeModeHint')
+                    .text('User Code');
+
+                updateHiddenCodeType('auto');
+
+                return;
+            }
+
+
+            var savedSetting =
+                getSavedCodeSetting();
+
+
+            /*
+             * Saved setting একই role হলে
+             * generation type ব্যবহার হবে।
+             */
+            if (
+                savedSetting &&
+                savedSetting.user_type === userType
+            ) {
+
+                if (
+                    savedSetting.generation_type ===
+                    'manual'
+                ) {
+
+                    $('input[name="code_generation_type"][value="manual"]')
+                        .prop(
+                            'checked',
+                            true
+                        );
+
+                    updateHiddenCodeType(
+                        'manual'
+                    );
+
+                    setManualModeUI();
+
+                    $('#manual_user_code')
+                        .val('');
+
+                    prepareManualMainId();
+
+                    return;
+                }
+            }
+
+
+            /*
+             * AUTO
+             */
+
+            $('input[name="code_generation_type"][value="auto"]')
+                .prop(
+                    'checked',
+                    true
                 );
 
-            } else {
+            updateHiddenCodeType(
+                'auto'
+            );
 
-                $('#custom_id').val('');
+            setAutoModeUI();
 
-            }
+            autoFillId(
+                userType,
+                institutionId
+            );
+        }
+    );
+
+
+    /* ============================================================
+       GENDER
+       ============================================================ */
+
+    $('input[name="gender"]').on(
+        'change',
+        function () {
+
+            /*
+             * Gender-এর সাথে ID generation-এর
+             * কোনো সম্পর্ক নেই।
+             */
 
         }
     );
 
 
-    /* Initial student state */
+    /* ============================================================
+       INITIAL USER TYPE
+       ============================================================ */
 
     if ($('#user_type').val()) {
 
-        $('#user_type').trigger('change');
+        $('#user_type')
+            .trigger('change');
 
+    } else {
+
+        var oldCodeType =
+            $('#code_generation_type').val() ||
+            'auto';
+
+        if (oldCodeType === 'manual') {
+
+            $('input[name="code_generation_type"][value="manual"]')
+                .prop(
+                    'checked',
+                    true
+                );
+
+            updateHiddenCodeType('manual');
+
+            setManualModeUI();
+
+        } else {
+
+            $('input[name="code_generation_type"][value="auto"]')
+                .prop(
+                    'checked',
+                    true
+                );
+
+            updateHiddenCodeType('auto');
+
+            setAutoModeUI();
+        }
     }
 
 
     /* ============================================================
        CLASS -> SECTION
-    ============================================================ */
+       ============================================================ */
 
     $('#class_id').on(
         'change',
@@ -2026,30 +2434,30 @@ $(document).ready(function () {
             var classId =
                 $(this).val();
 
-
             var sectionSelect =
                 $('#section_id');
-
 
             sectionSelect.html(
                 '<option value="">শাখা নির্বাচন করুন</option>'
             );
 
-
             if (!classId) {
-
                 return;
-
             }
 
-
             $.getJSON(
-                '{{ url('/dashboard/user/sections') }}/' + classId,
+
+                '{{ url('/dashboard/user/sections') }}/' +
+                classId,
+
                 function (data) {
 
                     $.each(
                         data,
-                        function (index, section) {
+                        function (
+                            index,
+                            section
+                        ) {
 
                             sectionSelect.append(
 
@@ -2060,20 +2468,17 @@ $(document).ready(function () {
                                 '</option>'
 
                             );
-
                         }
                     );
-
                 }
             );
-
         }
     );
 
 
     /* ============================================================
        ADDRESS AJAX
-    ============================================================ */
+       ============================================================ */
 
     function loadDistricts(
         divisionId,
@@ -2085,26 +2490,27 @@ $(document).ready(function () {
             '<option value="">জেলা নির্বাচন করুন</option>'
         );
 
-
         $(upazilaSelect).html(
             '<option value="">থানা নির্বাচন করুন</option>'
         );
 
-
         if (!divisionId) {
-
             return;
-
         }
 
-
         $.getJSON(
-            '{{ url('/get-districts') }}/' + divisionId,
+
+            '{{ url('/get-districts') }}/' +
+            divisionId,
+
             function (data) {
 
                 $.each(
                     data,
-                    function (key, value) {
+                    function (
+                        key,
+                        value
+                    ) {
 
                         $(districtSelect).append(
 
@@ -2115,13 +2521,10 @@ $(document).ready(function () {
                             '</option>'
 
                         );
-
                     }
                 );
-
             }
         );
-
     }
 
 
@@ -2134,21 +2537,23 @@ $(document).ready(function () {
             '<option value="">থানা নির্বাচন করুন</option>'
         );
 
-
         if (!districtId) {
-
             return;
-
         }
 
-
         $.getJSON(
-            '{{ url('/get-upazilas') }}/' + districtId,
+
+            '{{ url('/get-upazilas') }}/' +
+            districtId,
+
             function (data) {
 
                 $.each(
                     data,
-                    function (key, value) {
+                    function (
+                        key,
+                        value
+                    ) {
 
                         $(upazilaSelect).append(
 
@@ -2159,17 +2564,16 @@ $(document).ready(function () {
                             '</option>'
 
                         );
-
                     }
                 );
-
             }
         );
-
     }
 
 
-    /* Permanent */
+    /* ============================================================
+       PERMANENT ADDRESS
+       ============================================================ */
 
     $('#permanent_division').on(
         'change',
@@ -2180,7 +2584,6 @@ $(document).ready(function () {
                 '#permanent_district',
                 '#permanent_upazila'
             );
-
         }
     );
 
@@ -2193,12 +2596,13 @@ $(document).ready(function () {
                 $(this).val(),
                 '#permanent_upazila'
             );
-
         }
     );
 
 
-    /* Present */
+    /* ============================================================
+       PRESENT ADDRESS
+       ============================================================ */
 
     $('#present_division').on(
         'change',
@@ -2209,7 +2613,6 @@ $(document).ready(function () {
                 '#present_district',
                 '#present_upazila'
             );
-
         }
     );
 
@@ -2222,25 +2625,21 @@ $(document).ready(function () {
                 $(this).val(),
                 '#present_upazila'
             );
-
         }
     );
 
 
     /* ============================================================
        SAME ADDRESS
-    ============================================================ */
+       ============================================================ */
 
     $('#same_as_permanent').on(
         'change',
         function () {
 
             if (!$(this).is(':checked')) {
-
                 return;
-
             }
-
 
             var pDiv =
                 $('#permanent_division').val();
@@ -2289,13 +2688,11 @@ $(document).ready(function () {
                                 },
                                 300
                             );
-
                         }
 
                     },
                     300
                 );
-
             }
 
 
@@ -2311,14 +2708,13 @@ $(document).ready(function () {
                     $('input[name="permanent_village_road"]')
                         .val()
                 );
-
         }
     );
 
 
     /* ============================================================
-       LOAD OLD ADDRESS DATA
-    ============================================================ */
+       LOAD OLD PERMANENT ADDRESS
+       ============================================================ */
 
     if ($('#permanent_division').val()) {
 
@@ -2344,6 +2740,7 @@ $(document).ready(function () {
                     $('#permanent_district')
                         .val(oldPermanentDistrict);
 
+
                     loadUpazilas(
                         oldPermanentDistrict,
                         '#permanent_upazila'
@@ -2354,20 +2751,24 @@ $(document).ready(function () {
                         function () {
 
                             $('#permanent_upazila')
-                                .val(oldPermanentUpazila);
+                                .val(
+                                    oldPermanentUpazila
+                                );
 
                         },
                         300
                     );
-
                 }
 
             },
             300
         );
-
     }
 
+
+    /* ============================================================
+       LOAD OLD PRESENT ADDRESS
+       ============================================================ */
 
     if ($('#present_division').val()) {
 
@@ -2393,6 +2794,7 @@ $(document).ready(function () {
                     $('#present_district')
                         .val(oldPresentDistrict);
 
+
                     loadUpazilas(
                         oldPresentDistrict,
                         '#present_upazila'
@@ -2403,26 +2805,142 @@ $(document).ready(function () {
                         function () {
 
                             $('#present_upazila')
-                                .val(oldPresentUpazila);
+                                .val(
+                                    oldPresentUpazila
+                                );
 
                         },
                         300
                     );
-
                 }
 
             },
             300
         );
-
     }
 
 
     /* ============================================================
        CODE SETTING MODAL
-    ============================================================ */
+       ============================================================ */
 
     function openCodeSettingModal() {
+
+        /*
+         * Main form-এর বর্তমান setting snapshot।
+         */
+        modalOriginalSetting =
+            getCurrentMainCodeSetting();
+
+        modalManualCodeTouched = false;
+
+
+        var mainUserType =
+            modalOriginalSetting.user_type;
+
+
+        if (mainUserType) {
+
+            $('#code_setting_user_type')
+                .val(mainUserType);
+
+        } else {
+
+            $('#code_setting_user_type')
+                .val('');
+        }
+
+
+        var currentGenerationType =
+            modalOriginalSetting.generation_type ||
+            'auto';
+
+
+        $('input[name="code_generation_type"]')
+            .prop(
+                'checked',
+                false
+            );
+
+
+        $(
+            'input[name="code_generation_type"][value="' +
+            currentGenerationType +
+            '"]'
+        )
+            .prop(
+                'checked',
+                true
+            );
+
+
+        /*
+         * শুধুমাত্র explicit main manual code।
+         */
+        $('#manual_user_code')
+            .val(
+                modalOriginalSetting.manual_code || ''
+            );
+
+
+        if (
+            currentGenerationType === 'manual'
+        ) {
+
+            $('#manualCodeField')
+                .addClass('show');
+
+            $('#manualPreviewInfo')
+                .addClass('show');
+
+            $('#autoCodeInfo')
+                .hide();
+
+
+            $('#manual_user_code')
+                .attr(
+                    'placeholder',
+                    'খালি রাখলে ' +
+                    getRoleStart(mainUserType) +
+                    ' থেকে পরবর্তী কোড হবে'
+                );
+
+
+            /*
+             * Explicit code না থাকলে
+             * Modal-এ শুধু backend preview।
+             */
+            if (
+                !modalOriginalSetting.manual_code &&
+                mainUserType
+            ) {
+
+                previewManualCodeInModal(
+                    mainUserType,
+                    getInstitutionId()
+                );
+
+            } else {
+
+                $('#manualPreviewInfo')
+                    .text(
+                        'Manual Code: ' +
+                        modalOriginalSetting.manual_code
+                    );
+            }
+
+        } else {
+
+            $('#manualCodeField')
+                .removeClass('show');
+
+            $('#manualPreviewInfo')
+                .removeClass('show');
+
+            $('#autoCodeInfo')
+                .show();
+        }
+
 
         $('#codeSettingModal')
             .addClass('show');
@@ -2431,7 +2949,6 @@ $(document).ready(function () {
             'overflow',
             'hidden'
         );
-
     }
 
 
@@ -2445,6 +2962,7 @@ $(document).ready(function () {
             ''
         );
 
+        modalManualCodeTouched = false;
     }
 
 
@@ -2453,7 +2971,6 @@ $(document).ready(function () {
         function () {
 
             openCodeSettingModal();
-
         }
     );
 
@@ -2463,7 +2980,6 @@ $(document).ready(function () {
         function () {
 
             closeCodeSettingModal();
-
         }
     );
 
@@ -2472,32 +2988,33 @@ $(document).ready(function () {
         'click',
         function () {
 
+            /*
+             * Cancel করলে Main Form untouched।
+             */
             closeCodeSettingModal();
-
         }
     );
 
 
-    /* Click outside modal */
+    /* ============================================================
+       CLICK OUTSIDE MODAL
+       ============================================================ */
 
     $('#codeSettingModal').on(
         'click',
         function (e) {
 
-            if (
-                e.target ===
-                this
-            ) {
+            if (e.target === this) {
 
                 closeCodeSettingModal();
-
             }
-
         }
     );
 
 
-    /* ESC */
+    /* ============================================================
+       ESC
+       ============================================================ */
 
     $(document).on(
         'keydown',
@@ -2505,20 +3022,74 @@ $(document).ready(function () {
 
             if (
                 e.key === 'Escape' &&
-                $('#codeSettingModal').hasClass('show')
+                $('#codeSettingModal')
+                    .hasClass('show')
             ) {
 
                 closeCodeSettingModal();
-
             }
-
         }
     );
 
 
     /* ============================================================
-       CODE GENERATION TYPE
-    ============================================================ */
+       MODAL USER TYPE CHANGE
+       ============================================================ */
+
+    $('#code_setting_user_type').on(
+        'change',
+        function () {
+
+            var userType =
+                $(this).val();
+
+
+            /*
+             * Modal role change হলে
+             * Main Form touch হবে না।
+             */
+
+            $('#code_auto')
+                .prop(
+                    'checked',
+                    true
+                );
+
+
+            $('#manual_user_code')
+                .val('');
+
+
+            $('#manualCodeField')
+                .removeClass('show');
+
+            $('#manualPreviewInfo')
+                .removeClass('show');
+
+            $('#autoCodeInfo')
+                .show();
+
+
+            modalManualCodeTouched = false;
+
+
+            if (userType) {
+
+                $('#manual_user_code')
+                    .attr(
+                        'placeholder',
+                        'খালি রাখলে ' +
+                        getRoleStart(userType) +
+                        ' থেকে পরবর্তী কোড হবে'
+                    );
+            }
+        }
+    );
+
+
+    /* ============================================================
+       MODAL CODE GENERATION TYPE
+       ============================================================ */
 
     $('input[name="code_generation_type"]')
         .on(
@@ -2528,52 +3099,161 @@ $(document).ready(function () {
                 var type =
                     $(this).val();
 
+                var modalUserType =
+                    $('#code_setting_user_type')
+                        .val();
+
+
+                /*
+                 * Main Form-এর কোনো value এখানে
+                 * পরিবর্তন হবে না।
+                 */
 
                 if (type === 'manual') {
 
                     $('#manualCodeField')
                         .addClass('show');
 
+                    $('#manualPreviewInfo')
+                        .addClass('show');
+
                     $('#autoCodeInfo')
                         .hide();
+
+
+                    $('#manual_user_code')
+                        .attr(
+                            'placeholder',
+                            'খালি রাখলে ' +
+                            getRoleStart(modalUserType) +
+                            ' থেকে পরবর্তী কোড হবে'
+                        );
+
+
+                    if (
+                        modalUserType &&
+                        !$.trim(
+                            $('#manual_user_code').val()
+                        )
+                    ) {
+
+                        modalManualCodeTouched = false;
+
+
+                        previewManualCodeInModal(
+                            modalUserType,
+                            getInstitutionId()
+                        );
+                    }
 
                 } else {
 
                     $('#manualCodeField')
                         .removeClass('show');
 
+                    $('#manualPreviewInfo')
+                        .removeClass('show');
+
                     $('#autoCodeInfo')
                         .show();
 
-                }
 
+                    $('#manual_user_code')
+                        .val('');
+
+                    modalManualCodeTouched = false;
+                }
             }
         );
 
 
     /* ============================================================
-       SAVE CODE SETTING - FRONTEND STATE
-       Backend আমরা পরের ধাপে করব।
-    ============================================================ */
+       MANUAL CODE INPUT
+       ============================================================ */
+
+    $('#manual_user_code').on(
+        'input',
+        function () {
+
+            var value =
+                $(this).val();
+
+
+            value =
+                value.replace(
+                    /[^0-9]/g,
+                    ''
+                );
+
+
+            $(this).val(value);
+
+
+            modalManualCodeTouched = true;
+
+
+            if (value) {
+
+                $('#manualPreviewInfo')
+                    .text(
+                        'Manual Code: ' +
+                        value
+                    );
+
+                return;
+            }
+
+
+            /*
+             * Blank করলে Modal-এ শুধু
+             * next Manual preview।
+             */
+            var modalUserType =
+                $('#code_setting_user_type')
+                    .val();
+
+
+            if (modalUserType) {
+
+                modalManualCodeTouched = false;
+
+
+                previewManualCodeInModal(
+                    modalUserType,
+                    getInstitutionId()
+                );
+            }
+        }
+    );
+
+
+    /* ============================================================
+       SAVE CODE SETTING
+       ============================================================ */
 
     $('#saveCodeSetting').on(
         'click',
         function () {
 
             var userType =
-                $('#code_setting_user_type').val();
+                $('#code_setting_user_type')
+                    .val();
+
 
             var generationType =
-                $('input[name="code_generation_type"]:checked')
-                    .val();
+                $(
+                    'input[name="code_generation_type"]:checked'
+                )
+                .val();
 
-            var gender =
-                $('input[name="code_gender"]:checked')
-                    .val();
 
             var manualCode =
-                $('#manual_user_code').val();
+                $.trim(
+                    $('#manual_user_code').val()
+                );
 
+
+            /* ROLE VALIDATION */
 
             if (!userType) {
 
@@ -2582,45 +3262,204 @@ $(document).ready(function () {
                 );
 
                 return;
-
             }
+
+
+            /* GENERATION TYPE */
+
+            if (!generationType) {
+                generationType = 'auto';
+            }
+
+
+            /* MANUAL VALIDATION */
+
+            if (
+                generationType === 'manual'
+            ) {
+
+                if (manualCode) {
+
+                    if (!/^\d+$/.test(manualCode)) {
+
+                        alert(
+                            'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
+                        );
+
+                        $('#manual_user_code')
+                            .focus();
+
+                        return;
+                    }
+
+
+                    var roleStart =
+                        getRoleStart(userType);
+
+
+                    if (
+                        parseInt(
+                            manualCode,
+                            10
+                        ) < roleStart
+                    ) {
+
+                        alert(
+                            'এই Role-এর Manual Code ' +
+                            roleStart +
+                            ' বা তার বেশি হতে হবে।'
+                        );
+
+                        $('#manual_user_code')
+                            .focus();
+
+                        return;
+                    }
+                }
+            }
+
+
+            /* ====================================================
+               APPLY TO MAIN FORM ONLY AFTER SAVE
+               ==================================================== */
+
+            var mainUserType =
+                $('#user_type').val();
 
 
             if (
-                generationType === 'manual' &&
-                !manualCode
+                mainUserType !== userType
             ) {
 
-                alert(
-                    'ম্যানুয়াল কোড লিখুন।'
-                );
-
-                $('#manual_user_code').focus();
-
-                return;
-
+                $('#user_type')
+                    .val(userType);
             }
 
 
-            /*
-             * আপাতত settings browser session-এ রাখা হচ্ছে।
-             * পরের ধাপে Controller + Model + Database
-             * দিয়ে permanent save করব।
-             */
+            /* SAVE GENERATION TYPE */
 
+            updateHiddenCodeType(
+                generationType
+            );
+
+
+            /* ====================================================
+               MANUAL
+               ==================================================== */
+
+            if (
+                generationType === 'manual'
+            ) {
+
+                setManualModeUI();
+
+
+                if (manualCode) {
+
+                    /*
+                     * Explicit Manual Code
+                     *
+                     * Example:
+                     * 500
+                     */
+                    currentMainManualCode =
+                        manualCode;
+
+                    currentMainManualCodeExplicit =
+                        true;
+
+                    mainManualPreviewOnly =
+                        false;
+
+
+                    $('#custom_id')
+                        .val(manualCode)
+                        .attr(
+                            'placeholder',
+                            'ম্যানুয়াল কোড'
+                        );
+
+
+                    $('#manual_user_code')
+                        .val(manualCode);
+
+
+                } else {
+
+                    /*
+                     * Blank Manual
+                     *
+                     * Backend থেকে:
+                     *
+                     * last saved manual + 1
+                     *
+                     * preview হবে।
+                     */
+                    currentMainManualCode =
+                        '';
+
+                    currentMainManualCodeExplicit =
+                        false;
+
+                    mainManualPreviewOnly =
+                        true;
+
+
+                    $('#manual_user_code')
+                        .val('');
+
+
+                    manualFillId(
+                        userType,
+                        getInstitutionId()
+                    );
+                }
+
+
+            } else {
+
+                /* =================================================
+                   AUTO
+                   ================================================= */
+
+                currentMainManualCode =
+                    '';
+
+                currentMainManualCodeExplicit =
+                    false;
+
+                mainManualPreviewOnly =
+                    false;
+
+
+                $('#manual_user_code')
+                    .val('');
+
+
+                setAutoModeUI();
+
+
+                autoFillId(
+                    userType,
+                    getInstitutionId()
+                );
+            }
+
+
+            /* ====================================================
+               SESSION STORAGE
+               ==================================================== */
+
+            /*
+             * Manual code sessionStorage-এ রাখা হবে না।
+             */
             var settings = {
 
-                user_type: userType,
+                user_type:
+                    userType,
 
                 generation_type:
-                    generationType,
-
-                manual_code:
-                    manualCode,
-
-                gender:
-                    gender
-
+                    generationType
             };
 
 
@@ -2630,119 +3469,339 @@ $(document).ready(function () {
             );
 
 
-            /*
-             * যদি main form-এর user type-এর সাথে
-             * code setting-এর type মিলে যায়,
-             * তাহলে manual code হলে ID field-এ দেখানো হবে।
-             */
-
-            var mainUserType =
-                $('#user_type').val();
-
-
-            if (
-                generationType === 'manual' &&
-                mainUserType === userType &&
-                manualCode
-            ) {
-
-                $('#custom_id')
-                    .val(manualCode);
-
-            } else if (
-                generationType === 'auto' &&
-                mainUserType === userType
-            ) {
-
-                autoFillId(
-                    mainUserType,
-                    $('#madrasa_id').val() || 1
-                );
-
-            }
-
+            /* CLOSE MODAL */
 
             closeCodeSettingModal();
 
 
-            alert(
-                'Code Setting সংরক্ষণ করা হয়েছে।'
-            );
+            /* MESSAGE */
 
+            alert(
+
+                generationType === 'manual'
+
+                    ? (
+                        manualCode
+                            ? 'Manual Code Setting সংরক্ষণ করা হয়েছে।'
+                            : 'Manual Code Setting সংরক্ষণ করা হয়েছে। পরবর্তী Manual Code Backend থেকে তৈরি হবে।'
+                    )
+
+                    : 'Auto Code Setting সংরক্ষণ করা হয়েছে.'
+            );
         }
     );
 
 
     /* ============================================================
        RESTORE CODE SETTING
-    ============================================================ */
+       ============================================================ */
 
     try {
 
-        var savedSetting =
-            sessionStorage.getItem(
-                'user_code_setting'
-            );
+        var setting =
+            getSavedCodeSetting();
 
 
-        if (savedSetting) {
+        if (setting) {
 
-            var setting =
-                JSON.parse(savedSetting);
-
-
+            /*
+             * Modal role
+             */
             if (setting.user_type) {
 
                 $('#code_setting_user_type')
-                    .val(setting.user_type);
-
+                    .val(
+                        setting.user_type
+                    );
             }
 
 
+            /*
+             * Generation type
+             */
             if (setting.generation_type) {
 
-                $('input[name="code_generation_type"][value="' +
+                $(
+                    'input[name="code_generation_type"][value="' +
                     setting.generation_type +
-                    '"]')
-                    .prop('checked', true)
-                    .trigger('change');
+                    '"]'
+                )
+                    .prop(
+                        'checked',
+                        true
+                    );
 
+
+                if (
+                    $('#user_type').val() &&
+                    $('#user_type').val() ===
+                    setting.user_type
+                ) {
+
+                    updateHiddenCodeType(
+                        setting.generation_type
+                    );
+
+
+                    if (
+                        setting.generation_type ===
+                        'manual'
+                    ) {
+
+                        setManualModeUI();
+
+                    } else {
+
+                        setAutoModeUI();
+                    }
+                }
             }
 
 
-            if (setting.gender) {
+            /*
+             * Manual code কখনো sessionStorage
+             * থেকে restore হবে না।
+             */
+            $('#manual_user_code')
+                .val('');
 
-                $('input[name="code_gender"][value="' +
-                    setting.gender +
-                    '"]')
-                    .prop('checked', true);
 
+            /*
+             * Main form-এর current role saved role হলে
+             * setting apply হবে।
+             */
+            if (
+                $('#user_type').val() &&
+                $('#user_type').val() ===
+                setting.user_type
+            ) {
+
+                /*
+                 * MANUAL
+                 */
+                if (
+                    setting.generation_type ===
+                    'manual'
+                ) {
+
+                    updateHiddenCodeType(
+                        'manual'
+                    );
+
+
+                    currentMainManualCode =
+                        '';
+
+                    currentMainManualCodeExplicit =
+                        false;
+
+                    mainManualPreviewOnly =
+                        true;
+
+
+                    setManualModeUI();
+
+
+                    /*
+                     * এখানে Backend থেকে
+                     * last saved manual + 1
+                     * preview হবে।
+                     */
+                    manualFillId(
+                        setting.user_type,
+                        getInstitutionId()
+                    );
+
+
+                } else {
+
+                    /*
+                     * AUTO
+                     */
+                    updateHiddenCodeType(
+                        'auto'
+                    );
+
+
+                    currentMainManualCode =
+                        '';
+
+                    currentMainManualCodeExplicit =
+                        false;
+
+                    mainManualPreviewOnly =
+                        false;
+
+
+                    setAutoModeUI();
+
+
+                    autoFillId(
+                        $('#user_type').val(),
+                        getInstitutionId()
+                    );
+                }
             }
-
-
-            if (setting.manual_code) {
-
-                $('#manual_user_code')
-                    .val(setting.manual_code);
-
-            }
-
         }
 
     } catch (e) {
 
-        console.log(
+        console.error(
             'Code setting restore error:',
             e
         );
-
     }
 
+
+    /* ============================================================
+       BEFORE FORM SUBMIT
+       ============================================================ */
+
+    $('#userCreateForm').on(
+        'submit',
+        function (e) {
+
+            var userType =
+                $('#user_type').val();
+
+
+            var generationType =
+                $('#code_generation_type').val() ||
+                'auto';
+
+
+            /*
+             * USER TYPE VALIDATION
+             */
+            if (!userType) {
+
+                e.preventDefault();
+
+                alert(
+                    'অনুগ্রহ করে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
+                );
+
+                return false;
+            }
+
+
+            /* ====================================================
+               AUTO
+               ==================================================== */
+
+            if (
+                generationType === 'auto'
+            ) {
+
+                /*
+                 * Preview value submit হবে না।
+                 * Backend Auto code তৈরি করবে।
+                 */
+                $('#custom_id')
+                    .val('');
+
+                return true;
+            }
+
+
+            /* ====================================================
+               MANUAL + EXPLICIT CODE
+               ==================================================== */
+
+            if (
+                generationType === 'manual' &&
+                currentMainManualCodeExplicit &&
+                currentMainManualCode
+            ) {
+
+                var manualCode =
+                    $.trim(
+                        currentMainManualCode
+                    );
+
+
+                if (!/^\d+$/.test(manualCode)) {
+
+                    e.preventDefault();
+
+                    alert(
+                        'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
+                    );
+
+                    return false;
+                }
+
+
+                var roleStart =
+                    getRoleStart(userType);
+
+
+                if (
+                    parseInt(
+                        manualCode,
+                        10
+                    ) < roleStart
+                ) {
+
+                    e.preventDefault();
+
+                    alert(
+                        'এই Role-এর Manual Code ' +
+                        roleStart +
+                        ' বা তার বেশি হতে হবে।'
+                    );
+
+                    return false;
+                }
+
+
+                /*
+                 * User যে Manual code Save করেছে
+                 * সেটাই submit হবে।
+                 */
+                $('#custom_id')
+                    .val(manualCode);
+
+                return true;
+            }
+
+
+            /* ====================================================
+               MANUAL + BLANK
+               ==================================================== */
+
+            if (
+                generationType === 'manual'
+            ) {
+
+                /*
+                 * Main form-এ preview হিসেবে
+                 * 501 / 801 দেখা গেলেও সেটা
+                 * database-এ submit হবে না।
+                 *
+                 * Controller:
+                 *
+                 * generateManualCode()
+                 *
+                 * ব্যবহার করে last saved Manual + 1
+                 * তৈরি করবে।
+                 */
+                $('#custom_id')
+                    .val('');
+
+                return true;
+            }
+
+
+            return true;
+        }
+    );
 
 });
 
 </script>
 
 @endpush
+
 
 @endsection

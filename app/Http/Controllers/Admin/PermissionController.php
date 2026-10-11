@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Permission;
 use App\Models\SystemPanel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class PermissionController extends Controller
 {
@@ -15,7 +14,7 @@ class PermissionController extends Controller
      */
     public function index()
     {
-        $permissions = Permission::with('panel')
+        $permissions = Permission::with('systemPanel')
             ->orderBy('system_panel_id')
             ->orderBy('module')
             ->orderBy('serial')
@@ -27,9 +26,13 @@ class PermissionController extends Controller
 
         return view(
             'admin.permissions.index',
-            compact('permissions', 'panels')
+            compact(
+                'permissions',
+                'panels'
+            )
         );
     }
+
 
     /**
      * Store Permission
@@ -39,19 +42,19 @@ class PermissionController extends Controller
         $validated = $request->validate([
             'system_panel_id' => [
                 'required',
-                'exists:system_panels,id'
+                'exists:system_panels,id',
             ],
 
             'module' => [
                 'required',
                 'string',
-                'max:100'
+                'max:100',
             ],
 
             'permission_name' => [
                 'required',
                 'string',
-                'max:150'
+                'max:150',
             ],
 
             'slug' => [
@@ -59,23 +62,23 @@ class PermissionController extends Controller
                 'string',
                 'max:150',
                 'regex:/^[a-z0-9._-]+$/',
-                'unique:permissions,slug'
+                'unique:permissions,slug',
             ],
 
             'description' => [
                 'nullable',
-                'string'
+                'string',
             ],
 
             'serial' => [
                 'nullable',
                 'integer',
-                'min:0'
+                'min:0',
             ],
 
             'is_active' => [
                 'nullable',
-                'boolean'
+                'boolean',
             ],
         ]);
 
@@ -92,8 +95,12 @@ class PermissionController extends Controller
 
         return redirect()
             ->route('dashboard.permissions.index')
-            ->with('success', 'Permission created successfully.');
+            ->with(
+                'success',
+                'Permission created successfully.'
+            );
     }
+
 
     /**
      * Edit
@@ -112,27 +119,30 @@ class PermissionController extends Controller
         ]);
     }
 
+
     /**
      * Update
      */
-    public function update(Request $request, Permission $permission)
-    {
+    public function update(
+        Request $request,
+        Permission $permission
+    ) {
         $validated = $request->validate([
             'system_panel_id' => [
                 'required',
-                'exists:system_panels,id'
+                'exists:system_panels,id',
             ],
 
             'module' => [
                 'required',
                 'string',
-                'max:100'
+                'max:100',
             ],
 
             'permission_name' => [
                 'required',
                 'string',
-                'max:150'
+                'max:150',
             ],
 
             'slug' => [
@@ -140,23 +150,23 @@ class PermissionController extends Controller
                 'string',
                 'max:150',
                 'regex:/^[a-z0-9._-]+$/',
-                'unique:permissions,slug,' . $permission->id
+                'unique:permissions,slug,' . $permission->id,
             ],
 
             'description' => [
                 'nullable',
-                'string'
+                'string',
             ],
 
             'serial' => [
                 'nullable',
                 'integer',
-                'min:0'
+                'min:0',
             ],
 
             'is_active' => [
                 'nullable',
-                'boolean'
+                'boolean',
             ],
         ]);
 
@@ -172,8 +182,12 @@ class PermissionController extends Controller
 
         return redirect()
             ->route('dashboard.permissions.index')
-            ->with('success', 'Permission updated successfully.');
+            ->with(
+                'success',
+                'Permission updated successfully.'
+            );
     }
+
 
     /**
      * Delete
@@ -181,6 +195,7 @@ class PermissionController extends Controller
     public function destroy(Permission $permission)
     {
         if ($permission->roles()->exists()) {
+
             return back()->with(
                 'error',
                 'This permission is assigned to one or more roles.'

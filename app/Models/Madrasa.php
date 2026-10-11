@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 
 class Madrasa extends Model
@@ -60,7 +61,14 @@ class Madrasa extends Model
             'id'
         );
     }
-
+        public function subscriptions(): HasMany
+        {
+            return $this->hasMany(
+                Subscription::class,
+                'institution_id',
+                'id'
+            );
+        }
     /**
      * ----------------------------------------------------------
      * Students
@@ -169,13 +177,6 @@ class Madrasa extends Model
      * Search Scope
      * ----------------------------------------------------------
      *
-     * Search by:
-     * - Madrasa code
-     * - English name
-     * - Bangla name
-     * - Email
-     * - Phone
-     * - EIIN
      */
     public function scopeSearch($query, $search)
     {
@@ -248,4 +249,9 @@ class Madrasa extends Model
     {
         return (int) $this->status === 0;
     }
+
+    public function subscriptionPayments()
+{
+    return $this->hasMany(SubscriptionPayment::class, 'institution_id');
+}
 }

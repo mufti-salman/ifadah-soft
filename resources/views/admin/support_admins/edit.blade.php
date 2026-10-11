@@ -78,6 +78,7 @@
       id="supportAdminForm">
 
     @csrf
+
     @method('PUT')
 
 
@@ -129,6 +130,7 @@
                     <label class="form-label fw-semibold">
 
                         এডমিনের নাম
+
                         <span class="text-danger">*</span>
 
                     </label>
@@ -206,6 +208,7 @@
                     <label class="form-label fw-semibold">
 
                         মোবাইল নম্বর (লগইন আইডি)
+
                         <span class="text-danger">*</span>
 
                     </label>
@@ -235,6 +238,7 @@
                     <label class="form-label fw-semibold">
 
                         ইমেইল
+
                         <span class="text-muted fw-normal">
                             (ঐচ্ছিক)
                         </span>
@@ -349,10 +353,12 @@
                     </label>
 
                     @php
+
                         $currentStatus = old(
                             'status',
                             (string) $supportAdmin->status
                         );
+
                     @endphp
 
                     <div class="d-flex gap-3 pt-1">
@@ -411,32 +417,49 @@
 
 
     {{-- =====================================================
-        PERMISSION MATRIX
+        PERMISSION DATA
     ====================================================== --}}
 
     @php
 
         /*
          * Support Admin-এর বর্তমানে assigned permission ID.
-         *
-         * আপনার model-এ permissions() relation থাকলে
-         * এটি কাজ করবে।
          */
-
         $assignedPermissionIds =
             $supportAdmin->permissions
                 ? $supportAdmin->permissions->pluck('id')->toArray()
                 : [];
 
+
         /*
          * Validation fail করলে old permissions ব্যবহার করবো।
          */
-
         $selectedPermissions =
             old('permissions', $assignedPermissionIds);
 
+
+        if (!is_array($selectedPermissions)) {
+            $selectedPermissions = [];
+        }
+
+
+        /*
+         * Standard permission actions.
+         */
+        $standardActions = [
+            'view',
+            'create',
+            'edit',
+            'delete',
+        ];
+
     @endphp
 
+
+
+    {{-- =====================================================
+        PERMISSION MATRIX
+    ====================================================== --}}
 
     <div class="card border-0 shadow-sm mb-4">
 
@@ -530,8 +553,11 @@
                 <div class="small text-muted">
 
                     View = দেখা,
+
                     Create = যোগ,
+
                     Edit = সম্পাদনা,
+
                     Delete = মুছে ফেলা
 
                 </div>
@@ -541,7 +567,7 @@
 
 
             {{-- =================================================
-                PANEL / MODULE GROUPS
+                PANEL GROUPS
             ================================================== --}}
 
             @forelse($permissionGroups as $panelSlug => $panelPermissions)
@@ -557,6 +583,9 @@
                         $panel?->panel_name
                         ?? ucfirst($panelSlug);
 
+                    $panelModules =
+                        $panelPermissions->groupBy('module');
+
                 @endphp
 
 
@@ -564,25 +593,46 @@
                      data-panel="{{ $panelSlug }}">
 
 
-                    {{-- Panel Header --}}
+                    {{-- =================================================
+                        PANEL HEADER
+                    ================================================== --}}
 
                     <div class="d-flex align-items-center
                                 justify-content-between
-                                bg-light border rounded-top px-3 py-2">
+                                bg-light border rounded-top px-3 py-3">
 
                         <div class="d-flex align-items-center gap-2">
 
-                            <i class="bi bi-grid-1x2 text-primary"></i>
+                            <div class="panel-icon">
 
-                            <span class="fw-bold">
-                                {{ $panelName }}
-                            </span>
+                                <i class="bi bi-grid-1x2 text-primary"></i>
+
+                            </div>
+
+                            <div>
+
+                                <div class="fw-bold">
+
+                                    {{ $panelName }}
+
+                                </div>
+
+                                <small class="text-muted">
+
+                                    {{ $panelPermissions->count() }}
+                                    টি permission
+
+                                </small>
+
+                            </div>
 
                         </div>
 
 
                         <button type="button"
-                                class="btn btn-sm btn-link text-decoration-none panel-toggle">
+                                class="btn btn-sm btn-link
+                                       text-decoration-none
+                                       panel-toggle">
 
                             <i class="bi bi-chevron-up"></i>
 
@@ -592,409 +642,336 @@
 
 
 
-                    {{-- Permissions --}}
+                    {{-- =================================================
+                        PANEL TABLE
+                    ================================================== --}}
 
-                    <div class="permission-panel-body border border-top-0 rounded-bottom">
+                    <div class="permission-panel-body
+                                border border-top-0
+                                rounded-bottom">
 
+                        <table class="table table-hover
+                                      align-middle
+                                      mb-0 permission-matrix">
 
-                        @php
+                            <thead>
 
-                            $panelModules =
-                                $panelPermissions->groupBy('module');
+                                <tr>
 
-                        @endphp
+                                    <th class="permission-number">
+                                        #
+                                    </th>
 
+                                    <th class="permission-name">
+                                        পেজ / পারমিশন
+                                    </th>
 
-                        @foreach($panelModules as $moduleName => $modulePermissions)
+                                    <th class="permission-action">
+                                        View
+                                    </th>
 
-                            <div class="permission-module">
+                                    <th class="permission-action">
+                                        Insert
+                                    </th>
 
+                                    <th class="permission-action">
+                                        Edit
+                                    </th>
 
-                                {{-- Module Header --}}
+                                    <th class="permission-action">
+                                        Delete
+                                    </th>
 
-                                <div class="px-3 py-2 bg-white
-                                            border-bottom d-flex
-                                            align-items-center
-                                            justify-content-between">
+                                </tr>
 
-                                    <div class="d-flex align-items-center gap-2">
-
-                                        <span class="fw-semibold">
-                                            {{ $moduleName }}
-                                        </span>
-
-                                        <span class="badge bg-light text-muted border">
-
-                                            {{ $modulePermissions->count() }}
-
-                                            টি
-
-                                        </span>
-
-                                    </div>
-
-
-                                    <div>
-
-                                        <button type="button"
-                                                class="btn btn-sm btn-link text-primary
-                                                       module-select-all p-0 me-2">
-
-                                            সব নির্বাচন
-
-                                        </button>
-
-
-                                        <button type="button"
-                                                class="btn btn-sm btn-link text-danger
-                                                       module-clear-all p-0">
-
-                                            বাতিল
-
-                                        </button>
-
-                                    </div>
-
-                                </div>
+                            </thead>
 
 
 
-                                {{-- Permission Table --}}
+                            {{-- =================================================
+                                MODULE GROUPS
+                            ================================================== --}}
 
-                                <div class="table-responsive">
-
-                                    <table class="table table-sm
-                                                  table-hover align-middle mb-0">
-
-                                        <thead class="table-light">
-
-                                            <tr>
-
-                                                <th style="min-width:280px;"
-                                                    class="ps-3">
-
-                                                    পেজ / পারমিশন
-
-                                                </th>
+                            @php
+                                $rowNumber = 0;
+                            @endphp
 
 
-                                                <th class="text-center"
-                                                    style="width:110px;">
+                            @foreach($panelModules as $moduleName => $modulePermissions)
 
-                                                    View
+                                @php
 
-                                                </th>
+                                    $rowNumber++;
 
+                                    /*
+                                     * Standard permissions.
+                                     */
+                                    $permissionMap = [];
 
-                                                <th class="text-center"
-                                                    style="width:110px;">
+                                    foreach ($standardActions as $action) {
 
-                                                    Insert
+                                        $permissionMap[$action] =
+                                            $modulePermissions->first(
+                                                fn($item) =>
+                                                    str_ends_with(
+                                                        $item->slug,
+                                                        '.' . $action
+                                                    )
+                                            );
 
-                                                </th>
-
-
-                                                <th class="text-center"
-                                                    style="width:110px;">
-
-                                                    Edit
-
-                                                </th>
-
-
-                                                <th class="text-center"
-                                                    style="width:110px;">
-
-                                                    Delete
-
-                                                </th>
+                                    }
 
 
-                                                <th class="text-center"
-                                                    style="width:110px;">
-
-                                                    অন্যান্য
-
-                                                </th>
-
-                                            </tr>
-
-                                        </thead>
+                                    /*
+                                     * Standard permission IDs.
+                                     */
+                                    $standardPermissionIds =
+                                        collect($permissionMap)
+                                            ->filter()
+                                            ->pluck('id')
+                                            ->toArray();
 
 
-                                        <tbody>
+                                    /*
+                                     * Non-standard permissions.
+                                     *
+                                     * এগুলো আলাদা "Others" column-এ
+                                     * যাবে না।
+                                     *
+                                     * নিচে আলাদা row হিসেবে দেখানো হবে।
+                                     */
+                                    $extraPermissions =
+                                        $modulePermissions->filter(
+                                            fn($item) =>
+                                                !in_array(
+                                                    last(
+                                                        explode(
+                                                            '.',
+                                                            $item->slug
+                                                        )
+                                                    ),
+                                                    $standardActions
+                                                )
+                                        );
+
+                                @endphp
+
+
+                                <tbody class="permission-module">
+
+
+                                    {{-- =================================================
+                                        MODULE ROW
+                                    ================================================== --}}
+
+                                    <tr class="permission-module-row">
+
+                                        <td class="text-center fw-semibold text-muted">
+                                            {{ $rowNumber }}
+                                        </td>
+
+
+                                        <td>
+
+                                            <div class="d-flex flex-wrap
+                                                        align-items-center
+                                                        gap-2">
+
+                                                <span class="fw-semibold">
+
+                                                    {{ $moduleName }}
+
+                                                </span>
+
+                                                <span class="badge
+                                                             bg-light
+                                                             text-muted
+                                                             border">
+
+                                                    {{ $modulePermissions->count() }}
+                                                    permission
+
+                                                </span>
+
+                                            </div>
+
+                                        </td>
+
+
+                                        {{-- View --}}
+
+                                        @foreach($standardActions as $action)
+
+                                            @php
+                                                $permission =
+                                                    $permissionMap[$action] ?? null;
+                                            @endphp
+
+                                            <td class="text-center">
+
+                                                @if($permission)
+
+                                                    <label class="permission-check">
+
+                                                        <input type="checkbox"
+                                                               name="permissions[]"
+                                                               value="{{ $permission->id }}"
+                                                               class="form-check-input permission-checkbox"
+                                                               data-module="{{ $moduleName }}"
+                                                               data-action="{{ $action }}"
+                                                               {{ in_array(
+                                                                    $permission->id,
+                                                                    $selectedPermissions
+                                                                ) ? 'checked' : '' }}>
+
+                                                        <span class="permission-status">
+                                                            Active
+                                                        </span>
+
+                                                    </label>
+
+                                                @else
+
+                                                    <span class="text-muted">
+                                                        —
+                                                    </span>
+
+                                                @endif
+
+                                            </td>
+
+                                        @endforeach
+
+                                    </tr>
+
+
+
+                                    {{-- =================================================
+                                        EXTRA PERMISSIONS
+                                    ================================================== --}}
+
+                                    @foreach($extraPermissions as $extraPermission)
 
                                         @php
 
-                                            $pageGroups =
-                                                $modulePermissions->groupBy(
-
-                                                    function ($permission) {
-
-                                                        $parts =
-                                                            explode(
-                                                                '.',
-                                                                $permission->slug
-                                                            );
-
-                                                        array_pop($parts);
-
-                                                        return implode(
-                                                            '.',
-                                                            $parts
-                                                        );
-
-                                                    }
-
+                                            $extraAction =
+                                                last(
+                                                    explode(
+                                                        '.',
+                                                        $extraPermission->slug
+                                                    )
                                                 );
+
+                                            $rowNumber++;
 
                                         @endphp
 
 
-                                        @foreach($pageGroups as $pageSlug => $pagePermissions)
+                                        <tr class="permission-extra-row">
 
-                                            @php
+                                            <td class="text-center text-muted">
+                                                {{ $rowNumber }}
+                                            </td>
 
-                                                $pagePermission =
-                                                    $pagePermissions->first();
 
-                                                $pageName =
-                                                    $pagePermission->module;
+                                            <td>
 
-                                                $pageName =
-                                                    preg_replace(
-                                                        '/\s+(দেখুন|যোগ করুন|সম্পাদনা করুন|মুছে ফেলুন|.* করুন)$/u',
-                                                        '',
-                                                        $pagePermission->permission_name
-                                                    );
+                                                <div class="d-flex align-items-center
+                                                            gap-2 ps-3">
 
-                                            @endphp
+                                                    <span class="text-muted">
+                                                        ↳
+                                                    </span>
 
+                                                    <div>
 
-                                            <tr>
+                                                        <div class="fw-medium">
 
-
-                                                <td class="ps-3">
-
-                                                    <div class="fw-semibold">
-
-                                                        {{ $pageName }}
-
-                                                    </div>
-
-                                                </td>
-
-
-                                                @php
-
-                                                    $standardActions = [
-                                                        'view',
-                                                        'create',
-                                                        'edit',
-                                                        'delete'
-                                                    ];
-
-                                                @endphp
-
-
-                                                @foreach($standardActions as $action)
-
-                                                    @php
-
-                                                        $permission =
-                                                            $pagePermissions
-                                                                ->first(
-
-                                                                    fn($item) =>
-                                                                        str_ends_with(
-                                                                            $item->slug,
-                                                                            '.' . $action
-                                                                        )
-
-                                                                );
-
-                                                    @endphp
-
-
-                                                    <td class="text-center">
-
-                                                        @if($permission)
-
-                                                            <div class="form-check d-flex
-                                                                        justify-content-center">
-
-                                                                <input type="checkbox"
-                                                                       name="permissions[]"
-                                                                       value="{{ $permission->id }}"
-                                                                       class="form-check-input permission-checkbox"
-                                                                       data-module="{{ $moduleName }}"
-                                                                       data-action="{{ $action }}"
-
-                                                                       {{ in_array(
-                                                                            $permission->id,
-                                                                            $selectedPermissions
-                                                                        ) ? 'checked' : '' }}>
-
-                                                            </div>
-
-                                                        @else
-
-                                                            <span class="text-muted">
-                                                                —
-                                                            </span>
-
-                                                        @endif
-
-                                                    </td>
-
-                                                @endforeach
-
-
-
-                                                {{-- Other permissions --}}
-
-                                                <td class="text-center">
-
-                                                    @php
-
-                                                        $otherPermissions =
-                                                            $pagePermissions->filter(
-
-                                                                fn($item) =>
-                                                                    !in_array(
-
-                                                                        last(
-                                                                            explode(
-                                                                                '.',
-                                                                                $item->slug
-                                                                            )
-                                                                        ),
-
-                                                                        $standardActions
-
-                                                                    )
-
-                                                            );
-
-                                                    @endphp
-
-
-                                                    @if($otherPermissions->count())
-
-                                                        <div class="dropdown">
-
-                                                            <button type="button"
-                                                                    class="btn btn-sm btn-light border"
-                                                                    data-bs-toggle="dropdown">
-
-                                                                <i class="bi bi-three-dots"></i>
-
-                                                                <span class="ms-1">
-
-                                                                    {{ $otherPermissions->count() }}
-
-                                                                </span>
-
-                                                            </button>
-
-
-                                                            <div class="dropdown-menu dropdown-menu-end p-2 shadow-sm">
-
-                                                                @foreach($otherPermissions as $permission)
-
-                                                                    @php
-
-                                                                        $action =
-                                                                            last(
-                                                                                explode(
-                                                                                    '.',
-                                                                                    $permission->slug
-                                                                                )
-                                                                            );
-
-                                                                    @endphp
-
-
-                                                                    <label class="dropdown-item
-                                                                                  d-flex align-items-center gap-2">
-
-                                                                        <input type="checkbox"
-                                                                               name="permissions[]"
-                                                                               value="{{ $permission->id }}"
-                                                                               class="form-check-input permission-checkbox"
-                                                                               data-module="{{ $moduleName }}"
-                                                                               data-action="{{ $action }}"
-
-                                                                               {{ in_array(
-                                                                                    $permission->id,
-                                                                                    $selectedPermissions
-                                                                                ) ? 'checked' : '' }}>
-
-                                                                        <span>
-
-                                                                            {{ $permission->permission_name }}
-
-                                                                        </span>
-
-                                                                    </label>
-
-                                                                @endforeach
-
-                                                            </div>
+                                                            {{ $extraPermission->permission_name }}
 
                                                         </div>
 
-                                                    @else
+                                                        <small class="text-muted">
 
-                                                        <span class="text-muted">
-                                                            —
-                                                        </span>
+                                                            {{ $extraAction }}
 
-                                                    @endif
+                                                        </small>
 
-                                                </td>
+                                                    </div>
 
-                                            </tr>
+                                                </div>
 
-                                        @endforeach
+                                            </td>
 
-                                        </tbody>
 
-                                    </table>
+                                            <td class="text-center">
 
-                                </div>
+                                                <span class="text-muted">
+                                                    —
+                                                </span>
 
-                            </div>
+                                            </td>
 
-                        @endforeach
+
+                                            <td class="text-center">
+
+                                                <span class="text-muted">
+                                                    —
+                                                </span>
+
+                                            </td>
+
+
+                                            <td class="text-center">
+
+                                                <span class="text-muted">
+                                                    —
+                                                </span>
+
+                                            </td>
+
+
+                                            <td class="text-center">
+
+                                                <label class="permission-check">
+
+                                                    <input type="checkbox"
+                                                           name="permissions[]"
+                                                           value="{{ $extraPermission->id }}"
+                                                           class="form-check-input permission-checkbox"
+                                                           data-module="{{ $moduleName }}"
+                                                           data-action="{{ $extraAction }}"
+                                                           {{ in_array(
+                                                                $extraPermission->id,
+                                                                $selectedPermissions
+                                                            ) ? 'checked' : '' }}>
+
+                                                    <span class="permission-status">
+                                                        Active
+                                                    </span>
+
+                                                </label>
+
+                                            </td>
+
+                                        </tr>
+
+                                    @endforeach
+
+
+                                </tbody>
+
+                            @endforeach
+
+
+                        </table>
 
                     </div>
 
                 </div>
 
-            @empty
+            @endforeach
 
-                <div class="text-center py-5">
-
-                    <div class="mb-3">
-
-                        <i class="bi bi-shield-x fs-1 text-muted"></i>
-
-                    </div>
-
-                    <h6 class="fw-bold">
-                        কোনো সক্রিয় পারমিশন পাওয়া যায়নি
-                    </h6>
-
-                    <p class="text-muted mb-0">
-
-                        প্রথমে Permission Seeder থেকে পারমিশন তৈরি করুন।
-
-                    </p>
-
-                </div>
-
-            @endforelse
 
         </div>
 
@@ -1038,9 +1015,12 @@
 
     </div>
 
+
 </form>
 
 </div>
+
+
 
 {{-- =============================================================
 STYLES
@@ -1052,39 +1032,221 @@ STYLES
         overflow: hidden;
     }
 
-    .permission-module:last-child {
-        border-bottom: 0 !important;
+
+    .permission-panel-body {
+        background: #fff;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permission Matrix
+    |--------------------------------------------------------------------------
+    */
+
+    .permission-matrix {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+
+    .permission-matrix thead th {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 13px;
+        font-weight: 700;
+        color: #495057;
+        padding: 12px 10px;
+        vertical-align: middle;
+    }
+
+
+    .permission-matrix tbody td {
+        padding: 11px 10px;
+        vertical-align: middle;
+        border-color: #edf0f2;
+    }
+
+
+    .permission-number {
+        width: 55px;
+        text-align: center;
+    }
+
+
+    .permission-name {
+        width: 46%;
+        text-align: left;
+    }
+
+
+    .permission-action {
+        width: 12%;
+        text-align: center;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Module Row
+    |--------------------------------------------------------------------------
+    */
+
+    .permission-module-row {
+        background: #fff;
+    }
+
+
+    .permission-module-row:hover {
+        background: #f8fbff;
+    }
+
+
+    .permission-module-row td {
+        font-size: 14px;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Extra Permission Row
+    |--------------------------------------------------------------------------
+    */
+
+    .permission-extra-row {
+        background: #fafafa;
+    }
+
+
+    .permission-extra-row td {
+        font-size: 13px;
+    }
+
+
+    .permission-extra-row .fw-medium {
+        font-weight: 500;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Checkbox
+    |--------------------------------------------------------------------------
+    */
+
+    .permission-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        cursor: pointer;
+        margin: 0;
+    }
+
 
     .permission-checkbox {
         width: 18px;
         height: 18px;
         cursor: pointer;
+        margin: 0;
     }
+
 
     .permission-checkbox:checked {
         accent-color: var(--bs-primary);
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Active Status
+    |--------------------------------------------------------------------------
+    */
+
+    .permission-status {
+        display: none;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--bs-success);
+        white-space: nowrap;
+    }
+
+
+    .permission-checkbox:checked + .permission-status {
+        display: inline-flex;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Panel
+    |--------------------------------------------------------------------------
+    */
+
     .permission-panel-body {
         transition: all 0.2s ease;
     }
 
-    .module-select-all,
-    .module-clear-all {
-        font-size: 12px;
+
+    .panel-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .table > :not(caption) > * > * {
-        vertical-align: middle;
-    }
 
-    .dropdown-menu {
-        max-height: 300px;
-        overflow-y: auto;
+    /*
+    |--------------------------------------------------------------------------
+    | Mobile
+    |--------------------------------------------------------------------------
+    */
+
+    @media (max-width: 768px) {
+
+        .permission-matrix thead th,
+        .permission-matrix tbody td {
+            padding: 8px 5px;
+            font-size: 12px;
+        }
+
+
+        .permission-number {
+            width: 35px;
+        }
+
+
+        .permission-name {
+            width: 40%;
+        }
+
+
+        .permission-action {
+            width: 14%;
+        }
+
+
+        .permission-status {
+            display: none !important;
+        }
+
+
+        .permission-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+
+
+        .permission-extra-row .ps-3 {
+            padding-left: 5px !important;
+        }
+
     }
 
 </style>
+
+
 
 {{-- =============================================================
 JAVASCRIPT
@@ -1104,11 +1266,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const form =
         document.getElementById('supportAdminForm');
 
+
     const selectAllButton =
         document.getElementById('selectAllPermissions');
 
+
     const clearAllButton =
         document.getElementById('clearAllPermissions');
+
 
     const countElement =
         document.getElementById('selectedPermissionCount');
@@ -1127,6 +1292,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll(
                 '.permission-checkbox:checked'
             );
+
 
         countElement.textContent =
             checked.length;
@@ -1153,6 +1319,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 });
 
+
             updatePermissionCount();
 
         }
@@ -1178,6 +1345,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 });
 
+
             updatePermissionCount();
 
         }
@@ -1196,10 +1364,18 @@ document.addEventListener('DOMContentLoaded', function () {
         .forEach(function (module) {
 
 
+            /*
+             * Module row-এ select / clear button নেই।
+             *
+             * তাই ভবিষ্যতে যদি module controls যোগ করা হয়,
+             * এই existing logic কাজ করবে।
+             */
+
             const selectButton =
                 module.querySelector(
                     '.module-select-all'
                 );
+
 
             const clearButton =
                 module.querySelector(
@@ -1220,6 +1396,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         });
 
+
                     updatePermissionCount();
 
                 }
@@ -1238,6 +1415,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             checkbox.checked = false;
 
                         });
+
 
                     updatePermissionCount();
 
@@ -1390,6 +1568,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (button) {
 
                 button.disabled = true;
+
 
                 button.innerHTML =
                     '<span class="spinner-border spinner-border-sm me-1"></span>' +

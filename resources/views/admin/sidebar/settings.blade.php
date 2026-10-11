@@ -6,6 +6,18 @@
 
     /*
     |--------------------------------------------------------------------------
+    | System Super Admin Mode
+    |--------------------------------------------------------------------------
+    */
+
+    $user = auth()->user();
+
+    $systemSuperAdmin =
+        $user->is_super_admin
+        && !$user->active_institution_id;
+
+    /*
+    |--------------------------------------------------------------------------
     | Settings Panel Access
     |--------------------------------------------------------------------------
     */
@@ -43,18 +55,15 @@
         || $user->hasPermission('system-setting.view')
         || $user->hasPermission('system-setting.edit');
 
+
     /*
     |--------------------------------------------------------------------------
     | Support Admin Access
     |--------------------------------------------------------------------------
-    |
-    | Support Admin management is a system-level feature.
-    | Only Super Admin should see this menu.
-    |
     */
 
     $canSupportAdmin =
-        $user->is_super_admin
+        $systemSuperAdmin
         && (
             $user->hasPermission('support.view')
             || $user->hasPermission('support.create')
@@ -69,7 +78,8 @@
 
     <li class="nav-item">
 
-        <a class="nav-link text-white d-flex justify-content-between
+        <a
+            class="nav-link text-white d-flex justify-content-between
             {{
                 request()->routeIs(
                     'dashboard.settings.*',
@@ -83,13 +93,18 @@
                     'dashboard.support-admins.*'
                 ) ? 'active' : ''
             }}"
-           data-bs-toggle="collapse"
-           data-bs-target="#settingsMenu"
-           href="#settingsMenu">
+
+            data-bs-toggle="collapse"
+            data-bs-target="#settingsMenu"
+            href="#settingsMenu"
+        >
 
             <span>
+
                 <i class="fas fa-cog me-2"></i>
+
                 সেটিংস
+
             </span>
 
             <i class="fas fa-chevron-down"></i>
@@ -97,7 +112,8 @@
         </a>
 
 
-        <div class="collapse
+        <div
+            class="collapse
             {{
                 request()->routeIs(
                     'dashboard.settings.*',
@@ -111,7 +127,9 @@
                     'dashboard.support-admins.*'
                 ) ? 'show' : ''
             }}"
-             id="settingsMenu">
+
+            id="settingsMenu"
+        >
 
             <ul class="nav flex-column ms-3">
 
@@ -124,13 +142,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.settings.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="{{ route('dashboard.settings.index') }}">
+
+                            href="{{ route('dashboard.settings.index') }}"
+                        >
 
                             <i class="fas fa-sliders-h me-2"></i>
 
@@ -143,6 +164,7 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      একাডেমিক সেটিংস
                 ====================================================== --}}
@@ -151,13 +173,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.academic-years.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="{{ route('dashboard.academic-years.index') }}">
+
+                            href="{{ route('dashboard.academic-years.index') }}"
+                        >
 
                             <i class="fas fa-graduation-cap me-2"></i>
 
@@ -170,42 +195,45 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      প্রতিষ্ঠান সেটিংস
                 ====================================================== --}}
 
                 @sidebarPermission('institution.view')
 
-@if(
-    $user->is_super_admin
-    && session('institution_mode') !== true
-    && !session()->has('active_institution_id')
-    && $user->hasPermission('institution.view')
-)
+                    @if(
+                        $user->is_super_admin
+                        && session('institution_mode') !== true
+                        && !session()->has('active_institution_id')
+                        && $user->hasPermission('institution.view')
+                    )
 
-    <li class="nav-item">
+                        <li class="nav-item">
 
-        <a
-            class="nav-link text-white-50
-            {{
-                request()->routeIs(
-                    'dashboard.institutions.*'
-                ) ? 'active' : ''
-            }}"
-            href="{{ route('dashboard.institutions.index') }}"
-        >
+                            <a
+                                class="nav-link text-white-50
+                                {{
+                                    request()->routeIs(
+                                        'dashboard.institutions.*'
+                                    ) ? 'active' : ''
+                                }}"
 
-            <i class="fas fa-school me-2"></i>
+                                href="{{ route('dashboard.institutions.index') }}"
+                            >
 
-            প্রতিষ্ঠান সেটিংস
+                                <i class="fas fa-school me-2"></i>
 
-        </a>
+                                প্রতিষ্ঠান সেটিংস
 
-    </li>
+                            </a>
 
-    @endif
+                        </li>
+
+                    @endif
 
                 @endsidebarPermission
+
 
 
                 {{-- =====================================================
@@ -216,13 +244,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.month.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="{{ route('dashboard.month.index') }}">
+
+                            href="{{ route('dashboard.month.index') }}"
+                        >
 
                             <i class="fas fa-calendar-alt me-2"></i>
 
@@ -235,6 +266,7 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      ভাষা সেটিংস
                 ====================================================== --}}
@@ -243,13 +275,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.language.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="#">
+
+                            href="#"
+                        >
 
                             <i class="fas fa-language me-2"></i>
 
@@ -262,6 +297,7 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      থিম সেটিংস
                 ====================================================== --}}
@@ -270,13 +306,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.theme.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="#">
+
+                            href="#"
+                        >
 
                             <i class="fas fa-paint-brush me-2"></i>
 
@@ -289,6 +328,7 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      ব্যাকআপ ও রিস্টোর
                 ====================================================== --}}
@@ -297,13 +337,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.backup.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="#">
+
+                            href="#"
+                        >
 
                             <i class="fas fa-database me-2"></i>
 
@@ -316,6 +359,7 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      সিস্টেম সেটিংস
                 ====================================================== --}}
@@ -324,13 +368,16 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.system-settings.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="#">
+
+                            href="#"
+                        >
 
                             <i class="fas fa-server me-2"></i>
 
@@ -343,22 +390,26 @@
                 @endsidebarPermission
 
 
+
                 {{-- =====================================================
                      SUPPORT ADMIN
-                     Super Admin Only
+                     শুধুমাত্র System Super Admin
                 ====================================================== --}}
 
                 @if($canSupportAdmin)
 
                     <li class="nav-item">
 
-                        <a class="nav-link text-white-50
+                        <a
+                            class="nav-link text-white-50
                             {{
                                 request()->routeIs(
                                     'dashboard.support-admins.*'
                                 ) ? 'active' : ''
                             }}"
-                           href="{{ route('dashboard.support-admins.index') }}">
+
+                            href="{{ route('dashboard.support-admins.index') }}"
+                        >
 
                             <i class="fas fa-user-shield me-2"></i>
 
@@ -378,6 +429,4 @@
     </li>
 
 @endif
-
-
 @endpanel

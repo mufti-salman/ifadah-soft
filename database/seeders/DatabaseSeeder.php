@@ -35,6 +35,8 @@ class DatabaseSeeder extends Seeder
             FundSeeder::class,
             LedgerSeeder::class,
             SubLedgerSeeder::class,
+
+            SubscriptionPlanSeeder::class,
         ]);
     }
 }

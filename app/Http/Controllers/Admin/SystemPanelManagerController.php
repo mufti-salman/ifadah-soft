@@ -9,18 +9,29 @@ use Illuminate\Http\Request;
 
 class SystemPanelManagerController extends Controller
 {
-
+    /**
+     * Display panel manager.
+     */
     public function index(Request $request)
     {
-        $roles = Role::orderBy('level')->get();
+        $roles = Role::query()
+            ->orderBy('level')
+            ->get();
 
-        $selectedRole = $request->role
+        /*
+         * If a role is selected from the query string,
+         * load that role.
+         *
+         * Otherwise select the first available role.
+         */
+        $selectedRole = $request->filled('role')
             ? Role::findOrFail($request->role)
             : $roles->first();
 
-        $panels = SystemPanel::where('is_active',1)
-                    ->orderBy('serial')
-                    ->get();
+        $panels = SystemPanel::query()
+            ->where('is_active', true)
+            ->orderBy('serial')
+            ->get();
 
         return view(
             'admin.system-panel-manager.index',
@@ -32,20 +43,47 @@ class SystemPanelManagerController extends Controller
         );
     }
 
+    /**
+     * Update system panel access for a role.
+     */
     public function update(Request $request)
     {
-        $request->validate([
-            'role_id'=>'required|exists:roles,id',
-            'panels'=>'nullable|array'
+        $validated = $request->validate([
+            'role_id' => [
+                'required',
+                'integer',
+                'exists:roles,id',
+            ],
+
+            'panels' => [
+                'nullable',
+                'array',
+            ],
+
+            'panels.*' => [
+                'integer',
+                'exists:system_panels,id',
+            ],
         ]);
 
-        $role=Role::findOrFail($request->role_id);
-
-        $role->systemPanels()->sync($request->panels ?? []);
-
-        return back()->with(
-            'success',
-            'Panel access updated successfully.'
+        $role = Role::findOrFail(
+            $validated['role_id']
         );
+
+        $role->systemPanels()->sync(
+            $validated['panels'] ?? []
+        );
+
+        return redirect()
+            ->route(
+                'dashboard.system-panel-manager.index',
+                [
+                    'role' => $role->id,
+                ]
+            )
+            ->with(
+                'success',
+                'Panel access updated successfully.'
+            );
     }
 }

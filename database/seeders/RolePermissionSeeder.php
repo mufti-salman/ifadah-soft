@@ -26,10 +26,6 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | SUPPORT ADMIN
         |--------------------------------------------------------------------------
-        |
-        | Support Admin system-level support ও administration
-        | সম্পর্কিত permission পাবে।
-        |
         */
 
         $this->assignPermissions('support_admin', [
@@ -55,6 +51,8 @@ class RolePermissionSeeder extends Seeder
             'user.create',
             'user.edit',
             'user.delete',
+            'user.photo',
+            'user.report',
 
             // Role
             'role.view',
@@ -91,16 +89,11 @@ class RolePermissionSeeder extends Seeder
         | USER ADMIN
         |--------------------------------------------------------------------------
         |
-        | User Admin-এর permission সরাসরি role_permissions থেকে আসবে না।
+        | User Admin-এর permissions RoleSeeder থেকে manage হবে।
         |
-        | User Admin তার assigned institution-এর
-        | institution_permissions অনুযায়ী permission পাবে।
-        |
-        | তাই এখানে empty sync করা হচ্ছে।
+        | এখানে sync([]) করা যাবে না।
         |
         */
-
-        $this->assignPermissions('user_admin', []);
 
 
         /*
@@ -109,9 +102,6 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         |
         | Teacher-ও এখন User role-এর অধীনে থাকবে।
-        |
-        | তাই এখানে সাধারণ User + Teacher-এর প্রয়োজনীয়
-        | default permission রাখা হয়েছে।
         |
         */
 
@@ -244,17 +234,25 @@ class RolePermissionSeeder extends Seeder
      */
     protected function assignAllPermissions(string $roleSlug): void
     {
-        $role = Role::where('slug', $roleSlug)->first();
+        $role = Role::where(
+            'slug',
+            $roleSlug
+        )->first();
 
         if (!$role) {
             return;
         }
 
-        $permissionIds = Permission::where('is_active', true)
+        $permissionIds = Permission::where(
+            'is_active',
+            true
+        )
             ->pluck('id')
             ->toArray();
 
-        $role->permissions()->sync($permissionIds);
+        $role->permissions()->sync(
+            $permissionIds
+        );
     }
 
 
@@ -267,20 +265,14 @@ class RolePermissionSeeder extends Seeder
         string $roleSlug,
         array $permissions
     ): void {
-        $role = Role::where('slug', $roleSlug)->first();
+        $role = Role::where(
+            'slug',
+            $roleSlug
+        )->first();
 
         if (!$role) {
             return;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Empty permissions
-        |--------------------------------------------------------------------------
-        |
-        | user_admin-এর ক্ষেত্রে role_permissions খালি থাকবে।
-        |
-        */
 
         if (empty($permissions)) {
             $role->permissions()->sync([]);
@@ -292,10 +284,15 @@ class RolePermissionSeeder extends Seeder
             'slug',
             $permissions
         )
-            ->where('is_active', true)
+            ->where(
+                'is_active',
+                true
+            )
             ->pluck('id')
             ->toArray();
 
-        $role->permissions()->sync($permissionIds);
+        $role->permissions()->sync(
+            $permissionIds
+        );
     }
 }

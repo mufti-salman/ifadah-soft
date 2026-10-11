@@ -11,10 +11,15 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('institution_id')->nullable();
+            $table->string('institution_user_id', 100)->nullable();
             $table->unsignedBigInteger('role_id');
-            // $table->unsignedBigInteger('student_id')->nullable();  
-            // $table->unsignedBigInteger('academic_year_id')->nullable();  
-            // $table->unsignedBigInteger('class_id')->nullable();  
+            $table->enum(
+                'code_generation_type',
+                [
+                    'auto',
+                    'manual',
+                ]
+            )->default('auto');
             
             // Basic Info
             $table->string('username', 100);

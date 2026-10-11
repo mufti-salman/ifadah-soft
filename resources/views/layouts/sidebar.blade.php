@@ -1,4 +1,3 @@
-
 {{-- ================================================================
      ADMIN SIDEBAR
 ================================================================ --}}
@@ -11,59 +10,127 @@
     | Authenticated User
     |--------------------------------------------------------------------------
     */
+
     $authUser = auth()->user();
+
 
     /*
     |--------------------------------------------------------------------------
     | Role
     |--------------------------------------------------------------------------
-    |
-    | Current role slugs:
-    | super_admin
-    | admin
-    | madrasa
-    | teacher
-    | student
-    | guardian
-    |
     */
-    $roleSlug = optional($authUser?->role)->slug;
+
+    $roleSlug = strtolower(
+        trim(
+            (string) optional($authUser?->role)->slug
+        )
+    );
 
 
     /*
     |--------------------------------------------------------------------------
-    | Active Institution Context
+    | Active Institution
     |--------------------------------------------------------------------------
     |
-    | Super Admin / Admin যখন কোনো institution-এ switch করবে,
-    | তখন session('active_institution_id') থাকবে।
-    |
-    | সেটাই আগে priority পাবে।
+    | Super Admin যখন কোনো institution-এ Enter করে,
+    | তখন active_institution_id session-এ থাকবে।
     |
     */
-    $activeInstitutionId = session('active_institution_id');
+
+    $activeInstitutionId = session(
+        'active_institution_id'
+    );
 
 
     /*
     |--------------------------------------------------------------------------
-    | Resolve Institution
+    | System Roles
+    |--------------------------------------------------------------------------
+    */
+
+    $isSystemRole = in_array(
+        $roleSlug,
+        [
+            'super_admin',
+            'support_admin',
+        ],
+        true
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institution Mode
     |--------------------------------------------------------------------------
     |
-    | 1. Session institution থাকলে সেটি
-    | 2. না থাকলে logged-in user's institution
+    | শুধু active institution থাকলেই institution mode হবে।
     |
     */
-    if ($activeInstitutionId) {
 
-        $currentInstitution = Madrasa::find($activeInstitutionId);
+    $isInstitutionMode =
+        $isSystemRole
+        && session('institution_mode') === true
+        && !empty($activeInstitutionId);
 
-    } elseif ($authUser?->institution_id) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | System Mode
+    |--------------------------------------------------------------------------
+    |
+    | System role + কোনো institution active নেই
+    | = System Mode
+    |
+    */
+
+    $isSystemMode =
+        $isSystemRole
+        && !$isInstitutionMode;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve Current Institution
+    |--------------------------------------------------------------------------
+    */
+
+    $currentInstitution = null;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin → Selected Institution
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $isInstitutionMode
+        && !empty($activeInstitutionId)
+    ) {
+
+        $currentInstitution = Madrasa::find(
+            (int) $activeInstitutionId
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normal Institution User
+    |--------------------------------------------------------------------------
+    |
+    | user_admin / user / student নিজের institution ব্যবহার করবে।
+    |
+    */
+
+    elseif (
+        !$isSystemRole
+        && $authUser?->institution_id
+    ) {
 
         $currentInstitution = $authUser->institution;
 
-    } else {
-
-        $currentInstitution = null;
     }
 
 
@@ -74,22 +141,14 @@
     */
 
     $institutionName = $currentInstitution
-        ? ($currentInstitution->name_bn ?: $currentInstitution->name)
+        ? (
+            $currentInstitution->name_bn
+            ?: $currentInstitution->name
+        )
         : null;
 
+
     $institutionLogo = $currentInstitution?->logo;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | System Mode
-    |--------------------------------------------------------------------------
-    |
-    | Super Admin কোনো institution-এ ঢোকেনি = System Mode
-    |
-    */
-    $isInstitutionMode = session('institution_mode') === true
-        && !empty($activeInstitutionId);
 
 
     /*
@@ -98,17 +157,20 @@
     |--------------------------------------------------------------------------
     */
 
-    if ($isInstitutionMode && $institutionName) {
+    if ($isSystemMode) {
 
-        $displayInstitutionName = $institutionName;
+        $displayInstitutionName =
+            'System Administration';
 
-    } elseif ($currentInstitution && $institutionName) {
+    } elseif ($institutionName) {
 
-        $displayInstitutionName = $institutionName;
+        $displayInstitutionName =
+            $institutionName;
 
     } else {
 
-        $displayInstitutionName = 'সিস্টেম';
+        $displayInstitutionName =
+            'সিস্টেম';
     }
 
 
@@ -116,47 +178,64 @@
     |--------------------------------------------------------------------------
     | Logo
     |--------------------------------------------------------------------------
-    |
-    | Madrasa logo database-এ institutions/xxx/file.jpg
-    | হিসেবে থাকলে Storage URL ব্যবহার হবে।
-    |
     */
-    if ($institutionLogo) {
 
-        $displayLogo = asset('storage/' . $institutionLogo);
+    if (
+        $isInstitutionMode
+        && $institutionLogo
+    ) {
+
+        $displayLogo = asset(
+            'storage/' . $institutionLogo
+        );
 
     } else {
 
-        $displayLogo = asset('contents/admin/images/logo.png');
+        $displayLogo = asset(
+            'contents/admin/images/logo.png'
+        );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Institution Name Split
+    | Institution / System Name Split
     |--------------------------------------------------------------------------
-    |
-    | প্রথম অংশ বড় করে দেখাবে।
-    |
     */
-    $words = preg_split('/\s+/', trim($displayInstitutionName));
 
-    $firstPart = $words[0] ?? $displayInstitutionName;
+    $words = preg_split(
+        '/\s+/',
+        trim($displayInstitutionName)
+    );
+
+
+    $firstPart = $words[0]
+        ?? $displayInstitutionName;
+
 
     $secondPart = count($words) > 1
-        ? implode(' ', array_slice($words, 1))
+        ? implode(
+            ' ',
+            array_slice(
+                $words,
+                1
+            )
+        )
         : '';
 
 
     /*
     |--------------------------------------------------------------------------
-    | System Admin Check
+    | Sidebar Home Route
     |--------------------------------------------------------------------------
+    |
+    | এখন System এবং Institution — দুটোই একই /dashboard ব্যবহার করে।
+    |
     */
 
-    $isSuperAdmin = $roleSlug === 'super_admin';
-    $isAdmin      = $roleSlug === 'admin';
-    $isMadrasa    = $roleSlug === 'madrasa';
+    $sidebarHomeRoute =
+        'dashboard.index';
+
 @endphp
 
 
@@ -178,10 +257,11 @@
         <div class="sidebar_flex d-flex align-items-center">
 
             {{-- Logo --}}
+
             <div class="logo">
 
                 <a
-                    href="{{ route('dashboard.index') }}"
+                    href="{{ route($sidebarHomeRoute) }}"
                     class="text-white text-decoration-none d-flex align-items-center gap-2"
                 >
 
@@ -196,17 +276,21 @@
             </div>
 
 
-            {{-- Institution Name --}}
+            {{-- Institution / System Name --}}
+
             <div class="content text-secondary small mt-1">
 
                 <h3 class="institution-title">
                     {{ $firstPart }}
                 </h3>
 
+
                 @if($secondPart)
+
                     <p class="institution-subtitle">
                         {{ $secondPart }}
                     </p>
+
                 @endif
 
             </div>
@@ -227,58 +311,105 @@
             id="sidebarNav"
         >
 
-            {{-- Dashboard --}}
-            @include('admin.sidebar.dashboard')
+            {{-- ====================================================
+                 SYSTEM MODE
+            ===================================================== --}}
+
+            @if($isSystemMode)
+
+                @include(
+                    'admin.sidebar.system'
+                )
 
 
-            {{-- Institution --}}
-            @include('admin.sidebar.institution')
+            {{-- ====================================================
+                 MADRASA / INSTITUTION MODE
+            ===================================================== --}}
+
+            @else
+
+                {{-- Dashboard --}}
+
+                @include(
+                    'admin.sidebar.dashboard'
+                )
 
 
-            {{-- Student --}}
-            @include('admin.sidebar.student')
+                {{-- Institution --}}
+
+                @include(
+                    'admin.sidebar.institution'
+                )
 
 
-            {{-- Teacher --}}
-            @include('admin.sidebar.teacher')
+                {{-- Student --}}
+
+                @include(
+                    'admin.sidebar.student'
+                )
 
 
-            {{-- Attendance --}}
-            @include('admin.sidebar.attendance')
+                {{-- Teacher --}}
+
+                @include(
+                    'admin.sidebar.teacher'
+                )
 
 
-            {{-- Exam --}}
-            @include('admin.sidebar.exam')
+                {{-- Attendance --}}
+
+                @include(
+                    'admin.sidebar.attendance'
+                )
 
 
-            {{-- Result --}}
-            @include('admin.sidebar.result')
+                {{-- Exam --}}
+
+                @include(
+                    'admin.sidebar.exam'
+                )
 
 
-            {{-- Accounting --}}
-            @include('admin.sidebar.accounting')
+                {{-- Result --}}
+
+                @include(
+                    'admin.sidebar.result'
+                )
 
 
-            {{-- Payment --}}
-            @include('admin.sidebar.payment')
+                {{-- Accounting --}}
+
+                @include(
+                    'admin.sidebar.accounting'
+                )
 
 
-            {{-- Settings --}}
-            @include('admin.sidebar.settings')
+                {{-- Payment --}}
+
+                @include(
+                    'admin.sidebar.payment'
+                )
 
 
-            {{-- Help --}}
-            @include('admin.sidebar.help')
+                {{-- Settings --}}
+
+                @include(
+                    'admin.sidebar.settings'
+                )
 
 
-            {{-- System --}}
-            @include('admin.sidebar.system')
+                {{-- Help --}}
+
+                @include(
+                    'admin.sidebar.help'
+                )
+
+            @endif
 
         </ul>
 
     </div>
 
-    
 </aside>
 
 
@@ -295,25 +426,33 @@
     */
 
     .sidebar-logo {
+
         width: 52px;
+
         height: 52px;
+
         object-fit: contain;
+
         display: block;
+
         border-radius: 8px;
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Institution Title
+    | Institution / System Title
     |--------------------------------------------------------------------------
     */
 
     .institution-title {
+
         margin: 0;
+
         padding: 0;
 
         font-size: 17px;
+
         line-height: 1.2;
 
         font-weight: 700;
@@ -321,7 +460,9 @@
         color: #1f2937;
 
         white-space: nowrap;
+
         overflow: hidden;
+
         text-overflow: ellipsis;
 
         max-width: 165px;
@@ -335,15 +476,19 @@
     */
 
     .institution-subtitle {
+
         margin: 2px 0 0;
 
         font-size: 11px;
+
         line-height: 1.3;
 
         color: #6b7280;
 
         white-space: nowrap;
+
         overflow: hidden;
+
         text-overflow: ellipsis;
 
         max-width: 165px;
@@ -357,20 +502,29 @@
     */
 
     .sidebar-brand {
+
         overflow: hidden;
     }
 
+
     .sidebar_flex {
+
         min-width: 0;
+
         gap: 8px;
     }
 
+
     .sidebar_flex .logo {
+
         flex: 0 0 auto;
     }
 
+
     .sidebar_flex .content {
+
         min-width: 0;
+
         flex: 1;
     }
 
@@ -382,10 +536,13 @@
     */
 
     .admin-sidebar .institution-title {
+
         color: #1f2937;
     }
 
+
     .admin-sidebar .institution-subtitle {
+
         color: #6b7280;
     }
 
@@ -399,10 +556,13 @@
     @media (max-width: 991.98px) {
 
         .institution-title {
+
             max-width: 180px;
         }
 
+
         .institution-subtitle {
+
             max-width: 180px;
         }
 

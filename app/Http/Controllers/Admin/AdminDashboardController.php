@@ -3,49 +3,211 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Role;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Exam;
 use App\Models\Result;
 use App\Models\FeeGroup;
 use App\Models\FeeCollection;
-use App\Models\Madrasa;
+use Illuminate\Support\Facades\Auth;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
-        $studentRole = Role::where('role_name', 'student')->first();
-        $teacherRole = Role::where('role_name', 'teacher')->first();
+        $user = Auth::user();
 
-        $studentsCount = $studentRole ? User::where('role_id', $studentRole->id)->count() : 0;
-        $teachersCount = $teacherRole ? User::where('role_id', $teacherRole->id)->count() : 0;
+        /*
+        |--------------------------------------------------------------------------
+        | Active Institution
+        |--------------------------------------------------------------------------
+        |
+        | Super Admin:
+        |   session('active_institution_id')
+        |
+        | Institution Users:
+        |   user.institution_id
+        |
+        */
 
-        $madrasasCount = Madrasa::count();
-        $studentsTableCount = Student::count();
-        $teachersTableCount = Teacher::count();
-        $examsCount = Exam::count();
-        $resultsCount = Result::count();
+        if ($user->is_super_admin) {
+            $institutionId = session('active_institution_id');
+        } else {
+            $institutionId = $user->institution_id;
+        }
 
-        // 🔥 FIXED LOGIC
-        $totalFees = FeeGroup::sum('amount');
-        $totalPaid = FeeCollection::sum('paid_amount');
-        $totalDue = FeeCollection::sum('due_amount');
+        /*
+        |--------------------------------------------------------------------------
+        | Institution Required
+        |--------------------------------------------------------------------------
+        */
 
-        return view('admin.dashboard.home', compact(
-            'studentsCount',
-            'teachersCount',
-            'madrasasCount',
-            'studentsTableCount',
-            'teachersTableCount',
-            'examsCount',
-            'resultsCount',
-            'totalFees',
-            'totalPaid',
-            'totalDue'
-        ));
+        if (!$institutionId) {
+            abort(
+                403,
+                'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
+            );
+        }
+
+        $institutionId = (int) $institutionId;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Students
+        |--------------------------------------------------------------------------
+        */
+
+        $studentsCount = User::where(
+            'institution_id',
+            $institutionId
+        )
+            ->whereHas('role', function ($query) {
+                $query->where('slug', 'student');
+            })
+            ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Teachers
+        |--------------------------------------------------------------------------
+        |
+        | Teacher আলাদা Role নয়।
+        | Teacher model-এর institution_id ব্যবহার করা হচ্ছে।
+        |
+        */
+
+        $teachersCount = Teacher::where(
+            'institution_id',
+            $institutionId
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current Institution
+        |--------------------------------------------------------------------------
+        */
+
+        $madrasasCount = 1;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Students Table
+        |--------------------------------------------------------------------------
+        */
+
+        $studentsTableCount = Student::where(
+            'institution_id',
+            $institutionId
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Teachers Table
+        |--------------------------------------------------------------------------
+        */
+
+        $teachersTableCount = Teacher::where(
+            'institution_id',
+            $institutionId
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Exams
+        |--------------------------------------------------------------------------
+        */
+
+        $examsCount = Exam::where(
+            'institution_id',
+            $institutionId
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Results
+        |--------------------------------------------------------------------------
+        |
+        | results table-এ institution_id নেই।
+        |
+        | Result -> student_id -> Student -> institution_id
+        |
+        */
+
+        $resultsCount = Result::whereHas(
+            'student',
+            function ($query) use ($institutionId) {
+                $query->where(
+                    'institution_id',
+                    $institutionId
+                );
+            }
+        )->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fee Groups
+        |--------------------------------------------------------------------------
+        */
+
+        $totalFees = FeeGroup::where(
+            'institution_id',
+            $institutionId
+        )->sum('amount');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Paid Fees
+        |--------------------------------------------------------------------------
+        */
+
+        $totalPaid = FeeCollection::where(
+            'institution_id',
+            $institutionId
+        )->sum('paid_amount');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Due Fees
+        |--------------------------------------------------------------------------
+        */
+
+        $totalDue = FeeCollection::where(
+            'institution_id',
+            $institutionId
+        )->sum('due_amount');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dashboard
+        |--------------------------------------------------------------------------
+        */
+
+        return view(
+            'admin.dashboard.home',
+            compact(
+                'studentsCount',
+                'teachersCount',
+                'madrasasCount',
+                'studentsTableCount',
+                'teachersTableCount',
+                'examsCount',
+                'resultsCount',
+                'totalFees',
+                'totalPaid',
+                'totalDue'
+            )
+        );
     }
 }

@@ -1,5 +1,7 @@
 @extends('layouts.admin')
-@section('title','Permissions')
+
+@section('title', 'Permissions')
+
 @section('page')
 
 <div class="container-fluid">
@@ -9,21 +11,14 @@
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
 
             <div>
-
                 <h5 class="mb-0 fw-bold">
-
                     <i class="fas fa-key me-2"></i>
-
                     Permissions
-
                 </h5>
 
                 <small class="text-muted">
-
                     Manage all system permissions.
-
                 </small>
-
             </div>
 
             <button
@@ -31,12 +26,12 @@
                 id="addPermissionBtn">
 
                 <i class="fas fa-plus me-1"></i>
-
                 Add Permission
 
             </button>
 
         </div>
+
 
         <div class="card-body">
 
@@ -66,6 +61,7 @@
 
                     </thead>
 
+
                     <tbody>
 
                         @forelse($permissions as $permission)
@@ -73,106 +69,103 @@
                             <tr>
 
                                 <td>
-
                                     {{ $loop->iteration }}
-
                                 </td>
+
 
                                 <td>
 
-                                    {{ $permission->panel?->panel_name }}
+                                    {{ $permission->systemPanel?->panel_name }}
 
                                 </td>
+
 
                                 <td>
 
                                     <strong>
-
                                         {{ $permission->permission_name }}
-
                                     </strong>
 
                                 </td>
 
+
                                 <td>
 
                                     <code>
-
                                         {{ $permission->slug }}
-
                                     </code>
 
                                 </td>
 
+
                                 <td>
-
                                     {{ $permission->serial }}
-
                                 </td>
+
 
                                 <td>
 
                                     @if($permission->is_active)
 
                                         <span class="badge bg-success">
-
                                             Active
-
                                         </span>
 
                                     @else
 
                                         <span class="badge bg-danger">
-
                                             Inactive
-
                                         </span>
 
                                     @endif
 
                                 </td>
 
+
                                 <td>
 
-                              <button
-    class="btn btn-warning btn-sm editPermissionBtn"
+                                    <button
+                                        type="button"
+                                        class="btn btn-warning btn-sm editPermissionBtn"
 
-    data-id="{{ $permission->id }}"
+                                        data-id="{{ $permission->id }}"
 
-    data-panel="{{ $permission->system_panel_id }}"
+                                        data-panel="{{ $permission->system_panel_id }}"
 
-    data-name="{{ $permission->permission_name }}"
+                                        data-name="{{ $permission->permission_name }}"
 
-    data-slug="{{ $permission->slug }}"
+                                        data-slug="{{ $permission->slug }}"
 
-    data-serial="{{ $permission->serial }}"
+                                        data-serial="{{ $permission->serial }}"
 
-    data-description="{{ $permission->description }}"
+                                        data-description="{{ $permission->description }}"
 
-    data-status="{{ $permission->is_active }}">
+                                        data-status="{{ $permission->is_active }}">
 
-    <i class="fas fa-edit"></i>
+                                        <i class="fas fa-edit"></i>
 
-</button>
+                                    </button>
 
-<form
-    action="{{ route('dashboard.permissions.destroy',$permission->id) }}"
-    method="POST"
-    class="d-inline">
 
-    @csrf
+                                    <form
+                                        action="{{ route('dashboard.permissions.destroy', $permission->id) }}"
+                                        method="POST"
+                                        class="d-inline">
 
-    @method('DELETE')
+                                        @csrf
 
-    <button
-        class="btn btn-danger btn-sm"
-        onclick="return confirm('Delete this permission?')">
+                                        @method('DELETE')
 
-        <i class="fas fa-trash"></i>
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Delete this permission?')">
 
-    </button>
+                                            <i class="fas fa-trash"></i>
 
-</form>
+                                        </button>
+
+                                    </form>
 
                                 </td>
 
@@ -206,13 +199,20 @@
 
 </div>
 
+
 <!-- Add / Edit Permission Modal -->
 
-<div class="modal fade" id="permissionModal" tabindex="-1">
+<div
+    class="modal fade"
+    id="permissionModal"
+    tabindex="-1"
+    aria-hidden="true">
 
     <div class="modal-dialog modal-lg">
 
-        <form id="permissionForm" method="POST">
+        <form
+            id="permissionForm"
+            method="POST">
 
             @csrf
 
@@ -221,6 +221,7 @@
                 name="_method"
                 id="formMethod"
                 value="POST">
+
 
             <div class="modal-content">
 
@@ -234,23 +235,28 @@
 
                     </h5>
 
+
                     <button
+                        type="button"
                         class="btn-close"
                         data-bs-dismiss="modal">
+
                     </button>
 
                 </div>
+
 
                 <div class="modal-body">
 
                     <div class="row">
 
+
+                        <!-- System Panel -->
+
                         <div class="col-md-6 mb-3">
 
                             <label class="form-label">
-
                                 System Panel
-
                             </label>
 
                             <select
@@ -260,14 +266,13 @@
                                 required>
 
                                 <option value="">
-
                                     Select Panel
-
                                 </option>
 
                                 @foreach($panels as $panel)
 
-                                    <option value="{{ $panel->id }}">
+                                    <option
+                                        value="{{ $panel->id }}">
 
                                         {{ $panel->panel_name }}
 
@@ -279,12 +284,13 @@
 
                         </div>
 
+
+                        <!-- Permission Name -->
+
                         <div class="col-md-6 mb-3">
 
                             <label class="form-label">
-
                                 Permission Name
-
                             </label>
 
                             <input
@@ -296,12 +302,13 @@
 
                         </div>
 
+
+                        <!-- Slug -->
+
                         <div class="col-md-6 mb-3">
 
                             <label class="form-label">
-
                                 Slug
-
                             </label>
 
                             <input
@@ -309,16 +316,18 @@
                                 class="form-control"
                                 name="slug"
                                 id="slug"
-                                placeholder="student.view">
+                                placeholder="student.view"
+                                required>
 
                         </div>
+
+
+                        <!-- Serial -->
 
                         <div class="col-md-6 mb-3">
 
                             <label class="form-label">
-
                                 Serial
-
                             </label>
 
                             <input
@@ -330,12 +339,13 @@
 
                         </div>
 
+
+                        <!-- Description -->
+
                         <div class="col-12 mb-3">
 
                             <label class="form-label">
-
                                 Description
-
                             </label>
 
                             <textarea
@@ -346,12 +356,13 @@
 
                         </div>
 
+
+                        <!-- Status -->
+
                         <div class="col-md-4">
 
                             <label class="form-label d-block">
-
                                 Status
-
                             </label>
 
                             <div class="form-check form-switch">
@@ -361,9 +372,12 @@
                                     type="checkbox"
                                     id="is_active"
                                     name="is_active"
+                                    value="1"
                                     checked>
 
-                                <label class="form-check-label">
+                                <label
+                                    class="form-check-label"
+                                    for="is_active">
 
                                     Active
 
@@ -377,16 +391,18 @@
 
                 </div>
 
+
                 <div class="modal-footer">
 
                     <button
+                        type="button"
                         class="btn btn-secondary"
-                        data-bs-dismiss="modal"
-                        type="button">
+                        data-bs-dismiss="modal">
 
                         Close
 
                     </button>
+
 
                     <button
                         class="btn btn-primary"
@@ -406,67 +422,109 @@
 
 </div>
 
+
 @push('scripts')
 
 <script>
 
-const modal = new bootstrap.Modal(
-    document.getElementById('permissionModal')
-);
+document.addEventListener('DOMContentLoaded', function () {
 
-const form = document.getElementById('permissionForm');
+    const modalElement =
+        document.getElementById('permissionModal');
 
-document.getElementById('addPermissionBtn').onclick = function(){
+    const modal =
+        new bootstrap.Modal(modalElement);
 
-    form.reset();
+    const form =
+        document.getElementById('permissionForm');
 
-    document.getElementById('modalTitle').innerHTML =
-        'Add Permission';
 
-    document.getElementById('formMethod').value = 'POST';
+    /*
+    |--------------------------------------------------------------------------
+    | Add Permission
+    |--------------------------------------------------------------------------
+    */
 
-    form.action =
-        "{{ route('dashboard.permissions.store') }}";
+    const addButton =
+        document.getElementById('addPermissionBtn');
 
-    document.getElementById('is_active').checked = true;
+    if (addButton) {
 
-    modal.show();
+        addButton.addEventListener('click', function () {
 
-};
+            form.reset();
 
-document.querySelectorAll('.editPermissionBtn').forEach(btn=>{
+            document.getElementById('modalTitle').innerHTML =
+                'Add Permission';
 
-    btn.onclick = function(){
+            document.getElementById('formMethod').value =
+                'POST';
 
-        form.action =
-            "/dashboard/permissions/" + this.dataset.id;
+            form.action =
+                "{{ route('dashboard.permissions.store') }}";
 
-        document.getElementById('formMethod').value = 'PUT';
+            document.getElementById('is_active').checked =
+                true;
 
-        document.getElementById('modalTitle').innerHTML =
-            'Edit Permission';
+            modal.show();
 
-        document.getElementById('system_panel_id').value =
-            this.dataset.panel;
+        });
 
-        document.getElementById('permission_name').value =
-            this.dataset.name;
+    }
 
-        document.getElementById('slug').value =
-            this.dataset.slug;
 
-        document.getElementById('serial').value =
-            this.dataset.serial;
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Permission
+    |--------------------------------------------------------------------------
+    */
 
-        document.getElementById('description').value =
-            this.dataset.description;
+    document
+        .querySelectorAll('.editPermissionBtn')
+        .forEach(function (btn) {
 
-        document.getElementById('is_active').checked =
-            this.dataset.status == 1;
+            btn.addEventListener('click', function () {
 
-        modal.show();
+                form.action =
+                    "/dashboard/permissions/" +
+                    this.dataset.id;
 
-    };
+                document.getElementById('formMethod').value =
+                    'PUT';
+
+                document.getElementById('modalTitle').innerHTML =
+                    'Edit Permission';
+
+
+                document.getElementById('system_panel_id').value =
+                    this.dataset.panel;
+
+
+                document.getElementById('permission_name').value =
+                    this.dataset.name;
+
+
+                document.getElementById('slug').value =
+                    this.dataset.slug;
+
+
+                document.getElementById('serial').value =
+                    this.dataset.serial;
+
+
+                document.getElementById('description').value =
+                    this.dataset.description;
+
+
+                document.getElementById('is_active').checked =
+                    this.dataset.status == 1;
+
+
+                modal.show();
+
+            });
+
+        });
 
 });
 

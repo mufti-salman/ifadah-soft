@@ -173,12 +173,6 @@ class RoleSeeder extends Seeder
             |--------------------------------------------------------------------------
             | SUPER ADMIN
             |--------------------------------------------------------------------------
-            |
-            | Super Admin-এর Role Permission সব active permission।
-            |
-            | তবে Institution Mode-এ User.php
-            | institution permission দিয়ে access সীমাবদ্ধ করবে।
-            |
             */
 
             $superAdminRole->permissions()->sync(
@@ -205,15 +199,6 @@ class RoleSeeder extends Seeder
             |--------------------------------------------------------------------------
             | SUPPORT ADMIN
             |--------------------------------------------------------------------------
-            |
-            | Support Admin-এর জন্য:
-            |
-            | - Dashboard
-            | - Help
-            | - System
-            |
-            | এবং প্রয়োজনীয় Settings access।
-            |
             */
 
             $supportPermissionSlugs = [
@@ -288,11 +273,8 @@ class RoleSeeder extends Seeder
             $supportPanelSlugs = [
 
                 'dashboard',
-
                 'help',
-
                 'system',
-
                 'settings',
 
             ];
@@ -316,18 +298,14 @@ class RoleSeeder extends Seeder
             |--------------------------------------------------------------------------
             | USER ADMIN
             |--------------------------------------------------------------------------
-            |
-            | Institution-এর administrator।
-            |
-            | Institution Permission Manager যদি কোনো permission
-            | বন্ধ রাখে, User.php সেটি block করবে।
-            |
             */
 
             $userAdminPermissionSlugs = [
 
                 /*
+                |--------------------------------------------------------------------------
                 | Dashboard
+                |--------------------------------------------------------------------------
                 */
 
                 'dashboard.view',
@@ -335,7 +313,23 @@ class RoleSeeder extends Seeder
                 'dashboard.export',
 
                 /*
+                |--------------------------------------------------------------------------
+                | System User
+                |--------------------------------------------------------------------------
+                |
+                | User Admin-এর User Management permissions
+                |
+                */
+
+                'user.view',
+                'user.create',
+                'user.photo',
+                'user.report',
+
+                /*
+                |--------------------------------------------------------------------------
                 | Student
+                |--------------------------------------------------------------------------
                 */
 
                 'student.view',
@@ -387,7 +381,9 @@ class RoleSeeder extends Seeder
                 'certificate.print',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Teacher
+                |--------------------------------------------------------------------------
                 */
 
                 'teacher.view',
@@ -400,7 +396,9 @@ class RoleSeeder extends Seeder
                 'teacher.import',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Attendance
+                |--------------------------------------------------------------------------
                 */
 
                 'attendance.view',
@@ -411,7 +409,9 @@ class RoleSeeder extends Seeder
                 'attendance.export',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Exam
+                |--------------------------------------------------------------------------
                 */
 
                 'exam.view',
@@ -427,7 +427,9 @@ class RoleSeeder extends Seeder
                 'exam-type.delete',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Result
+                |--------------------------------------------------------------------------
                 */
 
                 'result.view',
@@ -443,7 +445,9 @@ class RoleSeeder extends Seeder
                 'grade.delete',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Accounting
+                |--------------------------------------------------------------------------
                 */
 
                 'fee.view',
@@ -485,7 +489,9 @@ class RoleSeeder extends Seeder
                 'accounting-report.print',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Payment
+                |--------------------------------------------------------------------------
                 */
 
                 'online-payment.view',
@@ -500,7 +506,9 @@ class RoleSeeder extends Seeder
                 'payment-gateway.delete',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Settings
+                |--------------------------------------------------------------------------
                 */
 
                 'general.view',
@@ -533,7 +541,9 @@ class RoleSeeder extends Seeder
                 'backup.delete',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Help
+                |--------------------------------------------------------------------------
                 */
 
                 'support.view',
@@ -608,23 +618,22 @@ class RoleSeeder extends Seeder
             |--------------------------------------------------------------------------
             | USER
             |--------------------------------------------------------------------------
-            |
-            | User role-কে বর্তমানে সাধারণভাবে
-            | institution-এর operational modules-এর
-            | permission দেওয়া হচ্ছে।
-            |
             */
 
             $userPermissionSlugs = [
 
                 /*
+                |--------------------------------------------------------------------------
                 | Dashboard
+                |--------------------------------------------------------------------------
                 */
 
                 'dashboard.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Student
+                |--------------------------------------------------------------------------
                 */
 
                 'student.view',
@@ -652,7 +661,9 @@ class RoleSeeder extends Seeder
                 'certificate.print',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Teacher
+                |--------------------------------------------------------------------------
                 */
 
                 'teacher.view',
@@ -661,7 +672,9 @@ class RoleSeeder extends Seeder
                 'teacher.photo',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Attendance
+                |--------------------------------------------------------------------------
                 */
 
                 'attendance.view',
@@ -670,7 +683,9 @@ class RoleSeeder extends Seeder
                 'attendance.report',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Exam
+                |--------------------------------------------------------------------------
                 */
 
                 'exam.view',
@@ -682,7 +697,9 @@ class RoleSeeder extends Seeder
                 'exam-type.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Result
+                |--------------------------------------------------------------------------
                 */
 
                 'result.view',
@@ -693,7 +710,9 @@ class RoleSeeder extends Seeder
                 'grade.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Accounting
+                |--------------------------------------------------------------------------
                 */
 
                 'fee.view',
@@ -714,14 +733,18 @@ class RoleSeeder extends Seeder
                 'accounting-report.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Payment
+                |--------------------------------------------------------------------------
                 */
 
                 'online-payment.view',
                 'online-payment.report',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Settings
+                |--------------------------------------------------------------------------
                 */
 
                 'general.view',
@@ -737,7 +760,9 @@ class RoleSeeder extends Seeder
                 'theme.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Help
+                |--------------------------------------------------------------------------
                 */
 
                 'support.view',
@@ -779,22 +804,22 @@ class RoleSeeder extends Seeder
             |--------------------------------------------------------------------------
             | STUDENT
             |--------------------------------------------------------------------------
-            |
-            | Student-এর access শুধুমাত্র student-related
-            | modules-এ সীমিত রাখা হচ্ছে।
-            |
             */
 
             $studentPermissionSlugs = [
 
                 /*
+                |--------------------------------------------------------------------------
                 | Dashboard
+                |--------------------------------------------------------------------------
                 */
 
                 'dashboard.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Student
+                |--------------------------------------------------------------------------
                 */
 
                 'student.view',
@@ -806,13 +831,17 @@ class RoleSeeder extends Seeder
                 'certificate.print',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Attendance
+                |--------------------------------------------------------------------------
                 */
 
                 'attendance.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Exam
+                |--------------------------------------------------------------------------
                 */
 
                 'exam.view',
@@ -820,7 +849,9 @@ class RoleSeeder extends Seeder
                 'exam-type.view',
 
                 /*
+                |--------------------------------------------------------------------------
                 | Result
+                |--------------------------------------------------------------------------
                 */
 
                 'result.view',
@@ -922,9 +953,6 @@ class RoleSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Super Admin
         |--------------------------------------------------------------------------
-        |
-        | Super Admin-এর কোনো institution থাকবে না।
-        |
         */
 
         User::updateOrCreate(
@@ -957,7 +985,7 @@ class RoleSeeder extends Seeder
             ],
             [
                 'institution_id'      => null,
-                'role_id'             => $supportAdminRole->id,
+                'role_id'              => $supportAdminRole->id,
                 'name'                => 'Support Admin',
                 'name_bn'             => 'সাপোর্ট অ্যাডমিন',
                 'phone'               => '01700000003',
@@ -986,7 +1014,9 @@ class RoleSeeder extends Seeder
                 'name_bn'             => 'আল হুদা অ্যাডমিন',
                 'phone'               => '01700000004',
                 'password'            => Hash::make('fahim'),
-                'institution_user_id' => '401',
+
+                'institution_user_id' => '301',
+
                 'username'            => 'alhuda_admin',
                 'status'              => 1,
             ]
@@ -997,10 +1027,6 @@ class RoleSeeder extends Seeder
         |--------------------------------------------------------------------------
         | Institution 1 - User / Teacher / Staff
         |--------------------------------------------------------------------------
-        |
-        | Teacher আলাদা Role নয়।
-        | Teacher / Staff → user role.
-        |
         */
 
         User::updateOrCreate(
@@ -1009,12 +1035,14 @@ class RoleSeeder extends Seeder
             ],
             [
                 'institution_id'      => $institutionOne->id,
-                'role_id'             => $userRole->id,
-                'name'                => 'Al Huda User',
-                'name_bn'             => 'আল হুদা ব্যবহারকারী',
-                'phone'               => '01700000005',
-                'password'            => Hash::make('fahim'),
+                'role_id'              => $userRole->id,
+                'name'                 => 'Al Huda User',
+                'name_bn'              => 'আল হুদা ব্যবহারকারী',
+                'phone'                => '01700000005',
+                'password'             => Hash::make('fahim'),
+
                 'institution_user_id' => '201',
+
                 'username'            => 'alhuda_user',
                 'status'              => 1,
             ]
@@ -1038,7 +1066,9 @@ class RoleSeeder extends Seeder
                 'name_bn'             => 'আল হুদা শিক্ষার্থী',
                 'phone'               => '01700000006',
                 'password'            => Hash::make('fahim'),
+
                 'institution_user_id' => '101',
+
                 'username'            => 'alhuda_student',
                 'status'              => 1,
             ]
@@ -1057,12 +1087,14 @@ class RoleSeeder extends Seeder
             ],
             [
                 'institution_id'      => $institutionTwo->id,
-                'role_id'             => $userAdminRole->id,
+                'role_id'              => $userAdminRole->id,
                 'name'                => 'Darul Uloom Admin',
                 'name_bn'              => 'দারুল উলুম অ্যাডমিন',
                 'phone'               => '01700000007',
                 'password'            => Hash::make('fahim'),
-                'institution_user_id' => '401',
+
+                'institution_user_id' => '301',
+
                 'username'            => 'darul_admin',
                 'status'              => 1,
             ]

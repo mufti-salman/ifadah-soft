@@ -8,11 +8,14 @@ use App\Models\SystemPanel;
 
 class RolePanelSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         /*
         |--------------------------------------------------------------------------
-        | All Panels
+        | Available Panels
         |--------------------------------------------------------------------------
         */
 
@@ -29,67 +32,178 @@ class RolePanelSeeder extends Seeder
             'help',
         ];
 
-        /*
-        |--------------------------------------------------------------------------
-        | Super Admin (System সহ)
-        |--------------------------------------------------------------------------
-        */
-
-        $this->assignPanels('super-admin', [
-            ...$allPanels,
-            'system',
-        ]);
 
         /*
         |--------------------------------------------------------------------------
-        | Soft Admin (System সহ)
+        | SUPER ADMIN
         |--------------------------------------------------------------------------
+        |
+        | Super Admin পুরো system-এর সব panel access করবে।
+        | এর সাথে System panel-ও থাকবে।
+        |
         */
 
-        $this->assignPanels('soft-admin', [
-            ...$allPanels,
-            'system',
-        ]);
+        $this->assignPanels(
+            'super_admin',
+            [
+                ...$allPanels,
+                'system',
+            ]
+        );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Madrasa Admin
+        | SUPPORT ADMIN
         |--------------------------------------------------------------------------
+        |
+        | Support Admin system support এবং administration-related
+        | panel access করবে।
+        |
         */
 
-        $this->assignPanels('madrasa-admin', $allPanels);
+        $this->assignPanels(
+            'support_admin',
+            [
+                'dashboard',
+                'help',
+                'system',
+                'settings',
+            ]
+        );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Teacher
+        | USER ADMIN
         |--------------------------------------------------------------------------
+        |
+        | Institution-level administrator।
+        |
+        | User Admin-এর institution-এর operational
+        | modules-এর সব panel থাকবে।
+        |
         */
 
-        $this->assignPanels('teacher', $allPanels);
+        $this->assignPanels(
+            'user_admin',
+            [
+                'dashboard',
+                'student',
+                'teacher',
+                'attendance',
+                'exam',
+                'result',
+                'accounting',
+                'payment',
+                'settings',
+                'help',
+            ]
+        );
+
 
         /*
         |--------------------------------------------------------------------------
-        | Student
+        | USER
         |--------------------------------------------------------------------------
+        |
+        | Institution-এর সাধারণ User / Teacher / Staff।
+        |
+        | Teacher আলাদা role নয়।
+        | Teacher / Staff → user role.
+        |
         */
 
-        $this->assignPanels('student', $allPanels);
+        $this->assignPanels(
+            'user',
+            [
+                'dashboard',
+                'student',
+                'teacher',
+                'attendance',
+                'exam',
+                'result',
+                'accounting',
+                'payment',
+                'settings',
+                'help',
+            ]
+        );
 
-        // Guardian লাগবে না
+
+        /*
+        |--------------------------------------------------------------------------
+        | STUDENT
+        |--------------------------------------------------------------------------
+        |
+        | Student-এর জন্য শুধুমাত্র student-related
+        | এবং academic panels।
+        |
+        */
+
+        $this->assignPanels(
+            'student',
+            [
+                'dashboard',
+                'student',
+                'attendance',
+                'exam',
+                'result',
+            ]
+        );
     }
 
-    protected function assignPanels(string $roleSlug, array $panelSlugs): void
-    {
-        $role = Role::where('slug', $roleSlug)->first();
+
+    /**
+     * Assign panels to a role.
+     */
+    protected function assignPanels(
+        string $roleSlug,
+        array $panelSlugs
+    ): void {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Role
+        |--------------------------------------------------------------------------
+        */
+
+        $role = Role::where(
+            'slug',
+            $roleSlug
+        )->first();
 
         if (!$role) {
             return;
         }
 
-        $panelIds = SystemPanel::whereIn('slug', $panelSlugs)
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Panels
+        |--------------------------------------------------------------------------
+        */
+
+        $panelIds = SystemPanel::whereIn(
+            'slug',
+            $panelSlugs
+        )
             ->pluck('id')
             ->toArray();
 
-        $role->systemPanels()->sync($panelIds);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sync Role Panels
+        |--------------------------------------------------------------------------
+        |
+        | sync() পুরোনো ভুল panel assignment remove করে
+        | শুধুমাত্র নিচের panel-গুলো রাখবে।
+        |
+        */
+
+        $role->systemPanels()->sync(
+            $panelIds
+        );
     }
 }

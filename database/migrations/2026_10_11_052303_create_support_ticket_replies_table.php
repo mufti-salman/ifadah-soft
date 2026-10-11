@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('support_ticket_replies', function (Blueprint $table) {
+            $table->id();
+
+            $table->foreignId('support_ticket_id')
+                ->constrained('support_tickets')
+                ->cascadeOnDelete();
+
+            // যিনি উত্তর বা মন্তব্য দিয়েছেন
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->restrictOnDelete();
+
+            $table->text('message');
+
+            // ভবিষ্যতে স্ক্রিনশট বা ফাইল সংযুক্ত করার জন্য
+            $table->string('attachment_path')->nullable();
+
+            $table->timestamps();
+
+            $table->index(['support_ticket_id', 'created_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('support_ticket_replies');
+    }
+};

@@ -37,7 +37,7 @@ class SystemPanel extends Model
      * ----------------------------------------------------------
      */
     protected $casts = [
-        'serial'    => 'integer',
+        'serial' => 'integer',
         'is_system' => 'boolean',
         'is_active' => 'boolean',
     ];
@@ -46,11 +46,6 @@ class SystemPanel extends Model
      * ----------------------------------------------------------
      * Roles
      * ----------------------------------------------------------
-     *
-     * কোন কোন Role এই System Panel ব্যবহার করতে পারবে।
-     *
-     * Pivot:
-     * role_system_panel
      */
     public function roles()
     {
@@ -66,16 +61,6 @@ class SystemPanel extends Model
      * ----------------------------------------------------------
      * Permissions
      * ----------------------------------------------------------
-     *
-     * এই panel-এর অধীনে থাকা সব permissions।
-     *
-     * Example:
-     *
-     * Student Panel
-     * ├── student.view
-     * ├── student.create
-     * ├── student.edit
-     * └── student.delete
      */
     public function permissions()
     {
@@ -97,7 +82,10 @@ class SystemPanel extends Model
             Permission::class,
             'system_panel_id',
             'id'
-        )->where('is_active', true);
+        )->where(
+            'is_active',
+            true
+        );
     }
 
     /**
@@ -107,17 +95,23 @@ class SystemPanel extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where(
+            'is_active',
+            true
+        );
     }
 
     /**
      * ----------------------------------------------------------
      * Inactive Scope
      * ----------------------------------------------------------
-     */
+    */
     public function scopeInactive($query)
     {
-        return $query->where('is_active', false);
+        return $query->where(
+            'is_active',
+            false
+        );
     }
 
     /**
@@ -127,7 +121,10 @@ class SystemPanel extends Model
      */
     public function scopeSystem($query)
     {
-        return $query->where('is_system', true);
+        return $query->where(
+            'is_system',
+            true
+        );
     }
 
     /**
@@ -137,7 +134,10 @@ class SystemPanel extends Model
      */
     public function scopeCustom($query)
     {
-        return $query->where('is_system', false);
+        return $query->where(
+            'is_system',
+            false
+        );
     }
 
     /**
@@ -147,16 +147,16 @@ class SystemPanel extends Model
      */
     public function scopeBySlug($query, $slug)
     {
-        return $query->where('slug', $slug);
+        return $query->where(
+            'slug',
+            $slug
+        );
     }
 
     /**
      * ----------------------------------------------------------
      * Ordered Scope
      * ----------------------------------------------------------
-     *
-     * Sidebar / Permission Manager-এ serial অনুযায়ী
-     * panel দেখানোর জন্য।
      */
     public function scopeOrdered($query)
     {
@@ -169,14 +169,18 @@ class SystemPanel extends Model
      * ----------------------------------------------------------
      * Has Permission
      * ----------------------------------------------------------
-     *
-     * Panel-এর মধ্যে নির্দিষ্ট permission আছে কিনা।
      */
     public function hasPermission($permissionSlug)
     {
         return $this->permissions()
-            ->where('slug', $permissionSlug)
-            ->where('is_active', true)
+            ->where(
+                'slug',
+                $permissionSlug
+            )
+            ->where(
+                'is_active',
+                true
+            )
             ->exists();
     }
 

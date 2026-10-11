@@ -25,10 +25,12 @@
 
         {{-- ======================================================
             EXIT INSTITUTION MODE
-            শুধু Super Admin + Institution Mode
+            শুধু System Panel থেকে Institution Change করা
+            Super Admin-এর জন্য
         ======================================================= --}}
         @if(
             auth()->user()->is_super_admin
+            && session('institution_mode') === true
             && session()->has('active_institution_id')
         )
 

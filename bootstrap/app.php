@@ -8,6 +8,7 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TrackVisitorSession;
 use App\Http\Middleware\InstitutionMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\EnsureActiveSubscription;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'institution' => InstitutionMiddleware::class,
             'permission' => PermissionMiddleware::class,
+            'subscription' => EnsureActiveSubscription::class,
         ]);
 
 

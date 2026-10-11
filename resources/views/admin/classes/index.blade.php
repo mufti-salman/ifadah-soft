@@ -422,17 +422,26 @@ document.getElementById('classModal').addEventListener('click', function(e) {
 
 function editClass(id) {
 
-    fetch(`/dashboard/classes/${id}/edit`)
-        .then(response => response.json())
+    const url = @json(url('/dashboard/classes'));
+
+    fetch(`${url}/${id}/edit`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('ক্লাস তথ্য পাওয়া যায়নি।');
+            }
+
+            return response.json();
+        })
         .then(data => {
 
             document.getElementById('classId').value = data.id;
 
-            document.getElementById('class_name').value = data.name;
+            document.getElementById('class_name').value = data.name ?? '';
 
-            document.getElementById('class_name_bn').value = data.name_bn;
+            document.getElementById('class_name_bn').value = data.name_bn ?? '';
 
-            document.getElementById('class_status').value = data.status;
+            document.getElementById('class_status').value =
+                data.status ?? 'active';
 
             document.getElementById('classModalTitle').innerHTML =
                 '<i class="fas fa-pen" style="margin-right:8px;"></i>ক্লাস এডিট করুন';
@@ -440,9 +449,13 @@ function editClass(id) {
             document.getElementById('classFormMethod').value = 'PUT';
 
             document.getElementById('classForm').action =
-                `/dashboard/classes/${id}`;
+                `${url}/${id}`;
 
             openClassModal();
+        })
+        .catch(error => {
+            console.error(error);
+            alert('ক্লাসের তথ্য লোড করা যায়নি।');
         });
 }
 </script>

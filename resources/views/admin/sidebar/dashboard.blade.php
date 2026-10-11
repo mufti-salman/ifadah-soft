@@ -6,9 +6,33 @@
 
     /*
     |--------------------------------------------------------------------------
+    | System Super Admin Mode
+    |--------------------------------------------------------------------------
+    | শুধুমাত্র মূল System Super Admin panel-এ
+    | System level menu দেখাবে।
+    |--------------------------------------------------------------------------
+    */
+
+    $systemSuperAdmin =
+        $user->is_super_admin
+        && !$user->active_institution_id;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institution Mode
+    |--------------------------------------------------------------------------
+    */
+
+    $institutionMode =
+        session('institution_mode') === true
+        && session()->has('active_institution_id');
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Dashboard Menu Visibility
     |--------------------------------------------------------------------------
-
     */
 
     $canDashboard =
@@ -18,10 +42,9 @@
         || $user->hasPermission('month.view')
         || $user->hasPermission('user.photo')
         || $user->hasPermission('user.report')
-        || $user->hasPermission('user.edit')
         || $user->hasPermission('institution.view')
         || (
-            $user->is_super_admin
+            $systemSuperAdmin
             && $user->hasPermission('role.view')
             && $user->hasPermission('permission.view')
         );
@@ -232,74 +255,49 @@
 
 
                 {{-- =====================================================
-                | ব্যবহারকারী পারমিশন
-                ====================================================== --}}
-
-                @sidebarPermission('user.edit')
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link text-white-50"
-                            href="#"
-                        >
-
-                            <i class="fas fa-user-lock me-2"></i>
-
-                            ব্যবহারকারী পারমিশন
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-
-                {{-- =====================================================
                 | প্রতিষ্ঠানের তথ্য
+                |
+                | System Super Admin Institution Mode এবং
+                | সরাসরি Institution User/Admin login —
+                | উভয়ের জন্য।
                 ====================================================== --}}
 
-                @sidebarPermission('institution.view')
+                @if($institutionMode)
 
+                    @sidebarPermission('institution.view')
 
-@if(
-    $user->is_super_admin
-    && session('institution_mode') === true
-    && session()->has('active_institution_id')
-)
+                        <li class="nav-item">
 
-    <li class="nav-item">
+                            <a
+                                class="nav-link text-white-50
+                                {{ request()->routeIs('dashboard.institution.info') ? 'active' : '' }}"
 
-        <a
-            class="nav-link text-white-50
-            {{ request()->routeIs('dashboard.institution.info') ? 'active' : '' }}"
+                                href="{{ route('dashboard.institution.info') }}"
+                            >
 
-            href="{{ route('dashboard.institution.info') }}"
-        >
+                                <i class="fas fa-school me-2"></i>
 
-            <i class="fas fa-school me-2"></i>
+                                প্রতিষ্ঠানের তথ্য
 
-            প্রতিষ্ঠানের তথ্য
+                            </a>
 
-        </a>
+                        </li>
 
-    </li>
+                    @endsidebarPermission
 
-@endif
-
-                @endsidebarPermission
+                @endif
 
 
 
                 {{-- =====================================================
                 | Institution Permission Manager
                 |
-                | শুধুমাত্র Super Admin
+                | শুধুমাত্র System Super Admin
+                | Institution Mode-এ দেখাবে না।
                 ====================================================== --}}
 
                 @if(
-                    $user->is_super_admin
+                    $systemSuperAdmin
                     && $user->hasPermission('role.view')
                     && $user->hasPermission('permission.view')
                 )

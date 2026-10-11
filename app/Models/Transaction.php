@@ -10,6 +10,7 @@ class Transaction extends Model
     use HasFactory;
 
     protected $fillable = [
+        'institution_id',
         'voucher_no',
         'type',
         'fund_id',
@@ -32,7 +33,10 @@ class Transaction extends Model
 
     public function paymentMethod()
     {
-        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
+        return $this->belongsTo(
+            PaymentMethod::class,
+            'payment_method_id'
+        );
     }
 
     public function cashier()
@@ -40,3 +44,4 @@ class Transaction extends Model
         return $this->belongsTo(Cashier::class);
     }
 }
+

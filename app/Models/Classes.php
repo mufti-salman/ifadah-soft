@@ -5,24 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Traits\BelongsToInstitution;
+
 class Classes extends Model
 {
     use HasFactory, BelongsToInstitution;
 
     protected $table = 'classes';
-    
+
     protected $fillable = [
         'institution_id',
         'name',
         'name_bn',
-        'sort_order',
+        'level',
+        'description',
         'status',
         'created_by',
         'updated_by',
-    ];
-
-    protected $casts = [
-        'sort_order' => 'integer',
     ];
 
     public function sections()
@@ -34,10 +32,12 @@ class Classes extends Model
     {
         return $this->hasMany(Admission::class, 'class_id');
     }
+
     public function institution()
     {
-        return $this->belongsTo(Madrasa::class);
+        return $this->belongsTo(Madrasa::class, 'institution_id');
     }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -48,19 +48,17 @@ class Classes extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    // ✅ Sections count with condition
     public function getSectionsCountAttribute()
     {
         return $this->sections()->count();
     }
 
-    // ✅ Active sections only
     public function activeSections()
     {
-        return $this->hasMany(Section::class, 'class_id', 'id')->where('is_active', true);
+        return $this->hasMany(Section::class, 'class_id', 'id')
+            ->where('is_active', true);
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -71,7 +69,6 @@ class Classes extends Model
         return $query->where('status', 'inactive');
     }
 
-    // Accessors
     public function getLevelLabelAttribute()
     {
         return match ($this->level) {
@@ -88,9 +85,11 @@ class Classes extends Model
     {
         return $this->name_bn ?: $this->name;
     }
-    
+
     public function getStatusLabelAttribute()
     {
-        return $this->status == 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়';
+        return $this->status == 'active'
+            ? 'সক্রিয়'
+            : 'নিষ্ক্রিয়';
     }
 }

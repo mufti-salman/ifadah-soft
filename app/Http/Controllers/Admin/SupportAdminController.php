@@ -20,22 +20,10 @@ class SupportAdminController extends Controller
      */
     public function index(Request $request)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin Role
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdminRole = Role::where(
             'slug',
             'support_admin'
         )->first();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Role না থাকলে
-        |--------------------------------------------------------------------------
-        */
 
         if (!$supportAdminRole) {
 
@@ -44,13 +32,6 @@ class SupportAdminController extends Controller
                 'Support Admin Role পাওয়া যায়নি।'
             );
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Query
-        |--------------------------------------------------------------------------
-        */
 
         $query = User::with([
             'role',
@@ -61,13 +42,6 @@ class SupportAdminController extends Controller
             'role_id',
             $supportAdminRole->id
         );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        */
 
         if ($request->filled('search')) {
 
@@ -109,13 +83,6 @@ class SupportAdminController extends Controller
             });
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Status Filter
-        |--------------------------------------------------------------------------
-        */
-
         if (
             $request->filled('status') &&
             in_array(
@@ -131,30 +98,15 @@ class SupportAdminController extends Controller
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Pagination
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdmins = $query
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Statistics
-        |--------------------------------------------------------------------------
-        */
-
         $totalSupportAdmins = User::where(
             'role_id',
             $supportAdminRole->id
         )->count();
-
 
         $activeSupportAdmins = User::where(
             'role_id',
@@ -165,7 +117,6 @@ class SupportAdminController extends Controller
             1
         )
         ->count();
-
 
         return view(
             'admin.support_admins.index',
@@ -185,17 +136,10 @@ class SupportAdminController extends Controller
      */
     public function create()
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin Role
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdminRole = Role::where(
             'slug',
             'support_admin'
         )->first();
-
 
         if (!$supportAdminRole) {
 
@@ -208,12 +152,28 @@ class SupportAdminController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Permissions
+        | Load Active Permissions
         |--------------------------------------------------------------------------
         |
-        | systemPanel relation ব্যবহার করে
-        | module/page অনুযায়ী permission সাজানো হবে।
+        | প্রথমে System Panel-এর serial অনুযায়ী সাজানো হবে।
         |
+        | Order:
+        |
+        | 1. Dashboard
+        | 2. Student
+        | 3. Teacher
+        | 4. Attendance
+        | 5. Exam
+        | 6. Result
+        | 7. Accounting
+        | 8. Payment
+        | 9. Settings
+        | 10. Help
+        | 11. System
+        |
+        | তারপর প্রতিটি Panel-এর ভিতরে Permission serial অনুযায়ী সাজানো হবে।
+        |
+        |--------------------------------------------------------------------------
         */
 
         $permissions = Permission::with(
@@ -223,18 +183,22 @@ class SupportAdminController extends Controller
             'is_active',
             true
         )
-        ->orderBy(
-            'system_panel_id'
-        )
-        ->orderBy(
-            'serial'
-        )
-        ->get();
+        ->get()
+        ->sortBy(function ($permission) {
+
+            return [
+                optional($permission->systemPanel)->serial ?? 9999,
+                $permission->serial ?? 9999,
+                $permission->id,
+            ];
+
+        })
+        ->values();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Group Permissions
+        | Group Permissions By Panel
         |--------------------------------------------------------------------------
         */
 
@@ -279,12 +243,6 @@ class SupportAdminController extends Controller
      */
     public function store(Request $request)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
-
         $validated = $request->validate([
 
             'name' => [
@@ -338,12 +296,6 @@ class SupportAdminController extends Controller
         ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin Role
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdminRole = Role::where(
             'slug',
             'support_admin'
@@ -366,37 +318,15 @@ class SupportAdminController extends Controller
 
         try {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Username
-            |--------------------------------------------------------------------------
-            */
-
             $username = $this->generateUsername(
                 $request->name,
                 $request->name_bn
             );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Institution User ID
-            |--------------------------------------------------------------------------
-            |
-            | Support Admin institution-এর অধীন নয়।
-            | তাই এখানে system-level ID generate হবে।
-            |
-            */
-
             $institutionUserId =
                 $this->generateSupportAdminId();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create User
-            |--------------------------------------------------------------------------
-            */
 
             $user = User::create([
 
@@ -436,12 +366,6 @@ class SupportAdminController extends Controller
 
             ]);
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Assign Permissions
-            |--------------------------------------------------------------------------
-            */
 
             $permissionIds =
                 collect(
@@ -505,23 +429,11 @@ class SupportAdminController extends Controller
      */
     public function edit($id)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Support Admin
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdmin = User::with([
             'role',
             'permissions',
         ])->findOrFail($id);
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Security
-        |--------------------------------------------------------------------------
-        */
 
         if (!$supportAdmin->is_support_admin) {
 
@@ -534,7 +446,12 @@ class SupportAdminController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Permissions
+        | Load Active Permissions
+        |--------------------------------------------------------------------------
+        |
+        | SystemPanel serial অনুযায়ী Panel order হবে।
+        | Permission serial অনুযায়ী Panel-এর ভিতরের order হবে।
+        |
         |--------------------------------------------------------------------------
         */
 
@@ -545,13 +462,17 @@ class SupportAdminController extends Controller
             'is_active',
             true
         )
-        ->orderBy(
-            'system_panel_id'
-        )
-        ->orderBy(
-            'serial'
-        )
-        ->get();
+        ->get()
+        ->sortBy(function ($permission) {
+
+            return [
+                optional($permission->systemPanel)->serial ?? 9999,
+                $permission->serial ?? 9999,
+                $permission->id,
+            ];
+
+        })
+        ->values();
 
 
         /*
@@ -570,6 +491,12 @@ class SupportAdminController extends Controller
             }
         );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Module Groups
+        |--------------------------------------------------------------------------
+        */
 
         $modules = $permissions->groupBy(
             'module'
@@ -620,22 +547,10 @@ class SupportAdminController extends Controller
         $id
     ) {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Find User
-        |--------------------------------------------------------------------------
-        */
-
         $supportAdmin = User::with(
             'role'
         )->findOrFail($id);
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Security
-        |--------------------------------------------------------------------------
-        */
 
         if (!$supportAdmin->is_support_admin) {
 
@@ -645,12 +560,6 @@ class SupportAdminController extends Controller
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
 
         $validated = $request->validate([
 
@@ -722,12 +631,6 @@ class SupportAdminController extends Controller
 
         try {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Update Basic Information
-            |--------------------------------------------------------------------------
-            */
-
             $supportAdmin->name =
                 $request->name;
 
@@ -747,12 +650,6 @@ class SupportAdminController extends Controller
                 auth()->id();
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Password
-            |--------------------------------------------------------------------------
-            */
-
             if ($request->filled('password')) {
 
                 $supportAdmin->password =
@@ -764,12 +661,6 @@ class SupportAdminController extends Controller
 
             $supportAdmin->save();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Sync Permissions
-            |--------------------------------------------------------------------------
-            */
 
             $permissionIds =
                 collect(
@@ -848,12 +739,6 @@ class SupportAdminController extends Controller
             )->findOrFail($id);
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Security
-            |--------------------------------------------------------------------------
-            */
-
             if (!$supportAdmin->is_support_admin) {
 
                 return back()->with(
@@ -862,12 +747,6 @@ class SupportAdminController extends Controller
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Cannot Delete Own Account
-            |--------------------------------------------------------------------------
-            */
 
             if (
                 auth()->id() ===
@@ -880,12 +759,6 @@ class SupportAdminController extends Controller
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Delete
-            |--------------------------------------------------------------------------
-            */
 
             $supportAdmin->permissions()->detach();
 
@@ -935,12 +808,6 @@ class SupportAdminController extends Controller
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Cannot Disable Own Account
-            |--------------------------------------------------------------------------
-            */
 
             if (
                 auth()->id() ===
@@ -1047,17 +914,6 @@ class SupportAdminController extends Controller
     /**
      * --------------------------------------------------------------------------
      * Generate Support Admin ID
-     * --------------------------------------------------------------------------
-     *
-     * Support Admin institution-এর অধীন নয়।
-     *
-     * Format:
-     *
-     * 501
-     * 502
-     * 503
-     * ...
-     *
      * --------------------------------------------------------------------------
      */
     private function generateSupportAdminId()

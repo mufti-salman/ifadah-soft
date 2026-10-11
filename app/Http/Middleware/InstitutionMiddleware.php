@@ -14,28 +14,22 @@ class InstitutionMiddleware
      * Institution Middleware
      * --------------------------------------------------------------------------
      *
-     * Role Structure:
+     * System Roles:
+     * - super_admin
+     * - support_admin
      *
-     * SUPER ADMIN
-     *      │
-     *      ├── SUPPORT ADMIN
-     *      │
-     *      └── INSTITUTION CONTEXT
-     *              │
-     *              ├── USER ADMIN
-     *              ├── USER
-     *              └── STUDENT
-     *
-     * Institution Based Roles:
-     *
+     * Institution Roles:
      * - user_admin
      * - user
      * - student
      *
-     * System Based Roles:
+     * Super Admin:
+     * - No active_institution_id = System Mode
+     * - active_institution_id = Institution Mode
      *
-     * - super_admin
-     * - support_admin
+     * Institution users:
+     * - Always use their own user.institution_id
+     * - Never trust active_institution_id from session
      *
      * --------------------------------------------------------------------------
      */
@@ -65,6 +59,7 @@ class InstitutionMiddleware
         */
 
         if ((int) $user->status !== 1) {
+
             abort(
                 403,
                 'আপনার অ্যাকাউন্ট বর্তমানে নিষ্ক্রিয়।'
@@ -94,6 +89,7 @@ class InstitutionMiddleware
         */
 
         if (empty($roleSlug)) {
+
             abort(
                 403,
                 'আপনার কোনো Role নির্ধারণ করা হয়নি।'
@@ -106,11 +102,10 @@ class InstitutionMiddleware
         | SUPER ADMIN
         |--------------------------------------------------------------------------
         |
-        | Super Admin:
+        | Super Admin দুইটি mode-এ কাজ করতে পারে:
         |
-        | 1. Institution ছাড়া system mode-এ থাকতে পারবে।
-        | 2. যেকোনো active institution select করতে পারবে।
-        | 3. Selected institution context-এ কাজ করতে পারবে।
+        | 1. System Mode
+        | 2. Institution Mode
         |
         */
 
@@ -118,8 +113,12 @@ class InstitutionMiddleware
 
             /*
             |--------------------------------------------------------------------------
-            | No Institution Selected → System Mode
+            | SYSTEM MODE
             |--------------------------------------------------------------------------
+            |
+            | active_institution_id না থাকলে Super Admin সম্পূর্ণ System
+            | Dashboard-এর context-এ থাকবে।
+            |
             */
 
             if (!session()->has('active_institution_id')) {
@@ -136,13 +135,46 @@ class InstitutionMiddleware
 
             /*
             |--------------------------------------------------------------------------
-            | Selected Institution
+            | Get Selected Institution
             |--------------------------------------------------------------------------
             */
 
-            $institution = Madrasa::find(
-                session('active_institution_id')
+            $activeInstitutionId = session(
+                'active_institution_id'
             );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Validate Institution ID
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                !is_numeric($activeInstitutionId) ||
+                (int) $activeInstitutionId <= 0
+            ) {
+
+                $this->clearInstitutionContext();
+
+                return redirect()
+                    ->route('dashboard.system.index')
+                    ->with(
+                        'error',
+                        'নির্বাচিত প্রতিষ্ঠানের তথ্য সঠিক নয়।'
+                    );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Load Institution
+            |--------------------------------------------------------------------------
+            */
+
+            $institution = Madrasa::query()
+                ->whereKey((int) $activeInstitutionId)
+                ->first();
 
 
             /*
@@ -156,7 +188,9 @@ class InstitutionMiddleware
                 $this->clearInstitutionContext();
 
                 return redirect()
-                    ->route('dashboard.institutions.index')
+                    ->route(
+                        'dashboard.system.institutions.index'
+                    )
                     ->with(
                         'error',
                         'নির্বাচিত প্রতিষ্ঠানটি আর পাওয়া যাচ্ছে না।'
@@ -175,7 +209,9 @@ class InstitutionMiddleware
                 $this->clearInstitutionContext();
 
                 return redirect()
-                    ->route('dashboard.institutions.index')
+                    ->route(
+                        'dashboard.system.institutions.index'
+                    )
                     ->with(
                         'error',
                         'নির্বাচিত প্রতিষ্ঠানটি বর্তমানে নিষ্ক্রিয়।'
@@ -185,12 +221,13 @@ class InstitutionMiddleware
 
             /*
             |--------------------------------------------------------------------------
-            | Bind Active Institution
+            | Bind Selected Institution
             |--------------------------------------------------------------------------
             */
 
-            $this->bindInstitution($institution);
-
+            $this->bindInstitution(
+                $institution
+            );
 
             return $next($request);
         }
@@ -201,30 +238,19 @@ class InstitutionMiddleware
         | SUPPORT ADMIN
         |--------------------------------------------------------------------------
         |
-        | Support Admin system-level role।
+        | Support Admin হলো System-level role।
         |
-        | তার নিজের কোনো institution বাধ্যতামূলক নয়।
+        | তাই Support Admin কখনো কোনো Madrasa context inherit করবে না।
         |
         */
 
         if ($roleSlug === 'support_admin') {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Support Admin → System Mode
-            |--------------------------------------------------------------------------
-            |
-            | Support Admin-এর ক্ষেত্রে কোনো stale institution context
-            | রাখা হবে না।
-            |
-            */
 
             $this->clearInstitutionContext();
 
             session([
                 'institution_mode' => false,
             ]);
-
 
             return $next($request);
         }
@@ -249,7 +275,11 @@ class InstitutionMiddleware
         |--------------------------------------------------------------------------
         */
 
-        if (in_array($roleSlug, $institutionRoles, true)) {
+        if (in_array(
+            $roleSlug,
+            $institutionRoles,
+            true
+        )) {
 
             /*
             |--------------------------------------------------------------------------
@@ -258,6 +288,8 @@ class InstitutionMiddleware
             */
 
             if (empty($user->institution_id)) {
+
+                $this->clearInstitutionContext();
 
                 abort(
                     403,
@@ -268,17 +300,28 @@ class InstitutionMiddleware
 
             /*
             |--------------------------------------------------------------------------
-            | ALWAYS USE USER'S OWN INSTITUTION
+            | IMPORTANT SECURITY RULE
             |--------------------------------------------------------------------------
             |
-            | User Admin / User / Student session বা URL থেকে
-            | অন্য institution select করতে পারবে না।
+            | Institution users-এর জন্য session-এর
+            | active_institution_id কখনো trusted হবে না।
+            |
+            | Database-এর user.institution_id-ই canonical source।
             |
             */
 
-            $institution = Madrasa::find(
-                $user->institution_id
-            );
+            $userInstitutionId = (int) $user->institution_id;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Load User's Own Institution
+            |--------------------------------------------------------------------------
+            */
+
+            $institution = Madrasa::query()
+                ->whereKey($userInstitutionId)
+                ->first();
 
 
             /*
@@ -317,12 +360,17 @@ class InstitutionMiddleware
 
             /*
             |--------------------------------------------------------------------------
-            | Bind User's Institution
+            | FORCE OWN INSTITUTION
             |--------------------------------------------------------------------------
+            |
+            | User-এর session-এ অন্য institution-এর ID থাকলেও
+            | সেটা overwrite হবে।
+            |
             */
 
-            $this->bindInstitution($institution);
-
+            $this->bindInstitution(
+                $institution
+            );
 
             return $next($request);
         }
@@ -333,6 +381,8 @@ class InstitutionMiddleware
         | UNKNOWN ROLE
         |--------------------------------------------------------------------------
         */
+
+        $this->clearInstitutionContext();
 
         abort(
             403,
@@ -346,110 +396,75 @@ class InstitutionMiddleware
      * Bind Institution Context
      * --------------------------------------------------------------------------
      */
-
-protected function bindInstitution(
-    Madrasa $institution
-): void {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Application Container
-    |--------------------------------------------------------------------------
-    */
-
-    app()->instance(
-        'institution_id',
-        $institution->id
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Session
-    |--------------------------------------------------------------------------
-    */
-
-    session([
+    protected function bindInstitution(
+        Madrasa $institution
+    ): void {
 
         /*
         |--------------------------------------------------------------------------
-        | Canonical Institution ID
+        | Application Container
         |--------------------------------------------------------------------------
         */
 
-        'active_institution_id' =>
-            $institution->id,
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Institution Information
-        |--------------------------------------------------------------------------
-        */
-
-        'institution_name' =>
-            $institution->name,
-
-
-        'institution_name_bn' =>
-            $institution->name_bn,
-
-
-        'institution_logo' =>
-            $institution->logo,
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Institution Mode
-        |--------------------------------------------------------------------------
-        */
-
-        'institution_mode' =>
-            true,
-
-    ]);
-}
-
-/**
- * --------------------------------------------------------------------------
- * Clear Institution Context
- * --------------------------------------------------------------------------
- */
-protected function clearInstitutionContext(): void
-{
-    /*
-    |--------------------------------------------------------------------------
-    | Application Container
-    |--------------------------------------------------------------------------
-    */
-
-    if (app()->bound('institution_id')) {
-
-        app()->forgetInstance(
-            'institution_id'
+        app()->instance(
+            'institution_id',
+            $institution->id
         );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session
+        |--------------------------------------------------------------------------
+        */
+
+        session([
+            'active_institution_id' => $institution->id,
+
+            'institution_name' => $institution->name,
+
+            'institution_name_bn' => $institution->name_bn,
+
+            'institution_logo' => $institution->logo,
+
+            'institution_mode' => true,
+        ]);
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Session
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * --------------------------------------------------------------------------
+     * Clear Institution Context
+     * --------------------------------------------------------------------------
+     */
+    protected function clearInstitutionContext(): void
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Application Container
+        |--------------------------------------------------------------------------
+        */
 
-    session()->forget([
+        if (app()->bound('institution_id')) {
 
-        'active_institution_id',
+            app()->forgetInstance(
+                'institution_id'
+            );
+        }
 
-        'institution_name',
 
-        'institution_name_bn',
+        /*
+        |--------------------------------------------------------------------------
+        | Session
+        |--------------------------------------------------------------------------
+        */
 
-        'institution_logo',
-
-        'institution_mode',
-
-    ]);
-}
+        session()->forget([
+            'active_institution_id',
+            'institution_name',
+            'institution_name_bn',
+            'institution_logo',
+            'institution_mode',
+        ]);
+    }
 }

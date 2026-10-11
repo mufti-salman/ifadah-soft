@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Services\CreateInstitutionTrial;
+use Illuminate\Support\Facades\DB;
 
 class InstitutionController extends Controller
 {
@@ -26,7 +28,7 @@ class InstitutionController extends Controller
         | Super Admin
         |--------------------------------------------------------------------------
         |
-        | সব প্রতিষ্ঠান দেখতে পারবে।
+        | System Dashboard থেকে সব প্রতিষ্ঠান দেখতে পারবে।
         |
         */
 
@@ -48,21 +50,14 @@ class InstitutionController extends Controller
             */
 
             $institutions = Madrasa::with('users')
-                ->where('id', $user->institution_id)
+                ->where(
+                    'id',
+                    $user->institution_id
+                )
                 ->latest()
                 ->get();
 
         } else {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Other Users
-            |--------------------------------------------------------------------------
-            |
-            | সাধারণ User / Student institution management page
-            | দেখতে পারবে না।
-            |
-            */
 
             abort(
                 403,
@@ -181,11 +176,22 @@ class InstitutionController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        Madrasa::create($validated);
+        DB::transaction(function () use ($validated) {
+
+    // Create institution.
+    $institution = Madrasa::create($validated);
+
+    // Create its initial 7-day trial subscription.
+    app(CreateInstitutionTrial::class)
+        ->execute($institution);
+
+    });
 
 
         return redirect()
-            ->route('dashboard.institutions.index')
+            ->route(
+                'dashboard.institutions.index'
+            )
             ->with(
                 'success',
                 'প্রতিষ্ঠান সফলভাবে তৈরি হয়েছে।'
@@ -396,10 +402,6 @@ class InstitutionController extends Controller
         |--------------------------------------------------------------------------
         | Update Active Institution Session
         |--------------------------------------------------------------------------
-        |
-        | Canonical key:
-        | active_institution_id
-        |
         */
 
         if (
@@ -410,6 +412,9 @@ class InstitutionController extends Controller
             session([
                 'institution_name' =>
                     $institution->name,
+
+                'institution_name_bn' =>
+                    $institution->name_bn,
 
                 'institution_logo' =>
                     $institution->logo,
@@ -654,6 +659,35 @@ class InstitutionController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | INSTITUTION INFORMATION
+    |--------------------------------------------------------------------------
+    */
+
+    public function info()
+    {
+        $user = Auth::user();
+
+        $institution = $user->activeInstitution;
+
+        if (!$institution) {
+
+            return redirect()
+                ->route('dashboard.index')
+                ->with(
+                    'error',
+                    'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
+                );
+        }
+
+        return view(
+            'admin.institutions.info',
+            compact('institution')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | EXIT INSTITUTION
     |--------------------------------------------------------------------------
     |
@@ -661,55 +695,19 @@ class InstitutionController extends Controller
     |
     */
 
-    /**
- * ----------------------------------------------------------
- * Institution Information
- * ----------------------------------------------------------
- */
-public function info()
-{
-    $user = auth()->user();
+    public function exit()
+    {
+        $this->authorizeSuperAdmin();
 
-    $institution = $user->activeInstitution;
+        $this->clearInstitutionContext();
 
-    if (!$institution) {
         return redirect()
             ->route('dashboard.index')
             ->with(
-                'error',
-                'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
+                'success',
+                'প্রতিষ্ঠান মোড থেকে সফলভাবে বের হয়েছেন।'
             );
     }
-
-    return view(
-        'admin.institutions.info',
-        compact('institution')
-    );
-}
-
-public function exit()
-{
-    if (!auth()->user()->is_super_admin) {
-        abort(403);
-    }
-
-    session()->forget([
-        'active_institution_id',
-        'institution_name',
-        'institution_mode',
-    ]);
-
-    if (app()->bound('institution_id')) {
-        app()->forgetInstance('institution_id');
-    }
-
-    return redirect()
-        ->route('dashboard.index')
-        ->with(
-            'success',
-            'প্রতিষ্ঠান মোড থেকে সফলভাবে বের হয়েছেন।'
-        );
-}
 
 
     /*
@@ -733,6 +731,9 @@ public function exit()
 
             'institution_name' =>
                 $institution->name,
+
+            'institution_name_bn' =>
+                $institution->name_bn,
 
             'institution_logo' =>
                 $institution->logo,
@@ -764,6 +765,7 @@ public function exit()
         session()->forget([
             'active_institution_id',
             'institution_name',
+            'institution_name_bn',
             'institution_logo',
             'institution_mode',
         ]);
@@ -790,10 +792,5 @@ public function exit()
                 'শুধুমাত্র Super Admin এই কাজটি করতে পারবেন।'
             );
         }
-        
     }
-
-
-    
-    
 }
