@@ -36,7 +36,6 @@
 
     </div>
 
-
     {{-- =========================================================
          ACADEMIC STATISTICS
     ========================================================== --}}
@@ -376,102 +375,6 @@
 
     </div>
 
-
-    {{-- =========================================================
-         QUICK INFORMATION
-    ========================================================== --}}
-
-    <div class="card border-0 shadow-sm mt-4">
-
-        <div class="card-header bg-transparent border-0 p-4">
-
-            <h5 class="fw-bold mb-1">
-
-                <i class="fas fa-info-circle text-primary me-2"></i>
-
-                প্রতিষ্ঠানের সংক্ষিপ্ত তথ্য
-
-            </h5>
-
-            <small class="text-muted">
-                ড্যাশবোর্ডের বর্তমান সারসংক্ষেপ
-            </small>
-
-        </div>
-
-        <div class="card-body">
-
-            <div class="row g-3">
-
-                <div class="col-md-3 col-6">
-
-                    <div class="p-3 bg-light rounded">
-
-                        <small class="text-muted d-block">
-                            শিক্ষার্থী
-                        </small>
-
-                        <strong class="fs-5">
-                            {{ number_format($studentsCount) }}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-                <div class="col-md-3 col-6">
-
-                    <div class="p-3 bg-light rounded">
-
-                        <small class="text-muted d-block">
-                            শিক্ষক
-                        </small>
-
-                        <strong class="fs-5">
-                            {{ number_format($teachersCount) }}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-                <div class="col-md-3 col-6">
-
-                    <div class="p-3 bg-light rounded">
-
-                        <small class="text-muted d-block">
-                            পরীক্ষা
-                        </small>
-
-                        <strong class="fs-5">
-                            {{ number_format($examsCount) }}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-                <div class="col-md-3 col-6">
-
-                    <div class="p-3 bg-light rounded">
-
-                        <small class="text-muted d-block">
-                            ফলাফল
-                        </small>
-
-                        <strong class="fs-5">
-                            {{ number_format($resultsCount) }}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
 
 </div>
 

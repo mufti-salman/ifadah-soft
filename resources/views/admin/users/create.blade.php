@@ -1747,6 +1747,107 @@ $(document).ready(function () {
         }
     }
 
+/* ============================================================
+   MANUAL CODE PERSISTENCE
+   ============================================================ */
+
+function getSavedManualCode() {
+
+    try {
+
+        var saved = sessionStorage.getItem(
+            'user_manual_code_setting'
+        );
+
+        if (!saved) {
+            return null;
+        }
+
+        return JSON.parse(saved);
+
+    } catch (e) {
+
+        console.error(
+            'Manual code restore error:',
+            e
+        );
+
+        return null;
+    }
+}
+
+
+function saveManualCode(
+    userType,
+    institutionId,
+    manualCode
+) {
+
+    var data = {
+
+        user_type: userType,
+
+        institution_id: String(
+            institutionId || ''
+        ),
+
+        manual_code: String(
+            manualCode || ''
+        )
+    };
+
+    sessionStorage.setItem(
+        'user_manual_code_setting',
+        JSON.stringify(data)
+    );
+}
+
+
+function clearSavedManualCode() {
+
+    sessionStorage.removeItem(
+        'user_manual_code_setting'
+    );
+}
+
+
+function restoreSavedManualCode(
+    userType,
+    institutionId
+) {
+
+    var saved = getSavedManualCode();
+
+    if (!saved) {
+        return false;
+    }
+
+    if (
+        saved.user_type !== userType ||
+        saved.institution_id !== String(
+            institutionId || ''
+        ) ||
+        !saved.manual_code
+    ) {
+        return false;
+    }
+
+    currentMainManualCode = saved.manual_code;
+
+    currentMainManualCodeExplicit = true;
+
+    mainManualPreviewOnly = false;
+
+    $('#custom_id').val(
+        saved.manual_code
+    );
+
+    $('#manual_user_code').val(
+        saved.manual_code
+    );
+
+    return true;
+}
 
     /* ============================================================
        UPDATE MAIN HIDDEN CODE TYPE
@@ -2196,61 +2297,72 @@ $(document).ready(function () {
     }
 
 
-    /* ============================================================
-       MANUAL MODE MAIN FORM
-       ============================================================ */
+function prepareManualMainId() {
 
-    function prepareManualMainId() {
+    var userType = $('#user_type').val();
 
-        var userType =
-            $('#user_type').val();
+    var institutionId = getInstitutionId();
 
-        if (!userType) {
+    if (!userType) {
 
-            $('#custom_id')
-                .val('');
+        $('#custom_id').val('');
 
-            return;
-        }
-
-        /*
-         * Explicit Manual Code থাকলে
-         * সেটাই Main Form-এ থাকবে।
-         */
-        if (
-            currentMainManualCodeExplicit &&
-            currentMainManualCode
-        ) {
-
-            $('#custom_id')
-                .val(currentMainManualCode)
-                .attr(
-                    'placeholder',
-                    'ম্যানুয়াল কোড'
-                );
-
-            mainManualPreviewOnly = false;
-
-            return;
-        }
-
-        /*
-         * Blank Manual:
-         *
-         * Backend থেকে last saved manual + 1
-         * preview হবে।
-         */
-        currentMainManualCode = '';
-
-        currentMainManualCodeExplicit = false;
-
-        mainManualPreviewOnly = true;
-
-        manualFillId(
-            userType,
-            getInstitutionId()
-        );
+        return;
     }
+
+    /*
+     * প্রথমে বর্তমান JavaScript State পরীক্ষা।
+     */
+
+    if (
+        currentMainManualCodeExplicit &&
+        currentMainManualCode
+    ) {
+
+        $('#custom_id').val(
+            currentMainManualCode
+        );
+
+        return;
+    }
+
+    /*
+     * Reload-এর পর Saved Manual Code restore।
+     */
+
+    if (
+        restoreSavedManualCode(
+            userType,
+            institutionId
+        )
+    ) {
+
+        $('#custom_id')
+            .val(currentMainManualCode)
+            .attr(
+                'placeholder',
+                'ম্যানুয়াল কোড'
+            );
+
+        return;
+    }
+
+    /*
+     * কোনো Explicit Code পাওয়া না গেলে
+     * Backend থেকে পরবর্তী Preview।
+     */
+
+    currentMainManualCode = '';
+
+    currentMainManualCodeExplicit = false;
+
+    mainManualPreviewOnly = true;
+
+    manualFillId(
+        userType,
+        institutionId
+    );
+}
 
 
     /* ============================================================
@@ -3354,67 +3466,55 @@ $(document).ready(function () {
                 setManualModeUI();
 
 
-                if (manualCode) {
+if (manualCode) {
 
-                    /*
-                     * Explicit Manual Code
-                     *
-                     * Example:
-                     * 500
-                     */
-                    currentMainManualCode =
-                        manualCode;
+    currentMainManualCode = manualCode;
 
-                    currentMainManualCodeExplicit =
-                        true;
+    currentMainManualCodeExplicit = true;
 
-                    mainManualPreviewOnly =
-                        false;
+    mainManualPreviewOnly = false;
 
+    /*
+     * Manual Code sessionStorage-এ সংরক্ষণ।
+     */
 
-                    $('#custom_id')
-                        .val(manualCode)
-                        .attr(
-                            'placeholder',
-                            'ম্যানুয়াল কোড'
-                        );
+    saveManualCode(
+        userType,
+        getInstitutionId(),
+        manualCode
+    );
 
+    $('#custom_id')
+        .val(manualCode)
+        .attr(
+            'placeholder',
+            'ম্যানুয়াল কোড'
+        );
 
-                    $('#manual_user_code')
-                        .val(manualCode);
+    $('#manual_user_code')
+        .val(manualCode);
 
+} else {
 
-                } else {
+    /*
+     * Blank Manual হলে আগের Explicit Code মুছে যাবে।
+     */
 
-                    /*
-                     * Blank Manual
-                     *
-                     * Backend থেকে:
-                     *
-                     * last saved manual + 1
-                     *
-                     * preview হবে।
-                     */
-                    currentMainManualCode =
-                        '';
+    currentMainManualCode = '';
 
-                    currentMainManualCodeExplicit =
-                        false;
+    currentMainManualCodeExplicit = false;
 
-                    mainManualPreviewOnly =
-                        true;
+    mainManualPreviewOnly = true;
 
+    clearSavedManualCode();
 
-                    $('#manual_user_code')
-                        .val('');
+    $('#manual_user_code').val('');
 
-
-                    manualFillId(
-                        userType,
-                        getInstitutionId()
-                    );
-                }
-
+    manualFillId(
+        userType,
+        getInstitutionId()
+    );
+}
 
             } else {
 
@@ -3519,43 +3619,14 @@ $(document).ready(function () {
             /*
              * Generation type
              */
-            if (setting.generation_type) {
+        if (setting.generation_type === 'manual') {
 
-                $(
-                    'input[name="code_generation_type"][value="' +
-                    setting.generation_type +
-                    '"]'
-                )
-                    .prop(
-                        'checked',
-                        true
-                    );
+            updateHiddenCodeType('manual');
 
+            setManualModeUI();
 
-                if (
-                    $('#user_type').val() &&
-                    $('#user_type').val() ===
-                    setting.user_type
-                ) {
-
-                    updateHiddenCodeType(
-                        setting.generation_type
-                    );
-
-
-                    if (
-                        setting.generation_type ===
-                        'manual'
-                    ) {
-
-                        setManualModeUI();
-
-                    } else {
-
-                        setAutoModeUI();
-                    }
-                }
-            }
+            prepareManualMainId();
+        }
 
 
             /*

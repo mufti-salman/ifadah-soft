@@ -39,15 +39,19 @@ class EnsureActiveSubscription
             abort(403, 'No institution is assigned to this account.');
         }
 
-        // Allow subscription-related pages and logout even if expired.
-        if ($request->routeIs(
-            'dashboard.subscription.plans',
-            'dashboard.subscription.current',
-            'dashboard.subscription.renewal.*',
-            'logout'
-        )) {
-            return $next($request);
-        }
+// Allow subscription purchase and payment routes
+// even if the current subscription is expired or inactive.
+if ($request->routeIs(
+    'dashboard.subscription.index',
+    'dashboard.subscription.plans',
+    'dashboard.subscription.current',
+    'dashboard.subscription.choose',
+    'dashboard.subscription.payments.store',
+    'dashboard.subscription.renewal.*',
+    'logout'
+)) {
+    return $next($request);
+}
 
     $hasValidSubscription = Subscription::query()
     ->where('institution_id', $institutionId)

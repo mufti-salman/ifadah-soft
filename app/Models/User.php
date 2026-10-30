@@ -1335,7 +1335,16 @@ public function permanentUpazila(): BelongsTo
 
         return false;
     }
-
+    /**
+     * Students linked to this user as guardian.
+     */
+    public function guardianStudents()
+    {
+        return $this->hasMany(
+            Student::class,
+            'guardian_user_id'
+        );
+    }
     /**
      * ---------------------------------------------------------
      * Active Scope

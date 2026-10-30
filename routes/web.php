@@ -6,12 +6,15 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\SystemDashboardController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserPhotoController;
+use App\Http\Controllers\Admin\UserReportController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\AdmissionController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\CalendarSettingController;
 
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\IncomeExpenseReportController;
@@ -22,6 +25,7 @@ use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\CashierController;
 
 use App\Http\Controllers\Admin\MonthSettingController;
+use App\Http\Controllers\Admin\InstitutionMonthController;
 use App\Http\Controllers\Admin\FeeSettingController;
 use App\Http\Controllers\Admin\FeeGroupController;
 use App\Http\Controllers\Admin\FeeCollectionController;
@@ -679,20 +683,37 @@ Route::prefix('dashboard')
         });
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | GENERAL SETTINGS
-        |--------------------------------------------------------------------------
-        */
+      /*
+|--------------------------------------------------------------------------
+| GENERAL SETTINGS
+|--------------------------------------------------------------------------
+*/
 
-        Route::get(
-            'settings',
-            [SettingController::class, 'index']
-        )
-            ->middleware('permission:general.view')
-            ->name('settings.index');
+Route::get(
+    'settings',
+    [SettingController::class, 'index']
+)
+    ->middleware('permission:general.view')
+    ->name('settings.index');
+/*
+|--------------------------------------------------------------------------
+| CALENDAR SETTINGS
+|--------------------------------------------------------------------------
+*/
 
+Route::get(
+    'settings/calendar',
+    [CalendarSettingController::class, 'index']
+)
+    ->middleware('permission:general.view')
+    ->name('settings.calendar');
 
+Route::post(
+    'settings/calendar',
+    [CalendarSettingController::class, 'update']
+)
+    ->middleware('permission:general.edit')
+    ->name('settings.calendar.update');
         /*
         |--------------------------------------------------------------------------
         | USER MANAGEMENT
@@ -754,7 +775,7 @@ Route::prefix('dashboard')
                         ->middleware('permission:user.edit')
                         ->name('user.edit');
 
-                    Route::put(
+                    Route::post(
                         '/',
                         [UserController::class, 'update']
                     )
@@ -779,6 +800,55 @@ Route::prefix('dashboard')
 
             });
 
+Route::prefix('user-photos')
+    ->middleware('permission:user.view')
+    ->group(function () {
+
+        Route::get(
+            '/',
+            [UserPhotoController::class, 'index']
+        )->name('user-photos.index');
+
+        Route::get(
+            '/search',
+            [UserPhotoController::class, 'search']
+        )->name('user-photos.search');
+
+        Route::post(
+            '/upload',
+            [UserPhotoController::class, 'upload']
+        )
+            ->middleware('permission:user.edit')
+            ->name('user-photos.upload');
+
+        Route::delete(
+            '/{user}',
+            [UserPhotoController::class, 'destroy']
+        )
+            ->whereNumber('user')
+            ->middleware('permission:user.edit')
+            ->name('user-photos.destroy');
+
+        Route::get(
+            '/download-all',
+            [UserPhotoController::class, 'downloadAll']
+        )->name('user-photos.download-all');
+    });
+
+Route::prefix('user-reports')
+    ->name('user-reports.')
+    ->middleware('permission:user.view')
+    ->group(function () {
+        Route::get(
+            '/',
+            [UserReportController::class, 'index']
+        )->name('index');
+
+        Route::post(
+            '/preview',
+            [UserReportController::class, 'preview']
+        )->name('preview');
+    });
 
         /*
         |--------------------------------------------------------------------------
@@ -815,7 +885,7 @@ Route::prefix('dashboard')
                     ->name('students.store');
 
 
-                Route::prefix('{id}')->group(function () {
+                Route::prefix('{username}')->group(function () {
 
                     Route::get(
                         '/',
@@ -1270,6 +1340,11 @@ Route::prefix('dashboard')
             });
 
 
+            Route::put(
+    '/academic-years/months',
+    [InstitutionMonthController::class, 'update']
+)->name('academic-years.months.update');
+
         /*
         |--------------------------------------------------------------------------
         | FEE TYPE
@@ -1668,28 +1743,33 @@ Route::prefix('dashboard')
                 |--------------------------------------------------------------------------
                 */
 
-                Route::prefix('payment-method')->group(function () {
+               Route::prefix('payment-method')->group(function () {
+    Route::get(
+        'list',
+        [PaymentMethodController::class, 'index']
+    )->name('payment-method.index');
 
-                    Route::get(
-                        'list',
-                        [PaymentMethodController::class, 'index']
-                    )->name('payment-method.index');
+    Route::post(
+        'store',
+        [PaymentMethodController::class, 'store']
+    )
+        ->middleware('permission:payment.create')
+        ->name('payment-method.store');
 
-                    Route::post(
-                        'store',
-                        [PaymentMethodController::class, 'store']
-                    )
-                        ->middleware('permission:payment.create')
-                        ->name('payment-method.store');
+    Route::put(
+        '{id}',
+        [PaymentMethodController::class, 'update']
+    )
+        ->middleware('permission:payment.create')
+        ->name('payment-method.update');
 
-                    Route::delete(
-                        '{id}',
-                        [PaymentMethodController::class, 'destroy']
-                    )
-                        ->middleware('permission:payment.delete')
-                        ->name('payment-method.destroy');
-
-                });
+    Route::delete(
+        '{id}',
+        [PaymentMethodController::class, 'destroy']
+    )
+        ->middleware('permission:payment.delete')
+        ->name('payment-method.destroy');
+});
 
 
                 /*

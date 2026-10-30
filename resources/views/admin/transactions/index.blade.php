@@ -1076,11 +1076,6 @@ body {
                        id="hiddenPayment"
                        value="">
 
-                <input type="hidden"
-                       name="cashier_id"
-                       id="hiddenCashier"
-                       value="">
-
                 <div class="form-grid">
 
                     {{-- Date --}}
@@ -1417,54 +1412,7 @@ body {
 
             </div>
 
-            {{-- Cashier --}}
-            <div class="card">
 
-                <div class="panel-label">
-                    ক্যাশিয়ার সিলেক্ট করুন
-                </div>
-
-                <div class="cashier-grid"
-                     id="cashierGrid">
-
-                    @foreach($cashiers as $c)
-
-                        <button type="button"
-                                class="cashier-btn {{ $loop->first ? 'active' : '' }}"
-                                onclick="selectCashier(this, {{ $c->id }})">
-
-                            {{ $c->name }}
-
-                        </button>
-
-                    @endforeach
-
-                </div>
-
-                @if($cashiers->isEmpty())
-
-                    <div style="text-align:center;color:#bbb;font-size:13px;padding:12px;">
-
-                        + বাটন দিয়ে ক্যাশিয়ার যোগ করুন
-
-                    </div>
-
-                @endif
-
-                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
-
-                    <button type="button"
-                            style="display:flex;align-items:center;gap:6px;padding:7px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;"
-                            onclick="openModal('cashierModal')">
-
-                        <i class="fas fa-plus"></i>
-                        ক্যাশিয়ার যোগ
-
-                    </button>
-
-                </div>
-
-            </div>
 
             {{-- Grand Total --}}
             <div class="card">
@@ -1650,15 +1598,11 @@ body {
 
                                     {{ $t->paymentMethod->name ?? '—' }}
 
-                                    @if($t->cashier)
-
-                                        <br>
-
-                                        <small>
-                                            ({{ $t->cashier->name }})
-                                        </small>
-
-                                    @endif
+                                @if($t->creator)
+                                    <small class="text-muted">
+                                        এন্ট্রি করেছেন: {{ $t->creator->name }}
+                                    </small>
+                                @endif
 
                                 </span>
 
@@ -2158,3237 +2102,1250 @@ body {
 </div>
 
 <script>
+'use strict';
+
+/* ============================================================
+   CONFIGURATION
+============================================================ */
 
 const TOKEN =
     document.querySelector('meta[name="csrf-token"]')?.content
-    || '{{ csrf_token() }}';
+    || @json(csrf_token());
 
-/*
-|--------------------------------------------------------------------------
-| Current Transaction Type
-|--------------------------------------------------------------------------
-*/
-
-const currentType =
-    @json($type);
-
-/*
-|--------------------------------------------------------------------------
-| Route URLs
-|--------------------------------------------------------------------------
-*/
+const currentType = @json($type);
 
 const ROUTES = {
+    paymentList: @json(route('dashboard.payment-method.index')),
+    paymentStore: @json(route('dashboard.payment-method.store')),
+    paymentUpdate: @json(route('dashboard.payment-method.update', ['id' => '__ID__'])),
+    paymentDestroy: @json(route('dashboard.payment-method.destroy', ['id' => '__ID__'])),
 
-    paymentList:
-        @json(route('dashboard.payment-method.index')),
+    fundStore: @json(route('dashboard.fund.store')),
+    ledgerStore: @json(route('dashboard.ledger.store')),
+    fundLedgers: @json(route('dashboard.ledger.fundLedgers', ['id' => '__ID__'])),
 
-    paymentStore:
-        @json(route('dashboard.payment-method.store')),
+    subLedgerList: @json(route('dashboard.sub-ledger.getByLedger', ['id' => '__ID__'])),
+    subLedgerStore: @json(route('dashboard.sub-ledger.store')),
 
-    paymentDestroy:
-        @json(route('dashboard.payment-method.destroy', ['id' => '__ID__'])),
-
-    paymentUpdate:
-        @json(route('dashboard.payment-method.destroy', ['id' => '__ID__'])),
-
-    cashierList:
-        @json(route('dashboard.cashier.index')),
-
-    cashierStore:
-        @json(route('dashboard.cashier.store')),
-
-    cashierDestroy:
-        @json(route('dashboard.cashier.destroy', ['id' => '__ID__'])),
-
-    fundStore:
-        @json(route('dashboard.fund.store')),
-
-    ledgerStore:
-        @json(route('dashboard.ledger.store')),
-
-    fundLedgers:
-        @json(route('dashboard.ledger.fundLedgers', ['id' => '__ID__'])),
-
-    subLedgerList:
-        @json(route('dashboard.sub-ledger.getByLedger', ['id' => '__ID__'])),
-
-    subLedgerStore:
-        @json(route('dashboard.sub-ledger.store')),
-
-    transactionDestroy:
-        @json(route('dashboard.transactions.destroy', ['id' => '__ID__']))
-
+    transactionDestroy: @json(route('dashboard.transactions.destroy', ['id' => '__ID__']))
 };
 
-/*
-|--------------------------------------------------------------------------
-| Helper
-|--------------------------------------------------------------------------
-*/
-
 function routeWithId(url, id) {
-
-    return url.replace('__ID__', id);
-
+    return url.replace('__ID__', encodeURIComponent(id));
 }
 
-function esc(s) {
+/* ============================================================
+   HELPERS
+============================================================ */
 
-    if (!s) return '';
+function esc(value) {
+    if (value === null || value === undefined) return '';
 
-    return String(s)
+    return String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
-
 }
 
-function showToast(msg, type) {
+function showToast(message, type = 'error') {
+    const toast = document.createElement('div');
 
-    const t = document.createElement('div');
-
-    t.style.cssText =
-        `position:fixed;
+    toast.style.cssText = `
+        position:fixed;
         bottom:24px;
         right:24px;
         background:${type === 'success' ? '#2e7d32' : '#c62828'};
         color:#fff;
         padding:12px 20px;
         border-radius:10px;
-        z-index:99999;
+        z-index:999999;
         font-size:14px;
         font-family:'Hind Siliguri',sans-serif;
         box-shadow:0 4px 16px rgba(0,0,0,.2);
         display:flex;
         align-items:center;
-        gap:8px;`;
+        gap:8px;
+    `;
 
-    t.innerHTML =
-        `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        ${esc(msg)}`;
+    const icon = document.createElement('i');
+    icon.className = type === 'success'
+        ? 'fas fa-check-circle'
+        : 'fas fa-exclamation-circle';
 
-    document.body.appendChild(t);
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    toast.append(icon, text);
+    document.body.appendChild(toast);
 
     setTimeout(() => {
-
-        t.style.opacity = '0';
-        t.style.transition = 'opacity .3s';
-
-        setTimeout(() => t.remove(), 300);
-
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity .3s';
+        setTimeout(() => toast.remove(), 300);
     }, 2700);
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Type
-|--------------------------------------------------------------------------
-*/
+async function readJsonResponse(response, defaultMessage) {
+    let data;
 
-function setType(t) {
+    try {
+        data = await response.json();
+    } catch {
+        throw new Error(defaultMessage || 'সার্ভার থেকে সঠিক response পাওয়া যায়নি।');
+    }
 
-    /*
-     * Current unsaved items type অনুযায়ী আলাদা storage-এ থাকবে।
-     */
+    if (!response.ok) {
+        let message = data.message || defaultMessage || 'অনুরোধটি সম্পন্ন হয়নি।';
+
+        if (data.errors) {
+            const firstError = Object.values(data.errors).flat()[0];
+            if (firstError) message = firstError;
+        }
+
+        throw new Error(message);
+    }
+
+    return data;
+}
+
+/* ============================================================
+   TRANSACTION TYPE
+============================================================ */
+
+function setType(type) {
     saveItemsToStorage();
 
     window.location.href =
-        "{{ route('dashboard.transactions.index') }}?type="
-        + encodeURIComponent(t);
-
+        @json(route('dashboard.transactions.index'))
+        + '?type='
+        + encodeURIComponent(type);
 }
 
-/*
-|--------------------------------------------------------------------------
-| Generic Modal
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   GENERIC MODALS
+============================================================ */
 
 function openModal(id) {
-
-    const modal =
-        document.getElementById(id);
-
-    if (modal) {
-        modal.classList.add('open');
-    }
-
+    document.getElementById(id)?.classList.add('open');
 }
 
 function closeModal(id) {
-
-    const modal =
-        document.getElementById(id);
-
-    if (modal) {
-        modal.classList.remove('open');
-    }
-
+    document.getElementById(id)?.classList.remove('open');
 }
 
-document
-    .querySelectorAll('.modal-overlay')
-    .forEach(m => {
-
-        m.addEventListener('click', function(e) {
-
-            if (e.target === this) {
-                this.classList.remove('open');
-            }
-
-        });
-
+document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function (event) {
+        if (event.target === this) {
+            this.classList.remove('open');
+        }
     });
+});
 
-/*
-|--------------------------------------------------------------------------
-| Payment Method
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   PAYMENT METHODS
+============================================================ */
 
-let selectedPaymentId =
-    '{{ $paymentMethods->first()?->id ?? "" }}';
-
-let selectedPaymentType =
-    'cash';
-
-function selectPaymentType(el, type) {
-
-    document
-        .querySelectorAll('#paymentTypeGrid .pay-card')
-        .forEach(card =>
-            card.classList.remove('active')
-        );
-
-    el.classList.add('active');
-
-    selectedPaymentType =
-        type;
-
-    loadPaymentMethods(type);
-
-}
-
-function loadPaymentMethods(type) {
-
-    fetch(
-        ROUTES.paymentList,
-        {
-            headers: {
-                'Accept': 'application/json'
-            }
-        }
-    )
-    .then(async response => {
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'Payment method load failed'
-            );
-
-        }
-
-        return Array.isArray(data)
-            ? data
-            : (
-                Array.isArray(data.data)
-                    ? data.data
-                    : []
-            );
-
-    })
-    .then(data => {
-
-        const select =
-            document.getElementById(
-                'paymentMethodSelect'
-            );
-
-        if (!select) return;
-
-        const filtered =
-            data.filter(item =>
-                item.account_type === type
-            );
-
-        select.innerHTML =
-            '<option value="">একাউন্ট নির্বাচন করুন</option>';
-
-        filtered.forEach(item => {
-
-            const option =
-                document.createElement('option');
-
-            option.value =
-                item.id;
-
-            option.textContent =
-                item.name;
-
-            select.appendChild(option);
-
-        });
-
-        if (filtered.length) {
-
-            selectedPaymentId =
-                String(filtered[0].id);
-
-            select.value =
-                String(filtered[0].id);
-
-        } else {
-
-            selectedPaymentId =
-                '';
-
-        }
-
-        const hiddenPayment =
-            document.getElementById(
-                'hiddenPayment'
-            );
-
-        if (hiddenPayment) {
-
-            hiddenPayment.value =
-                selectedPaymentId;
-
-        }
-
-    })
-    .catch(error => {
-
-        console.error(
-            'Payment Method Load Error:',
-            error
-        );
-
-        const select =
-            document.getElementById(
-                'paymentMethodSelect'
-            );
-
-        if (select) {
-
-            select.innerHTML =
-                '<option value="">লোড করা যায়নি</option>';
-
-        }
-
-        selectedPaymentId =
-            '';
-
-        const hiddenPayment =
-            document.getElementById(
-                'hiddenPayment'
-            );
-
-        if (hiddenPayment) {
-
-            hiddenPayment.value =
-                '';
-
-        }
-
-    });
-
-}
-
-const paymentMethodSelect =
-    document.getElementById(
-        'paymentMethodSelect'
-    );
-
-if (paymentMethodSelect) {
-
-    paymentMethodSelect.addEventListener(
-        'change',
-        function() {
-
-            selectedPaymentId =
-                this.value;
-
-            const hiddenPayment =
-                document.getElementById(
-                    'hiddenPayment'
-                );
-
-            if (hiddenPayment) {
-
-                hiddenPayment.value =
-                    this.value;
-
-            }
-
-        }
-    );
-
-}
-
-function selectPayment(el, id) {
-
-    document
-        .querySelectorAll('#paymentTypeGrid .pay-card')
-        .forEach(c =>
-            c.classList.remove('active')
-        );
-
-    el.classList.add('active');
-
-    selectedPaymentId =
-        String(id);
-
-    const hiddenPayment =
-        document.getElementById(
-            'hiddenPayment'
-        );
-
-    if (hiddenPayment) {
-
-        hiddenPayment.value =
-            selectedPaymentId;
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Cashier
-|--------------------------------------------------------------------------
-*/
-
-let selectedCashierId =
-    '{{ $cashiers->first()?->id ?? "" }}';
-
-const hiddenCashier =
-    document.getElementById(
-        'hiddenCashier'
-    );
-
-if (hiddenCashier) {
-
-    hiddenCashier.value =
-        selectedCashierId;
-
-}
-
-function selectCashier(el, id) {
-
-    document
-        .querySelectorAll('.cashier-btn')
-        .forEach(b =>
-            b.classList.remove('active')
-        );
-
-    el.classList.add('active');
-
-    selectedCashierId =
-        String(id);
-
-    const hidden =
-        document.getElementById(
-            'hiddenCashier'
-        );
-
-    if (hidden) {
-
-        hidden.value =
-            selectedCashierId;
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Sub Ledger Load
-|--------------------------------------------------------------------------
-*/
-
-async function loadSubLedgers(
-    ledgerId,
-    selectedId = null
-) {
-
-    const sel =
-        document.getElementById(
-            'subLedgerSelect'
-        );
-
-    if (!sel) return;
-
-    if (!ledgerId) {
-
-        sel.innerHTML =
-            '<option value="">সিলেক্ট করুন</option>';
-
-        return;
-
-    }
-
-    sel.innerHTML =
-        '<option value="">লোড হচ্ছে...</option>';
-
-    try {
-
-        const url =
-            routeWithId(
-                ROUTES.subLedgerList,
-                ledgerId
-            );
-
-        const response =
-            await fetch(
-                url,
-                {
-                    headers: {
-                        'Accept':
-                            'application/json'
-                    }
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'Sub Ledger load failed'
-            );
-
-        }
-
-        const list =
-            Array.isArray(data)
-                ? data
-                : (
-                    Array.isArray(data.data)
-                        ? data.data
-                        : []
-                );
-
-        let html =
-            '<option value="">সিলেক্ট করুন</option>';
-
-        list.forEach(item => {
-
-            html +=
-                `<option value="${item.id}">
-                    ${esc(item.name)}
-                </option>`;
-
-        });
-
-        sel.innerHTML =
-            html;
-
-        if (selectedId) {
-
-            sel.value =
-                String(selectedId);
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            'Sub Ledger Load Error:',
-            error
-        );
-
-        sel.innerHTML =
-            '<option value="">লোড করা যায়নি</option>';
-
-    }
-
-}
-
-const ledgerSelectElement =
-    document.getElementById(
-        'ledgerSelect'
-    );
-
-if (ledgerSelectElement) {
-
-    ledgerSelectElement.addEventListener(
-        'change',
-        async function() {
-
-            const ledgerId =
-                this.value;
-
-            await loadSubLedgers(
-                ledgerId
-            );
-
-        }
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Items + LocalStorage
-|--------------------------------------------------------------------------
-*/
-
-const ITEMS_STORAGE_KEY =
-    'madrasa_erp_transaction_items_{{ $type }}';
-
-let items = [];
-
-/*
-|--------------------------------------------------------------------------
-| Load Items From Storage
-|--------------------------------------------------------------------------
-*/
-
-function loadItemsFromStorage() {
-
-    try {
-
-        const stored =
-            localStorage.getItem(
-                ITEMS_STORAGE_KEY
-            );
-
-        if (!stored) {
-
-            items = [];
-
-            return;
-
-        }
-
-        const parsed =
-            JSON.parse(stored);
-
-        items =
-            Array.isArray(parsed)
-                ? parsed
-                : [];
-
-    } catch (error) {
-
-        console.error(
-            'Items Storage Load Error:',
-            error
-        );
-
-        items = [];
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Save Items To Storage
-|--------------------------------------------------------------------------
-*/
-
-function saveItemsToStorage() {
-
-    try {
-
-        localStorage.setItem(
-            ITEMS_STORAGE_KEY,
-            JSON.stringify(items)
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Items Storage Save Error:',
-            error
-        );
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Add Item
-|--------------------------------------------------------------------------
-*/
-
-function addItem() {
-
-    const le =
-        document.getElementById(
-            'ledgerSelect'
-        );
-
-    const se =
-        document.getElementById(
-            'subLedgerSelect'
-        );
-
-    const ae =
-        document.getElementById(
-            'itemAmount'
-        );
-
-    const de =
-        document.getElementById(
-            'itemDesc'
-        );
-
-    if (!le || !se || !ae || !de) {
-
-        return;
-
-    }
-
-    if (!le.value) {
-
-        showToast(
-            'আগে একটি লেজার সিলেক্ট করুন',
-            'error'
-        );
-
-        return;
-
-    }
-
-    const amount =
-        parseFloat(ae.value);
-
-    if (!amount || amount <= 0) {
-
-        showToast(
-            'সঠিক পরিমাণ দিন',
-            'error'
-        );
-
-        return;
-
-    }
-
-    const ledgerName =
-        le.options[
-            le.selectedIndex
-        ]?.text || '';
-
-    const subLedgerId =
-        se.value || null;
-
-    const subLedgerName =
-        se.value
-            ? (
-                se.options[
-                    se.selectedIndex
-                ]?.text || ''
-            )
-            : '';
-
-    items.push({
-
-        ledger_id:
-            le.value,
-
-        ledger_name:
-            ledgerName,
-
-        sub_ledger_id:
-            subLedgerId,
-
-        sub_ledger_name:
-            subLedgerName,
-
-        amount:
-            amount,
-
-        description:
-            de.value.trim()
-
-    });
-
-    saveItemsToStorage();
-
-    ae.value =
-        '';
-
-    de.value =
-        '';
-
-    renderItems();
-
-    showToast(
-        'আইটেম যুক্ত হয়েছে',
-        'success'
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Remove Item
-|--------------------------------------------------------------------------
-*/
-
-function removeItem(i) {
-
-    if (!confirm('এই আইটেমটি মুছবেন?')) {
-
-        return;
-
-    }
-
-    items.splice(
-        i,
-        1
-    );
-
-    saveItemsToStorage();
-
-    renderItems();
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Clear Items
-|--------------------------------------------------------------------------
-*/
-
-function clearItems() {
-
-    if (!items.length) {
-
-        return;
-
-    }
-
-    if (!confirm('সব আইটেম মুছবেন?')) {
-
-        return;
-
-    }
-
-    items = [];
-
-    saveItemsToStorage();
-
-    renderItems();
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Render Items
-|--------------------------------------------------------------------------
-*/
-
-function renderItems() {
-
-    const tbody =
-        document.getElementById(
-            'itemsBody'
-        );
-
-    const totEl =
-        document.getElementById(
-            'itemsTotal'
-        );
-
-    const gtEl =
-        document.getElementById(
-            'grandTotal'
-        );
-
-    const jsEl =
-        document.getElementById(
-            'itemsJson'
-        );
-
-    if (!tbody || !totEl || !gtEl || !jsEl) {
-
-        return;
-
-    }
-
-    if (!items.length) {
-
-        tbody.innerHTML =
-            `<tr class="empty-row">
-                <td colspan="6">
-                    <i class="fas fa-inbox"></i>
-                    কোনো আইটেম যোগ হয়নি
-                </td>
-            </tr>`;
-
-        totEl.textContent =
-            '৳ ০';
-
-        gtEl.textContent =
-            '৳ ০';
-
-        jsEl.value =
-            '[]';
-
-        return;
-
-    }
-
-    let total =
-        0;
-
-    let html =
-        '';
-
-    items.forEach((item, i) => {
-
-        total +=
-            Number(item.amount) || 0;
-
-        html +=
-            `<tr>
-
-                <td>
-                    <span class="serial-badge">
-                        ${i + 1}
-                    </span>
-                </td>
-
-                <td>
-                    ${esc(item.ledger_name)}
-                </td>
-
-                <td>
-                    ${
-                        esc(item.sub_ledger_name)
-                        || '—'
-                    }
-                </td>
-
-                <td>
-                    ${
-                        esc(item.description)
-                        || '—'
-                    }
-                </td>
-
-                <td style="font-weight:700;">
-                    ৳ ${Number(item.amount).toLocaleString()}
-                </td>
-
-                <td>
-
-                    <button
-                        type="button"
-                        class="del-row-btn"
-                        onclick="removeItem(${i})">
-
-                        <i class="fas fa-times"></i>
-
-                    </button>
-
-                </td>
-
-            </tr>`;
-
-    });
-
-    tbody.innerHTML =
-        html;
-
-    totEl.textContent =
-        '৳ ' + total.toLocaleString();
-
-    gtEl.textContent =
-        '৳ ' + total.toLocaleString();
-
-    jsEl.value =
-        JSON.stringify(items);
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Payment Method Modal
-|--------------------------------------------------------------------------
-*/
-
-let pmList =
-    [];
-
-let pmEditingId =
-    null;
+let selectedPaymentId = '';
+let selectedPaymentType = 'cash';
 
 const pmIconMap = {
-
-    cash:
-        'fa-money-bill-wave',
-
-    mobile:
-        'fa-mobile-alt',
-
-    bank:
-        'fa-university'
-
+    cash: 'fa-money-bill-wave',
+    mobile: 'fa-mobile-alt',
+    bank: 'fa-university'
 };
 
 const pmLabels = {
-
-    cash:
-        'ক্যাশ',
-
-    mobile:
-        'মোবাইল ব্যাংকিং',
-
-    bank:
-        'ব্যাংক'
-
+    cash: 'ক্যাশ',
+    mobile: 'মোবাইল ব্যাংকিং',
+    bank: 'ব্যাংক'
 };
 
-function openPmModal() {
+let pmList = [];
+let pmEditingId = null;
 
-    const overlay =
-        document.getElementById(
-            'pmOverlay'
+function selectPaymentType(element, type) {
+    document.querySelectorAll('#paymentTypeGrid .pay-card')
+        .forEach(card => card.classList.remove('active'));
+
+    element?.classList.add('active');
+    selectedPaymentType = type;
+
+    loadPaymentMethods(type);
+}
+
+async function loadPaymentMethods(type = 'cash') {
+    try {
+        const response = await fetch(ROUTES.paymentList, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await readJsonResponse(
+            response,
+            'Payment Method লোড করা যায়নি।'
         );
 
-    if (overlay) {
+        const list = Array.isArray(result)
+            ? result
+            : (Array.isArray(result.data) ? result.data : []);
 
-        overlay.classList.add(
-            'open'
-        );
+        const select = document.getElementById('paymentMethodSelect');
 
+        if (!select) {
+            selectedPaymentId = '';
+            return;
+        }
+
+        const filtered = list.filter(item => item.account_type === type);
+
+        select.innerHTML = '<option value="">একাউন্ট নির্বাচন করুন</option>';
+
+        filtered.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            select.appendChild(option);
+        });
+
+        if (filtered.length) {
+            const existing = filtered.find(
+                item => String(item.id) === String(selectedPaymentId)
+            );
+
+            selectedPaymentId = String(
+                existing ? existing.id : filtered[0].id
+            );
+
+            select.value = selectedPaymentId;
+        } else {
+            selectedPaymentId = '';
+            select.value = '';
+        }
+
+        const hiddenPayment = document.getElementById('hiddenPayment');
+
+        if (hiddenPayment) {
+            hiddenPayment.value = selectedPaymentId;
+        }
+    } catch (error) {
+        console.error('Payment Method Load Error:', error);
+
+        const select = document.getElementById('paymentMethodSelect');
+
+        if (select) {
+            select.innerHTML = '<option value="">লোড করা যায়নি</option>';
+        }
+
+        selectedPaymentId = '';
+
+        const hiddenPayment = document.getElementById('hiddenPayment');
+
+        if (hiddenPayment) {
+            hiddenPayment.value = '';
+        }
+
+        showToast(error.message || 'Payment Method লোড করা যায়নি।', 'error');
     }
+}
+
+const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+
+if (paymentMethodSelect) {
+    paymentMethodSelect.addEventListener('change', function () {
+        selectedPaymentId = this.value;
+
+        const hiddenPayment = document.getElementById('hiddenPayment');
+
+        if (hiddenPayment) {
+            hiddenPayment.value = this.value;
+        }
+    });
+}
+
+function selectPayment(element, id) {
+    document.querySelectorAll('#paymentTypeGrid .pay-card')
+        .forEach(card => card.classList.remove('active'));
+
+    element?.classList.add('active');
+
+    selectedPaymentId = String(id);
+
+    const hiddenPayment = document.getElementById('hiddenPayment');
+
+    if (hiddenPayment) {
+        hiddenPayment.value = selectedPaymentId;
+    }
+}
+
+/* ============================================================
+   PAYMENT METHOD MODAL
+============================================================ */
+
+function openPmModal() {
+    document.getElementById('pmOverlay')?.classList.add('open');
 
     pmLoadList();
-
-    loadPaymentMethods(
-        selectedPaymentType
-    );
-
 }
 
 function closePmModal() {
-
-    const overlay =
-        document.getElementById(
-            'pmOverlay'
-        );
-
-    if (overlay) {
-
-        overlay.classList.remove(
-            'open'
-        );
-
-    }
-
-}
-
-const pmOverlay =
-    document.getElementById(
-        'pmOverlay'
-    );
-
-if (pmOverlay) {
-
-    pmOverlay.addEventListener(
-        'click',
-        function(e) {
-
-            if (e.target === this) {
-
-                closePmModal();
-
-            }
-
-        }
-    );
-
+    document.getElementById('pmOverlay')?.classList.remove('open');
 }
 
 function pmNew() {
+    pmEditingId = null;
 
-    pmEditingId =
-        null;
+    const fields = {
+        pmType: 'cash',
+        pmName: '',
+        pmNumber: '',
+        pmMobile1: '',
+        pmMobile2: '',
+        pmAddress: ''
+    };
 
-    const type =
-        document.getElementById(
-            'pmType'
-        );
-
-    const name =
-        document.getElementById(
-            'pmName'
-        );
-
-    const number =
-        document.getElementById(
-            'pmNumber'
-        );
-
-    const mobile1 =
-        document.getElementById(
-            'pmMobile1'
-        );
-
-    const mobile2 =
-        document.getElementById(
-            'pmMobile2'
-        );
-
-    const address =
-        document.getElementById(
-            'pmAddress'
-        );
-
-    if (type) type.value = 'cash';
-
-    if (name) name.value = '';
-
-    if (number) number.value = '';
-
-    if (mobile1) mobile1.value = '';
-
-    if (mobile2) mobile2.value = '';
-
-    if (address) address.value = '';
-
-    document
-        .querySelectorAll('#pmTbody tr')
-        .forEach(r =>
-            r.classList.remove(
-                'pm-selected'
-            )
-        );
-
-    if (name) {
-
-        name.focus();
-
-    }
-
-}
-
-function pmLoadList() {
-
-    fetch(
-        ROUTES.paymentList,
-        {
-            headers: {
-                'Accept':
-                    'application/json'
-            }
-        }
-    )
-    .then(async response => {
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'Payment list load failed'
-            );
-
-        }
-
-        return Array.isArray(data)
-            ? data
-            : (
-                Array.isArray(data.data)
-                    ? data.data
-                    : []
-            );
-
-    })
-    .then(data => {
-
-        pmList =
-            data;
-
-        pmRenderTable();
-
-    })
-    .catch(error => {
-
-        console.error(
-            'Payment List Error:',
-            error
-        );
-
-        pmList =
-            [];
-
-        pmRenderTable();
-
+    Object.entries(fields).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.value = value;
     });
 
+    document.querySelectorAll('#pmTbody tr')
+        .forEach(row => row.classList.remove('pm-selected'));
+
+    document.getElementById('pmName')?.focus();
+}
+
+async function pmLoadList() {
+    try {
+        const response = await fetch(ROUTES.paymentList, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await readJsonResponse(
+            response,
+            'Payment Method তালিকা লোড করা যায়নি।'
+        );
+
+        pmList = Array.isArray(result)
+            ? result
+            : (Array.isArray(result.data) ? result.data : []);
+
+        pmRenderTable();
+        return pmList;
+    } catch (error) {
+        console.error('Payment List Error:', error);
+        pmList = [];
+        pmRenderTable();
+        showToast(error.message, 'error');
+        return [];
+    }
 }
 
 function pmRenderTable() {
-
-    const tbody =
-        document.getElementById(
-            'pmTbody'
-        );
+    const tbody = document.getElementById('pmTbody');
 
     if (!tbody) return;
 
     if (!pmList.length) {
-
-        tbody.innerHTML =
-            `<tr>
-
-                <td
-                    colspan="7"
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7"
                     style="text-align:center;color:#bbb;padding:18px;">
-
                     <i class="fas fa-inbox"></i>
                     কোনো একাউন্ট নেই
-
                 </td>
-
-            </tr>`;
-
+            </tr>
+        `;
         return;
-
     }
 
-    tbody.innerHTML =
-        pmList.map(
-            (acc, idx) => {
+    tbody.innerHTML = pmList.map((account, index) => `
+        <tr id="pmR_${account.id}">
+            <td>
+                <button type="button"
+                    class="pm-icon-btn edit"
+                    onclick="pmEdit(${Number(account.id)})"
+                    title="এডিট">
+                    <i class="fas fa-pen"></i>
+                </button>
+            </td>
 
-                return `
-                    <tr id="pmR_${acc.id}">
+            <td>
+                <button type="button"
+                    class="pm-icon-btn delete"
+                    onclick="pmDelete(${Number(account.id)})"
+                    title="মুছুন">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
 
-                        <td>
+            <td style="font-weight:700;color:#555;">
+                ${index + 1}
+            </td>
 
-                            <button
-                                type="button"
-                                class="pm-icon-btn edit"
-                                onclick="pmEdit(${acc.id})"
-                                title="এডিট">
+            <td>
+                <span class="pm-badge ${esc(account.account_type || 'cash')}">
+                    ${esc(pmLabels[account.account_type] || account.account_type || 'ক্যাশ')}
+                </span>
+            </td>
 
-                                <i class="fas fa-pen"></i>
-
-                            </button>
-
-                        </td>
-
-                        <td>
-
-                            <button
-                                type="button"
-                                class="pm-icon-btn delete"
-                                onclick="pmDelete(${acc.id})"
-                                title="মুছুন">
-
-                                <i class="fas fa-trash"></i>
-
-                            </button>
-
-                        </td>
-
-                        <td style="font-weight:700;color:#555;">
-                            ${idx + 1}
-                        </td>
-
-                        <td>
-
-                            <span
-                                class="pm-badge ${
-                                    acc.account_type
-                                    || 'cash'
-                                }">
-
-                                ${
-                                    pmLabels[
-                                        acc.account_type
-                                    ]
-                                    || acc.account_type
-                                    || 'ক্যাশ'
-                                }
-
-                            </span>
-
-                        </td>
-
-                        <td style="font-weight:600;">
-                            ${esc(acc.name)}
-                        </td>
-
-                        <td>
-                            ${
-                                esc(
-                                    acc.account_number
-                                )
-                                || '—'
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                esc(
-                                    acc.mobile1
-                                )
-                                || '—'
-                            }
-                        </td>
-
-                    </tr>
-                `;
-
-            }
-        ).join('');
-
+            <td style="font-weight:600;">${esc(account.name)}</td>
+            <td>${esc(account.account_number) || '—'}</td>
+            <td>${esc(account.mobile1) || '—'}</td>
+        </tr>
+    `).join('');
 }
 
 function pmEdit(id) {
+    const account = pmList.find(item => String(item.id) === String(id));
 
-    const acc =
-        pmList.find(
-            a => a.id == id
-        );
-
-    if (!acc) {
-
+    if (!account) {
+        showToast('একাউন্টটি পাওয়া যায়নি।', 'error');
         return;
-
     }
 
-    pmEditingId =
-        id;
+    pmEditingId = account.id;
 
-    document.getElementById(
-        'pmType'
-    ).value =
-        acc.account_type
-        || 'cash';
+    const values = {
+        pmType: account.account_type || 'cash',
+        pmName: account.name || '',
+        pmNumber: account.account_number || '',
+        pmMobile1: account.mobile1 || '',
+        pmMobile2: account.mobile2 || '',
+        pmAddress: account.address || ''
+    };
 
-    document.getElementById(
-        'pmName'
-    ).value =
-        acc.name
-        || '';
+    Object.entries(values).forEach(([fieldId, value]) => {
+        const element = document.getElementById(fieldId);
+        if (element) element.value = value;
+    });
 
-    document.getElementById(
-        'pmNumber'
-    ).value =
-        acc.account_number
-        || '';
+    document.querySelectorAll('#pmTbody tr')
+        .forEach(row => row.classList.remove('pm-selected'));
 
-    document.getElementById(
-        'pmMobile1'
-    ).value =
-        acc.mobile1
-        || '';
-
-    document.getElementById(
-        'pmMobile2'
-    ).value =
-        acc.mobile2
-        || '';
-
-    document.getElementById(
-        'pmAddress'
-    ).value =
-        acc.address
-        || '';
-
-    document
-        .querySelectorAll('#pmTbody tr')
-        .forEach(r =>
-            r.classList.remove(
-                'pm-selected'
-            )
-        );
-
-    const row =
-        document.getElementById(
-            'pmR_' + id
-        );
-
-    if (row) {
-
-        row.classList.add(
-            'pm-selected'
-        );
-
-    }
-
+    document.getElementById('pmR_' + id)?.classList.add('pm-selected');
 }
 
-/*
-|--------------------------------------------------------------------------
-| Payment Save
-|--------------------------------------------------------------------------
-*/
+function getPaymentFormData() {
+    const getValue = id =>
+        document.getElementById(id)?.value?.trim() || '';
+
+    const type = getValue('pmType') || 'cash';
+    const name = getValue('pmName');
+
+    if (!name) {
+        throw new Error('একাউন্টের নাম দিন।');
+    }
+
+    if (!['cash', 'mobile', 'bank'].includes(type)) {
+        throw new Error('সঠিক Payment Method type নির্বাচন করুন।');
+    }
+
+    return {
+        name,
+        icon: pmIconMap[type],
+        account_type: type,
+        account_number: getValue('pmNumber'),
+        mobile1: getValue('pmMobile1'),
+        mobile2: getValue('pmMobile2'),
+        address: getValue('pmAddress')
+    };
+}
 
 async function pmSave() {
+    let payload;
 
-    const name =
-        document.getElementById(
-            'pmName'
-        ).value.trim();
-
-    const type =
-        document.getElementById(
-            'pmType'
-        ).value;
-
-    const number =
-        document.getElementById(
-            'pmNumber'
-        ).value.trim();
-
-    const mob1 =
-        document.getElementById(
-            'pmMobile1'
-        ).value.trim();
-
-    const mob2 =
-        document.getElementById(
-            'pmMobile2'
-        ).value.trim();
-
-    const addr =
-        document.getElementById(
-            'pmAddress'
-        ).value.trim();
-
-    if (!name) {
-
-        showToast(
-            'একাউন্টের নাম দিন',
-            'error'
-        );
-
+    try {
+        payload = getPaymentFormData();
+    } catch (error) {
+        showToast(error.message, 'error');
         return;
-
     }
 
     try {
+        const response = await fetch(ROUTES.paymentStore, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-        const response =
-            await fetch(
-                ROUTES.paymentStore,
-                {
-
-                    method:
-                        'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            name:
-                                name,
-
-                            icon:
-                                pmIconMap[type]
-                                || 'fa-money-bill-wave',
-
-                            account_type:
-                                type,
-
-                            account_number:
-                                number,
-
-                            mobile1:
-                                mob1,
-
-                            mobile2:
-                                mob2,
-
-                            address:
-                                addr
-
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'পেমেন্ট মেথড সেভ করা যায়নি'
-            );
-
-        }
-
-        if (
-            !data.success
-            && !data.status
-            && !data.id
-            && !data.payment_method
-        ) {
-
-            throw new Error(
-                data.message
-                || 'পেমেন্ট মেথড সেভ হয়নি'
-            );
-
-        }
-
-        showToast(
-            name + ' সেভ হয়েছে',
-            'success'
+        const data = await readJsonResponse(
+            response,
+            'Payment Method সেভ করা যায়নি।'
         );
+
+        if (data.success === false) {
+            throw new Error(data.message || 'Payment Method সেভ হয়নি।');
+        }
+
+        showToast(data.message || 'Payment Method সেভ হয়েছে।', 'success');
 
         pmNew();
-
         await pmLoadList();
-
-        await loadPaymentMethods(
-            selectedPaymentType
-        );
-
+        await loadPaymentMethods(selectedPaymentType);
     } catch (error) {
-
-        console.error(
-            'Payment Save Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'সেভ হয়নি',
-            'error'
-        );
-
+        console.error('Payment Save Error:', error);
+        showToast(error.message || 'Payment Method সেভ হয়নি।', 'error');
     }
-
 }
-
-/*
-|--------------------------------------------------------------------------
-| Payment Update
-|--------------------------------------------------------------------------
-*/
 
 async function pmUpdate() {
-
     if (!pmEditingId) {
-
-        showToast(
-            'আগে একটি রো সিলেক্ট করুন',
-            'error'
-        );
-
+        showToast('আপডেট করার আগে তালিকা থেকে একটি একাউন্ট নির্বাচন করুন।', 'error');
         return;
-
     }
 
-    const name =
-        document.getElementById(
-            'pmName'
-        ).value.trim();
+    let payload;
 
-    const type =
-        document.getElementById(
-            'pmType'
-        ).value;
-
-    const number =
-        document.getElementById(
-            'pmNumber'
-        ).value.trim();
-
-    const mob1 =
-        document.getElementById(
-            'pmMobile1'
-        ).value.trim();
-
-    const mob2 =
-        document.getElementById(
-            'pmMobile2'
-        ).value.trim();
-
-    const addr =
-        document.getElementById(
-            'pmAddress'
-        ).value.trim();
-
-    if (!name) {
-
-        showToast(
-            'একাউন্টের নাম দিন',
-            'error'
-        );
-
+    try {
+        payload = getPaymentFormData();
+    } catch (error) {
+        showToast(error.message, 'error');
         return;
-
     }
 
     try {
-
-        const url =
-            routeWithId(
-                ROUTES.paymentUpdate,
-                pmEditingId
-            );
-
-        const response =
-            await fetch(
-                url,
-                {
-
-                    method:
-                        'PUT',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            name:
-                                name,
-
-                            icon:
-                                pmIconMap[type]
-                                || 'fa-money-bill-wave',
-
-                            account_type:
-                                type,
-
-                            account_number:
-                                number,
-
-                            mobile1:
-                                mob1,
-
-                            mobile2:
-                                mob2,
-
-                            address:
-                                addr
-
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'আপডেট করা যায়নি'
-            );
-
-        }
-
-        if (!data.success) {
-
-            throw new Error(
-                data.message
-                || 'আপডেট হয়নি'
-            );
-
-        }
-
-        showToast(
-            name + ' আপডেট হয়েছে',
-            'success'
+        const response = await fetch(
+            routeWithId(ROUTES.paymentUpdate, pmEditingId),
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': TOKEN,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }
         );
+
+        const data = await readJsonResponse(
+            response,
+            'Payment Method আপডেট করা যায়নি।'
+        );
+
+        if (data.success === false) {
+            throw new Error(data.message || 'আপডেট হয়নি।');
+        }
+
+        showToast(data.message || 'Payment Method আপডেট হয়েছে।', 'success');
 
         pmNew();
-
         await pmLoadList();
-
-        await loadPaymentMethods(
-            selectedPaymentType
-        );
-
+        await loadPaymentMethods(selectedPaymentType);
     } catch (error) {
-
-        console.error(
-            'Payment Update Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'আপডেট হয়নি',
-            'error'
-        );
-
+        console.error('Payment Update Error:', error);
+        showToast(error.message || 'আপডেট করা যায়নি।', 'error');
     }
-
 }
-
-/*
-|--------------------------------------------------------------------------
-| Payment Delete
-|--------------------------------------------------------------------------
-*/
 
 async function pmDelete(id) {
-
-    if (!confirm('এই একাউন্ট মুছবেন?')) {
-
-        return;
-
-    }
+    if (!confirm('এই একাউন্ট মুছবেন?')) return;
 
     try {
-
-        const url =
-            routeWithId(
-                ROUTES.paymentDestroy,
-                id
-            );
-
-        const response =
-            await fetch(
-                url,
-                {
-
-                    method:
-                        'DELETE',
-
-                    headers: {
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    }
-
+        const response = await fetch(
+            routeWithId(ROUTES.paymentDestroy, id),
+            {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': TOKEN,
+                    'Accept': 'application/json'
                 }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'মুছতে পারেনি'
-            );
-
-        }
-
-        if (!data.success) {
-
-            throw new Error(
-                data.message
-                || 'মুছতে পারেনি'
-            );
-
-        }
-
-        showToast(
-            'মুছে ফেলা হয়েছে',
-            'success'
+            }
         );
 
-        pmList =
-            pmList.filter(
-                a => a.id != id
-            );
+        const data = await readJsonResponse(
+            response,
+            'Payment Method মুছতে সমস্যা হয়েছে।'
+        );
+
+        if (data.success === false) {
+            throw new Error(data.message || 'মুছতে পারেনি।');
+        }
+
+        pmList = pmList.filter(
+            account => String(account.id) !== String(id)
+        );
+
+        if (String(pmEditingId) === String(id)) {
+            pmNew();
+        }
 
         pmRenderTable();
+        await loadPaymentMethods(selectedPaymentType);
 
-        if (pmEditingId == id) {
-
-            pmNew();
-
-        }
-
-        await loadPaymentMethods(
-            selectedPaymentType
-        );
-
+        showToast(data.message || 'একাউন্ট মুছে ফেলা হয়েছে।', 'success');
     } catch (error) {
-
-        console.error(
-            'Payment Delete Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'মুছতে পারেনি',
-            'error'
-        );
-
+        console.error('Payment Delete Error:', error);
+        showToast(error.message || 'একাউন্ট মুছতে পারেনি।', 'error');
     }
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Fund
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   SUB LEDGER LOAD
+============================================================ */
+
+async function loadSubLedgers(ledgerId, selectedId = null) {
+    const select = document.getElementById('subLedgerSelect');
+
+    if (!select) return;
+
+    if (!ledgerId) {
+        select.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+        return;
+    }
+
+    select.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+
+    try {
+        const response = await fetch(
+            routeWithId(ROUTES.subLedgerList, ledgerId),
+            { headers: { 'Accept': 'application/json' } }
+        );
+
+        const result = await readJsonResponse(
+            response,
+            'Sub Ledger লোড করা যায়নি।'
+        );
+
+        const list = Array.isArray(result)
+            ? result
+            : (Array.isArray(result.data) ? result.data : []);
+
+        select.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+
+        list.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            select.appendChild(option);
+        });
+
+        if (selectedId) {
+            select.value = String(selectedId);
+        }
+    } catch (error) {
+        console.error('Sub Ledger Load Error:', error);
+        select.innerHTML = '<option value="">লোড করা যায়নি</option>';
+        showToast(error.message, 'error');
+    }
+}
+
+document.getElementById('ledgerSelect')?.addEventListener('change', function () {
+    loadSubLedgers(this.value);
+});
+
+/* ============================================================
+   ITEMS + LOCAL STORAGE
+============================================================ */
+
+const ITEMS_STORAGE_KEY = 'madrasa_erp_transaction_items_{{ $type }}';
+let items = [];
+
+function loadItemsFromStorage() {
+    try {
+        const stored = localStorage.getItem(ITEMS_STORAGE_KEY);
+        const parsed = stored ? JSON.parse(stored) : [];
+        items = Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error('Items Storage Load Error:', error);
+        items = [];
+    }
+}
+
+function saveItemsToStorage() {
+    try {
+        localStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items));
+    } catch (error) {
+        console.error('Items Storage Save Error:', error);
+        showToast('ব্রাউজারে আইটেম সংরক্ষণ করা যায়নি।', 'error');
+    }
+}
+
+function addItem() {
+    const ledger = document.getElementById('ledgerSelect');
+    const subLedger = document.getElementById('subLedgerSelect');
+    const amountInput = document.getElementById('itemAmount');
+    const descriptionInput = document.getElementById('itemDesc');
+
+    if (!ledger || !subLedger || !amountInput || !descriptionInput) {
+        showToast('আইটেম ফর্মের প্রয়োজনীয় field পাওয়া যায়নি।', 'error');
+        return;
+    }
+
+    if (!ledger.value) {
+        showToast('আগে একটি লেজার সিলেক্ট করুন।', 'error');
+        return;
+    }
+
+    const amount = Number.parseFloat(amountInput.value);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        showToast('সঠিক পরিমাণ দিন।', 'error');
+        return;
+    }
+
+    items.push({
+        ledger_id: ledger.value,
+        ledger_name: ledger.options[ledger.selectedIndex]?.text || '',
+        sub_ledger_id: subLedger.value || null,
+        sub_ledger_name: subLedger.value
+            ? (subLedger.options[subLedger.selectedIndex]?.text || '')
+            : '',
+        amount,
+        description: descriptionInput.value.trim()
+    });
+
+    saveItemsToStorage();
+
+    amountInput.value = '';
+    descriptionInput.value = '';
+
+    renderItems();
+    showToast('আইটেম যুক্ত হয়েছে।', 'success');
+}
+
+function removeItem(index) {
+    if (!confirm('এই আইটেমটি মুছবেন?')) return;
+
+    items.splice(index, 1);
+    saveItemsToStorage();
+    renderItems();
+}
+
+function clearItems() {
+    if (!items.length) return;
+    if (!confirm('সব আইটেম মুছবেন?')) return;
+
+    items = [];
+    saveItemsToStorage();
+    renderItems();
+}
+
+function renderItems() {
+    const tbody = document.getElementById('itemsBody');
+    const totalElement = document.getElementById('itemsTotal');
+    const grandTotalElement = document.getElementById('grandTotal');
+    const itemsJson = document.getElementById('itemsJson');
+
+    if (!tbody || !totalElement || !grandTotalElement || !itemsJson) return;
+
+    if (!items.length) {
+        tbody.innerHTML = `
+            <tr class="empty-row">
+                <td colspan="6">
+                    <i class="fas fa-inbox"></i>
+                    কোনো আইটেম যোগ হয়নি
+                </td>
+            </tr>
+        `;
+
+        totalElement.textContent = '৳ ০';
+        grandTotalElement.textContent = '৳ ০';
+        itemsJson.value = '[]';
+        return;
+    }
+
+    let total = 0;
+
+    tbody.innerHTML = items.map((item, index) => {
+        total += Number(item.amount) || 0;
+
+        return `
+            <tr>
+                <td>
+                    <span class="serial-badge">${index + 1}</span>
+                </td>
+                <td>${esc(item.ledger_name)}</td>
+                <td>${esc(item.sub_ledger_name) || '—'}</td>
+                <td>${esc(item.description) || '—'}</td>
+                <td style="font-weight:700;">
+                    ৳ ${Number(item.amount).toLocaleString()}
+                </td>
+                <td>
+                    <button type="button"
+                        class="del-row-btn"
+                        onclick="removeItem(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const formattedTotal = '৳ ' + total.toLocaleString();
+
+    totalElement.textContent = formattedTotal;
+    grandTotalElement.textContent = formattedTotal;
+    itemsJson.value = JSON.stringify(items);
+}
+
+/* ============================================================
+   FUND
+============================================================ */
 
 async function addFund() {
+    const input = document.getElementById('fundName');
+    const button = document.getElementById('addFundBtn');
 
-    const input =
-        document.getElementById(
-            'fundName'
-        );
+    if (!input) return;
 
-    const button =
-        document.getElementById(
-            'addFundBtn'
-        );
-
-    if (!input) {
-
-        return;
-
-    }
-
-    const name =
-        input.value.trim();
+    const name = input.value.trim();
 
     if (!name) {
-
-        showToast(
-            'Fund-এর নাম দিন',
-            'error'
-        );
-
+        showToast('Fund-এর নাম দিন।', 'error');
         input.focus();
-
         return;
-
     }
 
     if (button) {
-
-        button.disabled =
-            true;
-
-        button.textContent =
-            'সংরক্ষণ হচ্ছে...';
-
+        button.disabled = true;
+        button.textContent = 'সংরক্ষণ হচ্ছে...';
     }
 
     try {
+        const response = await fetch(ROUTES.fundStore, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': TOKEN
+            },
+            body: JSON.stringify({
+                name,
+                type: currentType,
+                balance: 0
+            })
+        });
 
-        /*
-         * Fund অবশ্যই current transaction type-এর
-         * সাথে save হবে।
-         *
-         * Income page -> income
-         * Expense page -> expense
-         */
-        const response =
-            await fetch(
-                ROUTES.fundStore,
-                {
+        const data = await readJsonResponse(response, 'Fund সংরক্ষণ করা যায়নি।');
 
-                    method:
-                        'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'Accept':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            name:
-                                name,
-
-                            type:
-                                currentType,
-
-                            balance:
-                                0
-
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok || !data.success) {
-
-            throw new Error(
-                data.message
-                || 'Fund সংরক্ষণ করা যায়নি'
-            );
-
+        if (data.success === false) {
+            throw new Error(data.message || 'Fund সংরক্ষণ হয়নি।');
         }
 
-        const fund =
-            data.fund;
+        const fund = data.fund || data.data || data;
 
-        if (fund) {
+        if (fund?.id) {
+            const select = document.getElementById('fundSelect');
 
-            const fundSelect =
-                document.getElementById(
-                    'fundSelect'
-                );
-
-            if (fundSelect) {
-
-                /*
-                 * নতুন fund-এর type যদি current page-এর
-                 * type-এর সাথে মিলে যায়, তবেই select-এ যোগ হবে।
-                 */
-                if (
-                    !fund.type
-                    || fund.type === currentType
-                ) {
-
-                    const option =
-                        new Option(
-                            fund.name,
-                            fund.id,
-                            true,
-                            true
-                        );
-
-                    fundSelect.appendChild(
-                        option
-                    );
-
-                    fundSelect.dispatchEvent(
-                        new Event(
-                            'change'
-                        )
-                    );
-
-                }
-
+            if (select && (!fund.type || fund.type === currentType)) {
+                select.add(new Option(fund.name || name, fund.id, true, true));
+                select.dispatchEvent(new Event('change'));
             }
-
         }
 
-        input.value =
-            '';
+        input.value = '';
+        closeModal('fundModal');
 
-        closeModal(
-            'fundModal'
-        );
-
-        showToast(
-            data.message
-            || 'Fund সফলভাবে সংরক্ষণ করা হয়েছে',
-            'success'
-        );
-
+        showToast(data.message || 'Fund সংরক্ষণ হয়েছে।', 'success');
     } catch (error) {
-
-        console.error(
-            'Fund Store Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'Fund সংরক্ষণ করা যায়নি',
-            'error'
-        );
-
+        console.error('Fund Store Error:', error);
+        showToast(error.message || 'Fund সংরক্ষণ করা যায়নি।', 'error');
     } finally {
-
         if (button) {
-
-            button.disabled =
-                false;
-
-            button.textContent =
-                'সেভ করুন';
-
+            button.disabled = false;
+            button.textContent = 'সেভ করুন';
         }
-
     }
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Ledger
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   LEDGER
+============================================================ */
 
 async function addLedger() {
-
-    const name =
-        document.getElementById(
-            'ledgerName'
-        ).value.trim();
-
-    /*
-     * hiddenType থাকলে সেটি ব্যবহার করবে।
-     * না থাকলে currentType ব্যবহার করবে।
-     */
-    const hiddenType =
-        document.getElementById(
-            'hiddenType'
-        );
-
-    const type =
-        hiddenType?.value
-        || currentType;
-
-    const fundSelect =
-        document.getElementById(
-            'fundSelect'
-        );
-
-    const fund_id =
-        fundSelect?.value;
+    const name = document.getElementById('ledgerName')?.value.trim() || '';
+    const hiddenType = document.getElementById('hiddenType');
+    const type = hiddenType?.value || currentType;
+    const fundId = document.getElementById('fundSelect')?.value || '';
 
     if (!name) {
-
-        showToast(
-            'লেজারের নাম দিন',
-            'error'
-        );
-
+        showToast('লেজারের নাম দিন।', 'error');
         return;
-
     }
 
-    if (!fund_id) {
-
-        showToast(
-            'আগে একটি ফান্ড সিলেক্ট করুন',
-            'error'
-        );
-
+    if (!fundId) {
+        showToast('আগে একটি ফান্ড সিলেক্ট করুন।', 'error');
         return;
-
     }
 
-    const btn =
-        document.querySelector(
-            '#ledgerModal .btn-save'
-        );
-
-    const orig =
-        btn
-            ? btn.textContent
-            : 'সেভ করুন';
-
-    if (btn) {
-
-        btn.textContent =
-            'সেভ হচ্ছে...';
-
-        btn.disabled =
-            true;
-
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                ROUTES.ledgerStore,
-                {
-
-                    method:
-                        'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            name:
-                                name,
-
-                            type:
-                                type,
-
-                            fund_id:
-                                fund_id
-
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'লেজার সেভ করা যায়নি'
-            );
-
-        }
-
-        if (!data.success) {
-
-            throw new Error(
-                data.message
-                || 'লেজার সেভ হয়নি'
-            );
-
-        }
-
-        const ledgerSelect =
-            document.getElementById(
-                'ledgerSelect'
-            );
-
-        if (ledgerSelect) {
-
-            ledgerSelect.add(
-                new Option(
-                    data.name,
-                    data.id,
-                    true,
-                    true
-                )
-            );
-
-        }
-
-        document.getElementById(
-            'ledgerName'
-        ).value =
-            '';
-
-        closeModal(
-            'ledgerModal'
-        );
-
-        showToast(
-            data.name
-            + ' যোগ করা হয়েছে',
-            'success'
-        );
-
-        await loadSubLedgers(
-            data.id
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Ledger Store Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'লেজার সেভ হয়নি',
-            'error'
-        );
-
-    } finally {
-
-        if (btn) {
-
-            btn.textContent =
-                orig;
-
-            btn.disabled =
-                false;
-
-        }
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Fund Change -> Load Ledgers
-|--------------------------------------------------------------------------
-*/
-
-const fundSelectElement =
-    document.getElementById(
-        'fundSelect'
-    );
-
-if (fundSelectElement) {
-
-    fundSelectElement.addEventListener(
-        'change',
-        function() {
-
-            const fundId =
-                this.value;
-
-            const hiddenType =
-                document.getElementById(
-                    'hiddenType'
-                );
-
-            const type =
-                hiddenType?.value
-                || currentType;
-
-            const ledgerSelect =
-                document.getElementById(
-                    'ledgerSelect'
-                );
-
-            const subLedgerSelect =
-                document.getElementById(
-                    'subLedgerSelect'
-                );
-
-            if (!ledgerSelect || !subLedgerSelect) {
-
-                return;
-
-            }
-
-            if (!fundId) {
-
-                ledgerSelect.innerHTML =
-                    '<option value="">সিলেক্ট করুন</option>';
-
-                subLedgerSelect.innerHTML =
-                    '<option value="">সিলেক্ট করুন</option>';
-
-                return;
-
-            }
-
-            ledgerSelect.innerHTML =
-                '<option value="">লোড হচ্ছে...</option>';
-
-            subLedgerSelect.innerHTML =
-                '<option value="">সিলেক্ট করুন</option>';
-
-            const fundLedgerUrl =
-                routeWithId(
-                    ROUTES.fundLedgers,
-                    fundId
-                );
-
-            fetch(
-                fundLedgerUrl
-                + '?type='
-                + encodeURIComponent(type),
-                {
-
-                    headers: {
-                        'Accept':
-                            'application/json'
-                    }
-
-                }
-            )
-            .then(async response => {
-
-                const data =
-                    await response.json();
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.message
-                        || 'Ledger load failed'
-                    );
-
-                }
-
-                return Array.isArray(data)
-                    ? data
-                    : (
-                        Array.isArray(data.data)
-                            ? data.data
-                            : []
-                    );
-
-            })
-            .then(data => {
-
-                let html =
-                    '<option value="">সিলেক্ট করুন</option>';
-
-                data.forEach(item => {
-
-                    html +=
-                        `<option value="${item.id}">
-                            ${esc(item.name)}
-                        </option>`;
-
-                });
-
-                ledgerSelect.innerHTML =
-                    html;
-
-                subLedgerSelect.innerHTML =
-                    '<option value="">সিলেক্ট করুন</option>';
-
-            })
-            .catch(error => {
-
-                console.error(
-                    'Fund Ledger Load Error:',
-                    error
-                );
-
-                ledgerSelect.innerHTML =
-                    '<option value="">লোড করা যায়নি</option>';
-
-                subLedgerSelect.innerHTML =
-                    '<option value="">সিলেক্ট করুন</option>';
-
-            });
-
-        }
-    );
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Sub Ledger Save
-|--------------------------------------------------------------------------
-*/
-
-async function addSubLedger() {
-
-    const name =
-        document.getElementById(
-            'subLedgerName'
-        ).value.trim();
-
-    const ledger_id =
-        document.getElementById(
-            'ledgerSelect'
-        ).value;
-
-    if (!name) {
-
-        showToast(
-            'সাব-লেজারের নাম দিন',
-            'error'
-        );
-
-        return;
-
-    }
-
-    if (!ledger_id) {
-
-        showToast(
-            'আগে একটি লেজার সিলেক্ট করুন',
-            'error'
-        );
-
-        return;
-
-    }
-
-    const btn =
-        document.querySelector(
-            '#subLedgerModal .btn-save'
-        );
-
-    const orig =
-        btn
-            ? btn.textContent
-            : 'সেভ করুন';
-
-    if (btn) {
-
-        btn.textContent =
-            'সেভ হচ্ছে...';
-
-        btn.disabled =
-            true;
-
-    }
-
-    try {
-
-        const response =
-            await fetch(
-                ROUTES.subLedgerStore,
-                {
-
-                    method:
-                        'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            name:
-                                name,
-
-                            ledger_id:
-                                ledger_id
-
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message
-                || 'সাব-লেজার সেভ করা যায়নি'
-            );
-
-        }
-
-        if (!data.success) {
-
-            throw new Error(
-                data.message
-                || 'সাব-লেজার সেভ হয়নি'
-            );
-
-        }
-
-        await loadSubLedgers(
-            ledger_id,
-            data.id
-        );
-
-        document.getElementById(
-            'subLedgerName'
-        ).value =
-            '';
-
-        closeModal(
-            'subLedgerModal'
-        );
-
-        showToast(
-            data.name
-            + ' যোগ করা হয়েছে',
-            'success'
-        );
-
-    } catch (error) {
-
-        console.error(
-            'Sub Ledger Store Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'সেভ হয়নি',
-            'error'
-        );
-
-    } finally {
-
-        if (btn) {
-
-            btn.textContent =
-                orig;
-
-            btn.disabled =
-                false;
-
-        }
-
-    }
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| Cashier
-|--------------------------------------------------------------------------
-*/
-
-async function addCashier() {
-
-    const input =
-        document.getElementById(
-            'cashierName'
-        );
-
-    const button =
-        document.getElementById(
-            'addCashierBtn'
-        );
-
-    if (!input) {
-
-        return;
-
-    }
-
-    const name =
-        input.value.trim();
-
-    if (!name) {
-
-        showToast(
-            'ক্যাশিয়ারের নাম দিন',
-            'error'
-        );
-
-        input.focus();
-
-        return;
-
-    }
+    const button = document.querySelector('#ledgerModal .btn-save');
+    const originalText = button?.textContent || 'সেভ করুন';
 
     if (button) {
-
-        button.disabled =
-            true;
-
-        button.textContent =
-            'সেভ হচ্ছে...';
-
+        button.disabled = true;
+        button.textContent = 'সেভ হচ্ছে...';
     }
 
     try {
+        const response = await fetch(ROUTES.ledgerStore, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                type,
+                fund_id: fundId
+            })
+        });
 
-        const response =
-            await fetch(
-                ROUTES.cashierStore,
-                {
+        const data = await readJsonResponse(response, 'লেজার সেভ করা যায়নি।');
 
-                    method:
-                        'POST',
-
-                    headers: {
-
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json'
-
-                    },
-
-                    body:
-                        JSON.stringify({
-                            name:
-                                name
-                        })
-
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok || !data.success) {
-
-            throw new Error(
-                data.message
-                || 'ক্যাশিয়ার সেভ হয়নি'
-            );
-
+        if (data.success === false) {
+            throw new Error(data.message || 'লেজার সেভ হয়নি।');
         }
 
-        const cashier =
-            data.cashier
-            || data;
+        const ledger = data.ledger || data.data || data;
+        const ledgerId = ledger.id;
+        const ledgerName = ledger.name || name;
 
-        const id =
-            cashier.id;
+        const select = document.getElementById('ledgerSelect');
 
-        const cashierName =
-            cashier.name
-            || name;
-
-        const grid =
-            document.getElementById(
-                'cashierGrid'
-            );
-
-        if (grid && id) {
-
-            const emptyText =
-                grid.parentElement
-                    ?.querySelector(
-                        'div[style*="text-align:center"]'
-                    );
-
-            if (emptyText) {
-
-                emptyText.remove();
-
-            }
-
-            grid
-                .querySelectorAll(
-                    '.cashier-btn'
-                )
-                .forEach(b =>
-                    b.classList.remove(
-                        'active'
-                    )
-                );
-
-            const buttonEl =
-                document.createElement(
-                    'button'
-                );
-
-            buttonEl.type =
-                'button';
-
-            buttonEl.className =
-                'cashier-btn active';
-
-            buttonEl.textContent =
-                cashierName;
-
-            buttonEl.onclick =
-                function() {
-
-                    selectCashier(
-                        this,
-                        id
-                    );
-
-                };
-
-            grid.appendChild(
-                buttonEl
-            );
-
-            selectedCashierId =
-                String(id);
-
-            const hidden =
-                document.getElementById(
-                    'hiddenCashier'
-                );
-
-            if (hidden) {
-
-                hidden.value =
-                    String(id);
-
-            }
-
+        if (select && ledgerId) {
+            select.add(new Option(ledgerName, ledgerId, true, true));
+            select.dispatchEvent(new Event('change'));
         }
 
-        input.value =
-            '';
+        const input = document.getElementById('ledgerName');
+        if (input) input.value = '';
 
-        closeModal(
-            'cashierModal'
-        );
+        closeModal('ledgerModal');
+        showToast(data.message || `${ledgerName} যোগ হয়েছে।`, 'success');
 
-        showToast(
-            cashierName
-            + ' যোগ করা হয়েছে',
-            'success'
-        );
-
+        if (ledgerId) {
+            await loadSubLedgers(ledgerId);
+        }
     } catch (error) {
-
-        console.error(
-            'Cashier Store Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'ক্যাশিয়ার সেভ হয়নি',
-            'error'
-        );
-
+        console.error('Ledger Store Error:', error);
+        showToast(error.message || 'লেজার সেভ হয়নি।', 'error');
     } finally {
-
         if (button) {
-
-            button.disabled =
-                false;
-
-            button.textContent =
-                'সেভ করুন';
-
+            button.disabled = false;
+            button.textContent = originalText;
         }
-
     }
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Submit Transaction
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   FUND CHANGE -> LOAD LEDGERS
+============================================================ */
+
+document.getElementById('fundSelect')?.addEventListener('change', async function () {
+    const fundId = this.value;
+    const hiddenType = document.getElementById('hiddenType');
+    const type = hiddenType?.value || currentType;
+
+    const ledgerSelect = document.getElementById('ledgerSelect');
+    const subLedgerSelect = document.getElementById('subLedgerSelect');
+
+    if (!ledgerSelect || !subLedgerSelect) return;
+
+    if (!fundId) {
+        ledgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+        subLedgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+        return;
+    }
+
+    ledgerSelect.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+    subLedgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+
+    try {
+        const url = routeWithId(ROUTES.fundLedgers, fundId)
+            + '?type=' + encodeURIComponent(type);
+
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const result = await readJsonResponse(response, 'Ledger লোড করা যায়নি।');
+
+        const list = Array.isArray(result)
+            ? result
+            : (Array.isArray(result.data) ? result.data : []);
+
+        ledgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+
+        list.forEach(item => {
+            ledgerSelect.add(new Option(item.name, item.id));
+        });
+
+        subLedgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+    } catch (error) {
+        console.error('Fund Ledger Load Error:', error);
+        ledgerSelect.innerHTML = '<option value="">লোড করা যায়নি</option>';
+        subLedgerSelect.innerHTML = '<option value="">সিলেক্ট করুন</option>';
+        showToast(error.message, 'error');
+    }
+});
+
+/* ============================================================
+   SUB LEDGER SAVE
+============================================================ */
+
+async function addSubLedger() {
+    const name = document.getElementById('subLedgerName')?.value.trim() || '';
+    const ledgerId = document.getElementById('ledgerSelect')?.value || '';
+
+    if (!name) {
+        showToast('সাব-লেজারের নাম দিন।', 'error');
+        return;
+    }
+
+    if (!ledgerId) {
+        showToast('আগে একটি লেজার সিলেক্ট করুন।', 'error');
+        return;
+    }
+
+    const button = document.querySelector('#subLedgerModal .btn-save');
+    const originalText = button?.textContent || 'সেভ করুন';
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'সেভ হচ্ছে...';
+    }
+
+    try {
+        const response = await fetch(ROUTES.subLedgerStore, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                ledger_id: ledgerId
+            })
+        });
+
+        const data = await readJsonResponse(response, 'সাব-লেজার সেভ করা যায়নি।');
+
+        if (data.success === false) {
+            throw new Error(data.message || 'সাব-লেজার সেভ হয়নি।');
+        }
+
+        const subLedger = data.subLedger || data.sub_ledger || data.data || data;
+        const subLedgerId = subLedger.id;
+        const subLedgerName = subLedger.name || name;
+
+        await loadSubLedgers(ledgerId, subLedgerId);
+
+        const input = document.getElementById('subLedgerName');
+        if (input) input.value = '';
+
+        closeModal('subLedgerModal');
+        showToast(data.message || `${subLedgerName} যোগ হয়েছে।`, 'success');
+    } catch (error) {
+        console.error('Sub Ledger Store Error:', error);
+        showToast(error.message || 'সাব-লেজার সেভ হয়নি।', 'error');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+}
+
+/* ============================================================
+   SUBMIT TRANSACTION
+============================================================ */
 
 async function submitForm() {
+    const fundSelect = document.getElementById('fundSelect');
 
-    const fundSelect =
-        document.getElementById(
-            'fundSelect'
-        );
-
-    if (!fundSelect || !fundSelect.value) {
-
-        showToast(
-            'দয়া করে একটি ফান্ড সিলেক্ট করুন',
-            'error'
-        );
-
+    if (!fundSelect?.value) {
+        showToast('দয়া করে একটি ফান্ড সিলেক্ট করুন।', 'error');
         return;
-
     }
 
     if (!items.length) {
-
-        showToast(
-            'কমপক্ষে একটি আইটেম যোগ করুন',
-            'error'
-        );
-
+        showToast('কমপক্ষে একটি আইটেম যোগ করুন।', 'error');
         return;
-
     }
 
     if (!selectedPaymentId) {
-
-        showToast(
-            'পেমেন্ট মেথড সিলেক্ট করুন',
-            'error'
-        );
-
+        showToast('এই ধরনের কোনো Payment Method নেই। আগে Payment Method যোগ করুন।', 'error');
         return;
-
     }
 
-    if (!selectedCashierId) {
-
-        showToast(
-            'ক্যাশিয়ার সিলেক্ট করুন',
-            'error'
-        );
-
-        return;
-
-    }
-
-    const hiddenPayment =
-        document.getElementById(
-            'hiddenPayment'
-        );
-
-    if (hiddenPayment) {
-
-        hiddenPayment.value =
-            selectedPaymentId;
-
-    }
-
-    const hiddenCashier =
-        document.getElementById(
-            'hiddenCashier'
-        );
-
-    if (hiddenCashier) {
-
-        hiddenCashier.value =
-            selectedCashierId;
-
-    }
-
-    const itemsJson =
-        document.getElementById(
-            'itemsJson'
-        );
-
-    if (itemsJson) {
-
-        itemsJson.value =
-            JSON.stringify(items);
-
-    }
-
-    /*
-     * Type নিশ্চিত করছি।
-     */
-    const hiddenType =
-        document.getElementById(
-            'hiddenType'
-        );
-
-    if (hiddenType) {
-
-        hiddenType.value =
-            currentType;
-
-    }
-
-    const form =
-        document.getElementById(
-            'mainForm'
-        );
+    const form = document.getElementById('mainForm');
 
     if (!form) {
-
-        showToast(
-            'Transaction form পাওয়া যায়নি',
-            'error'
-        );
-
+        showToast('Transaction form পাওয়া যায়নি।', 'error');
         return;
-
     }
 
-    const confirmBtn =
-        document.querySelector(
-            '.confirm-btn'
-        );
+    const hiddenPayment = document.getElementById('hiddenPayment');
+    if (hiddenPayment) hiddenPayment.value = selectedPaymentId;
 
-    if (confirmBtn) {
+    const itemsJson = document.getElementById('itemsJson');
+    if (itemsJson) itemsJson.value = JSON.stringify(items);
 
-        confirmBtn.disabled =
-            true;
+    const hiddenType = document.getElementById('hiddenType');
+    if (hiddenType) hiddenType.value = currentType;
 
-        confirmBtn.innerHTML =
-            '<i class="fas fa-spinner fa-spin"></i> সেভ হচ্ছে...';
+    const button = document.querySelector('.confirm-btn');
 
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> সেভ হচ্ছে...';
     }
 
-    /*
-     * Submit হওয়ার আগে storage clear করছি না।
-     * সফল হলে session flag দেখে clear হবে।
-     */
     sessionStorage.setItem(
         'transaction_submitting_{{ $type }}',
         '1'
     );
 
     form.submit();
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Delete Transaction
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   DELETE TRANSACTION
+============================================================ */
 
-async function deleteTransaction(
-    id,
-    btn
-) {
-
-    if (!confirm('এই লেনদেন মুছবেন?')) {
-
-        return;
-
-    }
+async function deleteTransaction(id, button) {
+    if (!confirm('এই লেনদেন মুছবেন?')) return;
 
     try {
-
-        const url =
-            routeWithId(
-                ROUTES.transactionDestroy,
-                id
-            );
-
-        const response =
-            await fetch(
-                url,
-                {
-
-                    method:
-                        'DELETE',
-
-                    headers: {
-
-                        'X-CSRF-TOKEN':
-                            TOKEN,
-
-                        'Accept':
-                            'application/json',
-
-                        'Content-Type':
-                            'application/json'
-
-                    }
-
+        const response = await fetch(
+            routeWithId(ROUTES.transactionDestroy, id),
+            {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': TOKEN,
+                    'Accept': 'application/json'
                 }
-            );
+            }
+        );
 
-        const data =
-            await response.json();
+        const data = await readJsonResponse(response, 'লেনদেন মুছতে সমস্যা হয়েছে।');
 
-        if (!response.ok || !data.success) {
-
-            throw new Error(
-                data.message
-                || 'মুছতে সমস্যা হয়েছে'
-            );
-
+        if (data.success === false) {
+            throw new Error(data.message || 'লেনদেন মুছতে পারেনি।');
         }
 
-        btn
-            ?.closest('tr')
-            ?.remove();
+        button?.closest('tr')?.remove();
 
-        showToast(
-            'লেনদেন মুছে ফেলা হয়েছে',
-            'success'
-        );
+        showToast(data.message || 'লেনদেন মুছে ফেলা হয়েছে।', 'success');
 
-        setTimeout(
-            () => location.reload(),
-            700
-        );
-
+        setTimeout(() => location.reload(), 700);
     } catch (error) {
-
-        console.error(
-            'Transaction Delete Error:',
-            error
-        );
-
-        showToast(
-            error.message
-            || 'মুছতে সমস্যা হয়েছে',
-            'error'
-        );
-
+        console.error('Transaction Delete Error:', error);
+        showToast(error.message || 'লেনদেন মুছতে সমস্যা হয়েছে।', 'error');
     }
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Search
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   TABLE SEARCH
+============================================================ */
 
 function filterTable(input) {
+    const query = input.value.toLowerCase();
 
-    const q =
-        input.value.toLowerCase();
+    document.querySelectorAll('#transTable tbody tr').forEach(row => {
+        if (row.classList.contains('empty-row')) return;
 
-    document
-        .querySelectorAll(
-            '#transTable tbody tr'
-        )
-        .forEach(row => {
-
-            if (
-                row.classList.contains(
-                    'empty-row'
-                )
-            ) {
-
-                return;
-
-            }
-
-            row.style.display =
-                row.textContent
-                    .toLowerCase()
-                    .includes(q)
-                    ? ''
-                    : 'none';
-
-        });
-
+        row.style.display = row.textContent.toLowerCase().includes(query)
+            ? ''
+            : 'none';
+    });
 }
 
-/*
-|--------------------------------------------------------------------------
-| Initial Load
-|--------------------------------------------------------------------------
-*/
+/* ============================================================
+   INITIAL LOAD
+============================================================ */
 
-document.addEventListener(
-    'DOMContentLoaded',
-    async function() {
+document.addEventListener('DOMContentLoaded', async function () {
+    loadItemsFromStorage();
+    renderItems();
 
-        /*
-         * 1. LocalStorage থেকে items
-         */
-        loadItemsFromStorage();
+    // Cash is the default payment type.
+    const cashCard = document.querySelector(
+        '#paymentTypeGrid .pay-card[data-type="cash"]'
+    );
 
-        renderItems();
+    if (cashCard) {
+        cashCard.classList.add('active');
+    }
 
-        /*
-         * 2. Default payment type
-         */
-        await loadPaymentMethods(
-            'cash'
-        );
+    selectedPaymentType = 'cash';
+    await loadPaymentMethods('cash');
 
-        /*
-         * 3. Current fund -> ledger load
-         */
-        const fundSelect =
-            document.getElementById(
-                'fundSelect'
-            );
+    const fundSelect = document.getElementById('fundSelect');
 
-        if (
-            fundSelect
-            && fundSelect.value
-        ) {
+    if (fundSelect?.value) {
+        fundSelect.dispatchEvent(new Event('change'));
+    }
 
-            fundSelect.dispatchEvent(
-                new Event(
-                    'change'
-                )
-            );
+    const ledgerSelect = document.getElementById('ledgerSelect');
 
-        }
+    if (ledgerSelect?.value) {
+        await loadSubLedgers(ledgerSelect.value);
+    }
 
-        /*
-         * 4. Selected ledger থাকলে
-         *    sub ledger load
-         */
-        const ledgerSelect =
-            document.getElementById(
-                'ledgerSelect'
-            );
+    const hiddenType = document.getElementById('hiddenType');
 
-        if (
-            ledgerSelect
-            && ledgerSelect.value
-        ) {
+    if (hiddenType) {
+        hiddenType.value = currentType;
+    }
 
-            await loadSubLedgers(
-                ledgerSelect.value
-            );
+    const submitting = sessionStorage.getItem(
+        'transaction_submitting_{{ $type }}'
+    );
 
-        }
+    @if(session('success'))
+        if (submitting) {
+            localStorage.removeItem(ITEMS_STORAGE_KEY);
+            items = [];
+            renderItems();
 
-        /*
-         * 5. Hidden fields sync
-         */
-        const hiddenPayment =
-            document.getElementById(
-                'hiddenPayment'
-            );
-
-        if (hiddenPayment) {
-
-            hiddenPayment.value =
-                selectedPaymentId;
-
-        }
-
-        const hiddenCashier =
-            document.getElementById(
-                'hiddenCashier'
-            );
-
-        if (hiddenCashier) {
-
-            hiddenCashier.value =
-                selectedCashierId;
-
-        }
-
-        const hiddenType =
-            document.getElementById(
-                'hiddenType'
-            );
-
-        if (hiddenType) {
-
-            hiddenType.value =
-                currentType;
-
-        }
-
-        /*
-         * 6. Successful submit হলে
-         *    old localStorage items clear হবে।
-         */
-        const submitting =
-            sessionStorage.getItem(
+            sessionStorage.removeItem(
                 'transaction_submitting_{{ $type }}'
             );
+        }
+    @endif
+});
 
-        @if(session('success'))
+/* ============================================================
+   EXPOSE FUNCTIONS FOR INLINE HTML onclick HANDLERS
+============================================================ */
 
-            if (submitting) {
+Object.assign(window, {
+    setType,
+    openModal,
+    closeModal,
 
-                localStorage.removeItem(
-                    ITEMS_STORAGE_KEY
-                );
+    selectPayment,
+    selectPaymentType,
 
-                items = [];
+    addItem,
+    removeItem,
+    clearItems,
+    submitForm,
 
-                renderItems();
+    deleteTransaction,
+    filterTable,
 
-                sessionStorage.removeItem(
-                    'transaction_submitting_{{ $type }}'
-                );
+    addFund,
+    addLedger,
+    addSubLedger,
 
-            }
-
-        @endif
-
-    }
-);
-
-/*
-|--------------------------------------------------------------------------
-| Global Functions
-|--------------------------------------------------------------------------
-*/
-
-window.setType =
-    setType;
-
-window.openModal =
-    openModal;
-
-window.closeModal =
-    closeModal;
-
-window.selectPayment =
-    selectPayment;
-
-window.selectPaymentType =
-    selectPaymentType;
-
-window.selectCashier =
-    selectCashier;
-
-window.addItem =
-    addItem;
-
-window.removeItem =
-    removeItem;
-
-window.clearItems =
-    clearItems;
-
-window.submitForm =
-    submitForm;
-
-window.deleteTransaction =
-    deleteTransaction;
-
-window.filterTable =
-    filterTable;
-
-window.addLedger =
-    addLedger;
-
-window.addSubLedger =
-    addSubLedger;
-
-window.addFund =
-    addFund;
-
-window.addCashier =
-    addCashier;
-
-window.openPmModal =
-    openPmModal;
-
-window.closePmModal =
-    closePmModal;
-
-window.pmSave =
-    pmSave;
-
-window.pmUpdate =
-    pmUpdate;
-
-window.pmNew =
-    pmNew;
-
-window.pmEdit =
-    pmEdit;
-
-window.pmDelete =
-    pmDelete;
-
+    openPmModal,
+    closePmModal,
+    pmSave,
+    pmUpdate,
+    pmNew,
+    pmEdit,
+    pmDelete
+});
 </script>
+
 
 @endsection

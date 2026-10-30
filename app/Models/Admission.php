@@ -10,21 +10,19 @@ class Admission extends Model
     use HasFactory;
 
     protected $fillable = [
+        'institution_id',
         'admission_no',
         'student_id',
         'academic_year_id',
         'class_id',
         'admission_date',
-
         'financial_status',
         'residence_status',
         'admission_type',
-
         'status',
         'leaving_date',
         'leaving_reason',
         'remarks',
-
         'created_by',
         'updated_by',
     ];
@@ -49,6 +47,11 @@ class Admission extends Model
     {
         return $this->belongsTo(AcademicYear::class);
     }
+
+    public function institution()
+{
+    return $this->belongsTo(Madrasa::class, 'institution_id');
+}
 
     public function class()
     {

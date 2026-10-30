@@ -65,61 +65,6 @@
 
             <ul class="nav flex-column ms-3">
 
-
-                {{-- =====================================================
-                | শিক্ষার্থীর তালিকা
-                ====================================================== --}}
-
-                @sidebarPermission('student.view')
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link text-white-50
-                            {{ request()->routeIs('dashboard.teacher.students.*') ? 'active' : '' }}"
-
-                            href="{{ route('dashboard.teacher.students.index') }}"
-                        >
-
-                            <i class="fas fa-users me-2"></i>
-
-                            শিক্ষার্থীর তালিকা
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-
-                {{-- =====================================================
-                | ভর্তি তথ্য
-                ====================================================== --}}
-
-                @sidebarPermission('admission.view')
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link text-white-50
-                            {{ request()->routeIs('dashboard.teacher.admissions.*') ? 'active' : '' }}"
-
-                            href="{{ route('dashboard.teacher.admissions.index') }}"
-                        >
-
-                            <i class="fas fa-user-plus me-2"></i>
-
-                            ভর্তি তথ্য
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-
                 {{-- =====================================================
                 | শিক্ষক তথ্য
                 ====================================================== --}}

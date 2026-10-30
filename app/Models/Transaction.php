@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Transaction extends Model
 {
@@ -11,27 +13,36 @@ class Transaction extends Model
 
     protected $fillable = [
         'institution_id',
+        'created_by',
         'voucher_no',
         'type',
         'fund_id',
         'payment_method_id',
-        'cashier_id',
         'total_amount',
         'date',
-        'note'
+        'note',
     ];
 
-    public function items()
+    /**
+     * Transaction items.
+     */
+    public function items(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
     }
 
-    public function fund()
+    /**
+     * Transaction fund.
+     */
+    public function fund(): BelongsTo
     {
         return $this->belongsTo(Fund::class);
     }
 
-    public function paymentMethod()
+    /**
+     * Payment method used for this transaction.
+     */
+    public function paymentMethod(): BelongsTo
     {
         return $this->belongsTo(
             PaymentMethod::class,
@@ -39,9 +50,14 @@ class Transaction extends Model
         );
     }
 
-    public function cashier()
+    /**
+     * User who created the transaction.
+     */
+    public function creator(): BelongsTo
     {
-        return $this->belongsTo(Cashier::class);
+        return $this->belongsTo(
+            User::class,
+            'created_by'
+        );
     }
 }
-

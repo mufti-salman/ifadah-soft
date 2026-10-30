@@ -663,27 +663,41 @@ class InstitutionController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function info()
-    {
-        $user = Auth::user();
 
-        $institution = $user->activeInstitution;
+public function info()
+{
+    $user = Auth::user();
 
-        if (!$institution) {
+    if (!$user) {
+        abort(401);
+    }
 
+    // Super Admin হলে বর্তমানে নির্বাচিত প্রতিষ্ঠানের তথ্য দেখাবে
+    if ($user->is_super_admin) {
+        $institutionId = session('active_institution_id');
+
+        if (!$institutionId || session('institution_mode') !== true) {
             return redirect()
                 ->route('dashboard.index')
-                ->with(
-                    'error',
-                    'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
-                );
+                ->with('error', 'প্রতিষ্ঠানের তথ্য দেখতে আগে একটি প্রতিষ্ঠান নির্বাচন করুন।');
         }
 
-        return view(
-            'admin.institutions.info',
-            compact('institution')
-        );
+        $institution = Madrasa::find($institutionId);
+    } else {
+        // সাধারণ ব্যবহারকারী নিজের প্রতিষ্ঠানের তথ্য দেখবে
+        $institution = $user->institution_id
+            ? Madrasa::find($user->institution_id)
+            : null;
     }
+
+    if (!$institution) {
+        return redirect()
+            ->route('dashboard.index')
+            ->with('error', 'প্রতিষ্ঠানের তথ্য পাওয়া যায়নি।');
+    }
+
+    return view('admin.institutions.info', compact('institution'));
+}
 
 
     /*

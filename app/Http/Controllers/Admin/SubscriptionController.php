@@ -639,110 +639,103 @@ class SubscriptionController extends Controller
     /**
      * Handle activation, extension and cancellation actions.
      */
-    public function handleSubscriptionAction(
-        Request $request,
-        Subscription $subscription
+
+public function handleSubscriptionAction(
+    Request $request,
+    Subscription $subscription
+) {
+    $validated = $request->validate([
+        'action' => [
+            'required',
+            Rule::in([
+                'activate',
+                'extend',
+                'cancel',
+            ]),
+        ],
+
+        'extension_days' => [
+            'nullable',
+            'required_if:action,extend',
+            'integer',
+            'min:1',
+            'max:3650',
+        ],
+
+        'notes' => [
+            'nullable',
+            'string',
+            'max:2000',
+        ],
+    ]);
+
+    DB::transaction(function () use (
+        $validated,
+        $subscription
     ) {
-        $validated = $request->validate([
-            'action' => [
-                'required',
-                Rule::in([
-                    'activate',
-                    'extend',
-                    'cancel',
-                ]),
-            ],
+        // Activate subscription manually by Super Admin.
+        if ($validated['action'] === 'activate') {
+            $subscription->status = 'active';
 
-            'extension_days' => [
-                'nullable',
-                'required_if:action,extend',
-                'integer',
-                'min:1',
-                'max:3650',
-            ],
+            $subscription->starts_at =
+                $subscription->starts_at ?? now();
 
-            'notes' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-        ]);
+            $subscription->ends_at =
+                $subscription->ends_at ?? now()->addMonth();
 
-        DB::transaction(function () use (
-            $validated,
-            $subscription
-        ) {
-            if ($validated['action'] === 'activate') {
-                if ((float) $subscription->amount > 0) {
-                    $hasVerifiedPayment = $subscription->payments()
-                        ->where('status', 'approved')
-                        ->exists();
+            $subscription->cancelled_at = null;
+        }
 
-                    if (!$hasVerifiedPayment) {
-                        abort(
-                            422,
-                            'An approved payment is required before activating this paid subscription.'
-                        );
-                    }
-                }
-
-                $subscription->status = 'active';
-                $subscription->starts_at =
-                    $subscription->starts_at ?? now();
-
-                $subscription->ends_at =
-                    $subscription->ends_at ?? now()->addMonth();
-
-                $subscription->cancelled_at = null;
-            }
-
-            if ($validated['action'] === 'extend') {
-                if (!in_array(
-                    $subscription->status,
-                    ['active', 'trialing'],
-                    true
-                )) {
-                    abort(
-                        422,
-                        'Only active or trial subscriptions can be extended.'
-                    );
-                }
-
-                $baseDate = $subscription->ends_at
-                    && $subscription->ends_at->isFuture()
-                        ? $subscription->ends_at
-                        : now();
-
-                $subscription->ends_at = $baseDate->copy()->addDays(
-                    (int) $validated['extension_days']
+        // Extend an active or trial subscription.
+        if ($validated['action'] === 'extend') {
+            if (!in_array(
+                $subscription->status,
+                ['active', 'trialing'],
+                true
+            )) {
+                abort(
+                    422,
+                    'Only active or trial subscriptions can be extended.'
                 );
             }
 
-            if ($validated['action'] === 'cancel') {
-                $subscription->status = 'cancelled';
-                $subscription->cancelled_at = now();
-            }
+            $baseDate = $subscription->ends_at
+                && $subscription->ends_at->isFuture()
+                    ? $subscription->ends_at
+                    : now();
 
-            if (!empty($validated['notes'])) {
-                $existingNotes = $subscription->notes;
-
-                $subscription->notes = trim(
-                    ($existingNotes
-                        ? $existingNotes . "\n"
-                        : '') . $validated['notes']
-                );
-            }
-
-            $subscription->save();
-        });
-
-        return redirect()
-            ->route('dashboard.subscription.manage', $subscription)
-            ->with(
-                'success',
-                'Subscription action completed successfully.'
+            $subscription->ends_at = $baseDate->copy()->addDays(
+                (int) $validated['extension_days']
             );
-    }
+        }
+
+        // Cancel subscription.
+        if ($validated['action'] === 'cancel') {
+            $subscription->status = 'cancelled';
+            $subscription->cancelled_at = now();
+        }
+
+        // Append admin notes.
+        if (!empty($validated['notes'])) {
+            $existingNotes = $subscription->notes;
+
+            $subscription->notes = trim(
+                ($existingNotes
+                    ? $existingNotes . "\n"
+                    : '') . $validated['notes']
+            );
+        }
+
+        $subscription->save();
+    });
+
+    return redirect()
+        ->route('dashboard.subscription.manage', $subscription)
+        ->with(
+            'success',
+            'Subscription action completed successfully.'
+        );
+}
 
     /**
      * Soft-delete a subscription record.

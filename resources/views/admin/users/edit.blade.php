@@ -164,7 +164,7 @@
          MAIN FORM
     ========================================================== --}}
     <form method="POST"
-          action="{{ route('dashboard.user.update', $user->id) }}"
+          action="{{ route('dashboard.user.update', $user->username) }}"
           enctype="multipart/form-data">
 
         @csrf

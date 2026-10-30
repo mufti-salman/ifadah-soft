@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PaymentMethod extends Model
 {
     protected $fillable = [
+        'institution_id',
         'user_id',
         'name',
         'icon',
@@ -16,13 +19,19 @@ class PaymentMethod extends Model
         'mobile2',
         'address',
     ];
-    
-    public function user()
+
+    /**
+     * User who created the payment method.
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
-    public function transactions()
+
+    /**
+     * Transactions associated with this payment method.
+     */
+    public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
     }

@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MonthSetting extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'institution_id',
         'academic_year',
         'class_id',
         'month_1',
@@ -26,13 +28,16 @@ class MonthSetting extends Model
         'month_12',
     ];
 
-    // Relationship with Class
-    public function studentClass()
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Madrasa::class, 'institution_id');
+    }
+
+    public function studentClass(): BelongsTo
     {
         return $this->belongsTo(Classes::class, 'class_id');
     }
 
-    // Get months as array
     public function getMonthsArray(): array
     {
         return [

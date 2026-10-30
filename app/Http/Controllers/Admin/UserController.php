@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class UserController extends Controller
@@ -338,6 +339,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+       
         DB::beginTransaction();
 
         $photoPath = null;
@@ -776,7 +778,6 @@ class UserController extends Controller
                     ?? ''
                 )
             );
-
             /*
              * MANUAL CODE
              *
@@ -1519,24 +1520,26 @@ private function generateManualCode(
         return $studentId;
     }
 
-    public function show($id)
-    {
-        $authUser = auth()->user();
 
-        $user = User::with([
-            'role',
-            'institution',
-            'student',
-            'creator',
-            'updater',
-            'presentDivision',
-            'presentDistrict',
-            'presentUpazila',
-            'permanentDivision',
-            'permanentDistrict',
-            'permanentUpazila',
-        ])->findOrFail($id);
+      public function show($username)
+{
+    $authUser = auth()->user();
 
+    $user = User::with([
+        'role',
+        'institution',
+        'student',
+        'creator',
+        'updater',
+        'presentDivision',
+        'presentDistrict',
+        'presentUpazila',
+        'permanentDivision',
+        'permanentDistrict',
+        'permanentUpazila',
+    ])
+        ->where('username', $username)
+        ->firstOrFail();
         /*
          * Switched Super Admin can only access
          * users from active institution.
@@ -1632,15 +1635,16 @@ private function generateManualCode(
         );
     }
 
-    public function edit($id)
+    public function edit($username)
     {
-        $authUser = auth()->user();
 
-        $user = User::with([
-            'role',
-            'student',
-            'institution',
-        ])->findOrFail($id);
+    $authUser = auth()->user();
+
+    $user = User::with([
+        'role',
+        'student',
+        'institution',
+    ])->where('username', $username)->firstOrFail();
 
         /*
          * Switched Super Admin:
@@ -1853,16 +1857,16 @@ private function generateManualCode(
         );
     }
 
-    public function update(
-        Request $request,
-        $id
-    ) {
-        $authUser = auth()->user();
+public function update(
+    Request $request,
+    $username
+) {
+    $authUser = auth()->user();
 
-        $user = User::with([
-            'role',
-            'student',
-        ])->findOrFail($id);
+    $user = User::with([
+        'role',
+        'student',
+    ])->where('username', $username)->firstOrFail();
 
         /*
          * Switched Super Admin:
@@ -2670,14 +2674,16 @@ private function generateManualCode(
         }
     }
 
-    public function destroy($id)
-    {
-        try {
+public function destroy($username)
+{
+    try {
 
-            $user = User::with([
-                'role',
-                'student'
-            ])->findOrFail($id);
+        $user = User::with([
+            'role',
+            'student'
+        ])
+            ->where('username', $username)
+            ->firstOrFail();
 
             if (
                 optional($user->role)->slug
@@ -2833,11 +2839,11 @@ private function generateManualCode(
         }
     }
 
-    public function toggleStatus($id)
-    {
-        $user = User::with(
-            'role'
-        )->findOrFail($id);
+public function toggleStatus($username)
+{
+    $user = User::with('role')
+        ->where('username', $username)
+        ->firstOrFail();
 
         if (
             optional($user->role)->slug
@@ -2975,51 +2981,33 @@ private function generateManualCode(
         );
     }
 
-    private function generateUsername(
-        $nameEn = null,
-        $nameBn = null
-    ) {
+   private function generateUsername($nameEn = null, $nameBn = null)
+{
+    $name = trim((string) $nameEn);
 
-        $base = preg_replace(
-            '/[^a-zA-Z0-9]/',
-            '',
-            strtolower(
-                $nameEn ?? ''
-            )
-        );
+    // English name থেকে username তৈরি
+    $baseName = Str::slug($name, '_');
+    $baseName = preg_replace('/[^a-z0-9_]/', '', $baseName);
+    $baseName = trim($baseName, '_');
 
-        if (empty($base)) {
-
-            $base =
-                'user'
-                . substr(
-                    md5(
-                        ($nameBn ?? '')
-                        . microtime(true)
-                    ),
-                    0,
-                    6
-                );
-        }
-
-        $username = $base;
-        $counter = 1;
-
-        while (
-            User::where(
-                'username',
-                $username
-            )->exists()
-        ) {
-
-            $username =
-                $base . $counter;
-
-            $counter++;
-        }
-
-        return $username;
+    // English name না থাকলে fallback
+    if ($baseName === '') {
+        $baseName = 'user';
+    } else {
+        $baseName = 'user_' . $baseName;
     }
+
+    $username = $baseName;
+    $counter = 2;
+
+    // Username unique রাখা
+    while (User::where('username', $username)->exists()) {
+        $username = $baseName . $counter;
+        $counter++;
+    }
+
+    return $username;
+}
 
     public function getDistricts($divisionId)
     {

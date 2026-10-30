@@ -3,38 +3,49 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{
-    Ledger,
-    SubLedger,
-    Fund,
-    PaymentMethod,
-    Cashier,
-    Transaction,
-    TransactionItem
-};
+use App\Models\Fund;
+use App\Models\Ledger;
+use App\Models\PaymentMethod;
+use App\Models\SubLedger;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class TransactionController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * Get the active institution ID.
+     */
+    private function getInstitutionId(): int
     {
-        $type = $request->get('type', 'expense');
-
-        if (!in_array($type, ['income', 'expense'])) {
-            $type = 'expense';
-        }
-
-        $institutionId = auth()->user()->active_institution_id;
+        $institutionId = auth()->user()?->active_institution_id;
 
         if (!$institutionId) {
             abort(403, 'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।');
         }
 
+        return (int) $institutionId;
+    }
+
+    /**
+     * Display income and expense transactions.
+     */
+    public function index(Request $request)
+    {
+        $institutionId = $this->getInstitutionId();
+
+        $type = $request->query('type', 'expense');
+
+        if (!in_array($type, ['income', 'expense'], true)) {
+            $type = 'expense';
+        }
+
         /*
         |--------------------------------------------------------------------------
-        | Generate Unique Voucher Number
+        | Voucher Number
         |--------------------------------------------------------------------------
         */
 
@@ -45,10 +56,8 @@ class TransactionController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Ledgers
+        | Institution Ledgers
         |--------------------------------------------------------------------------
-        | Income tab  -> income ledgers only
-        | Expense tab -> expense ledgers only
         */
 
         $ledgers = Ledger::where('institution_id', $institutionId)
@@ -58,10 +67,8 @@ class TransactionController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Funds
+        | Institution Funds
         |--------------------------------------------------------------------------
-        | Current funds table does not have type column.
-        | Therefore funds are institution-wise common.
         */
 
         $funds = Fund::where('institution_id', $institutionId)
@@ -71,23 +78,20 @@ class TransactionController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Payment Methods
+        | Institution Payment Methods
         |--------------------------------------------------------------------------
         */
 
-        $paymentMethods = PaymentMethod::all();
+        $paymentMethods = PaymentMethod::where(
+                'institution_id',
+                $institutionId
+            )
+            ->orderBy('name')
+            ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | Cashiers
-        |--------------------------------------------------------------------------
-        */
-
-        $cashiers = Cashier::all();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Transactions
+        | Institution Transactions
         |--------------------------------------------------------------------------
         */
 
@@ -96,7 +100,7 @@ class TransactionController extends Controller
                 'items.subLedger',
                 'fund',
                 'paymentMethod',
-                'cashier'
+                'creator',
             ])
             ->where('institution_id', $institutionId)
             ->where('type', $type)
@@ -105,7 +109,7 @@ class TransactionController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Balance
+        | Payment Method Balances
         |--------------------------------------------------------------------------
         */
 
@@ -119,284 +123,341 @@ class TransactionController extends Controller
                 'ledgers',
                 'funds',
                 'paymentMethods',
-                'cashiers',
                 'transactions',
                 'balance'
             )
         );
     }
 
-
+    /**
+     * Store a new income or expense transaction.
+     */
     public function store(Request $request)
     {
+        $institutionId = $this->getInstitutionId();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Request
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'type' => [
+                'required',
+                'in:income,expense',
+            ],
+
+            'date' => [
+                'required',
+                'date',
+            ],
+
+            'fund_id' => [
+                'required',
+                'integer',
+            ],
+
+            'payment_method_id' => [
+                'required',
+                'integer',
+            ],
+
+            'note' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            'items' => [
+                'required',
+                'json',
+            ],
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Decode Items
+        |--------------------------------------------------------------------------
+        */
+
+        $items = json_decode($validated['items'], true);
+
+        if (!is_array($items) || empty($items)) {
+            throw ValidationException::withMessages([
+                'items' => 'কমপক্ষে একটি Transaction Item দিতে হবে।',
+            ]);
+        }
+
+        $type = $validated['type'];
+
         try {
-
-            Log::info('Transaction store started', [
-                'request_type' => $request->type,
-                'all_data' => $request->all()
-            ]);
-
-            DB::beginTransaction();
-
-            $institutionId = auth()->user()->active_institution_id;
-
-            if (!$institutionId) {
-                throw new \Exception(
-                    'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
-                );
-            }
-
             /*
             |--------------------------------------------------------------------------
-            | Validation
+            | Create Transaction and Items Atomically
             |--------------------------------------------------------------------------
             */
 
-            $validated = $request->validate([
-                'type' => 'required|in:income,expense',
-                'date' => 'required|date',
-
-                'fund_id' => [
-                    'required',
-                    'exists:funds,id'
-                ],
-
-                'payment_method_id' => [
-                    'required',
-                    'exists:payment_methods,id'
-                ],
-
-                'cashier_id' => [
-                    'required',
-                    'exists:cashiers,id'
-                ],
-
-                'note' => 'nullable|string',
-                'items' => 'required|json'
-            ]);
-
-            $type = $validated['type'];
-
-            /*
-            |--------------------------------------------------------------------------
-            | Decode Items
-            |--------------------------------------------------------------------------
-            */
-
-            $items = json_decode($request->items, true);
-
-            if (!is_array($items) || empty($items)) {
-                throw new \Exception(
-                    'কোনো আইটেম পাওয়া যায়নি।'
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Validate Fund
-            |--------------------------------------------------------------------------
-            */
-
-            $fund = Fund::where('id', $request->fund_id)
-                ->where('institution_id', $institutionId)
-                ->where('type', $type)
-                ->first();
-
-            if (!$fund) {
-                throw new \Exception(
-                    'নির্বাচিত Fund এই প্রতিষ্ঠানের অন্তর্ভুক্ত নয়।'
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Validate Payment Method
-            |--------------------------------------------------------------------------
-            */
-
-            $paymentMethodExists = PaymentMethod::where(
-                'id',
-                $request->payment_method_id
-            )->exists();
-
-            if (!$paymentMethodExists) {
-                throw new \Exception(
-                    'নির্বাচিত Payment Method পাওয়া যায়নি।'
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Validate Cashier
-            |--------------------------------------------------------------------------
-            */
-
-            $cashierExists = Cashier::where(
-                'id',
-                $request->cashier_id
-            )->exists();
-
-            if (!$cashierExists) {
-                throw new \Exception(
-                    'নির্বাচিত Cashier পাওয়া যায়নি।'
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Validate Ledger + Sub Ledger
-            |--------------------------------------------------------------------------
-            */
-
-            foreach ($items as $index => $item) {
-
-                if (empty($item['ledger_id'])) {
-                    throw new \Exception(
-                        'আইটেম #' .
-                        ($index + 1) .
-                        '-এ Ledger নির্বাচন করা হয়নি।'
-                    );
-                }
-
+            $transaction = DB::transaction(function () use (
+                $validated,
+                $institutionId,
+                $type,
+                $items
+            ) {
                 /*
                 |--------------------------------------------------------------------------
-                | Ledger must belong to current institution
-                | and must match transaction type
+                | Validate Fund
                 |--------------------------------------------------------------------------
                 */
 
-                $ledger = Ledger::where('id', $item['ledger_id'])
+                $fund = Fund::where('id', $validated['fund_id'])
                     ->where('institution_id', $institutionId)
                     ->where('type', $type)
                     ->first();
 
-                if (!$ledger) {
-                    throw new \Exception(
-                        'আইটেম #' .
-                        ($index + 1) .
-                        '-এর Ledger এই Transaction Type-এর জন্য বৈধ নয়।'
-                    );
+                if (!$fund) {
+                    throw ValidationException::withMessages([
+                        'fund_id' => 'নির্বাচিত Fund এই প্রতিষ্ঠানের অথবা এই Transaction Type-এর জন্য বৈধ নয়।',
+                    ]);
                 }
 
                 /*
                 |--------------------------------------------------------------------------
-                | Validate Sub Ledger
+                | Validate Payment Method
                 |--------------------------------------------------------------------------
                 */
 
-                if (!empty($item['sub_ledger_id'])) {
+                $paymentMethod = PaymentMethod::where(
+                        'id',
+                        $validated['payment_method_id']
+                    )
+                    ->where('institution_id', $institutionId)
+                    ->first();
 
-                    $subLedgerExists = SubLedger::where(
-                            'id',
-                            $item['sub_ledger_id']
-                        )
-                        ->where('ledger_id', $ledger->id)
-                        ->exists();
+                if (!$paymentMethod) {
+                    throw ValidationException::withMessages([
+                        'payment_method_id' => 'নির্বাচিত Payment Method এই প্রতিষ্ঠানের অন্তর্ভুক্ত নয়।',
+                    ]);
+                }
 
-                    if (!$subLedgerExists) {
-                        throw new \Exception(
-                            'আইটেম #' .
-                            ($index + 1) .
-                            '-এর Sub Ledger নির্বাচিত Ledger-এর অন্তর্ভুক্ত নয়।'
-                        );
+                /*
+                |--------------------------------------------------------------------------
+                | Validate Transaction Items
+                |--------------------------------------------------------------------------
+                */
+
+                $totalAmount = 0;
+
+                foreach ($items as $index => $item) {
+                    $itemNumber = $index + 1;
+
+                    if (!is_array($item)) {
+                        throw ValidationException::withMessages([
+                            'items' => "আইটেম #{$itemNumber}-এর তথ্য সঠিক নয়।",
+                        ]);
                     }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Ledger ID
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        !isset($item['ledger_id']) ||
+                        !is_numeric($item['ledger_id']) ||
+                        (int) $item['ledger_id'] <= 0
+                    ) {
+                        throw ValidationException::withMessages([
+                            'items' => "আইটেম #{$itemNumber}-এ সঠিক Ledger নির্বাচন করুন।",
+                        ]);
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Validate Ledger Against Institution and Type
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $ledger = Ledger::where(
+                            'id',
+                            (int) $item['ledger_id']
+                        )
+                        ->where('institution_id', $institutionId)
+                        ->where('type', $type)
+                        ->first();
+
+                    if (!$ledger) {
+                        throw ValidationException::withMessages([
+                            'items' => "আইটেম #{$itemNumber}-এর Ledger এই প্রতিষ্ঠানের অথবা Transaction Type-এর জন্য বৈধ নয়।",
+                        ]);
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Validate Optional Sub-Ledger
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $subLedgerId = null;
+
+                    if (
+                        isset($item['sub_ledger_id']) &&
+                        $item['sub_ledger_id'] !== '' &&
+                        $item['sub_ledger_id'] !== null
+                    ) {
+                        if (
+                            !is_numeric($item['sub_ledger_id']) ||
+                            (int) $item['sub_ledger_id'] <= 0
+                        ) {
+                            throw ValidationException::withMessages([
+                                'items' => "আইটেম #{$itemNumber}-এর Sub-Ledger ID সঠিক নয়।",
+                            ]);
+                        }
+
+                        $subLedgerId = (int) $item['sub_ledger_id'];
+
+                        /*
+                         * A Sub-Ledger must belong to the selected Ledger.
+                         * The selected Ledger has already been validated
+                         * against the active institution.
+                         */
+                        $subLedgerExists = SubLedger::where(
+                                'id',
+                                $subLedgerId
+                            )
+                            ->where('ledger_id', $ledger->id)
+                            ->exists();
+
+                        if (!$subLedgerExists) {
+                            throw ValidationException::withMessages([
+                                'items' => "আইটেম #{$itemNumber}-এর Sub-Ledger নির্বাচিত Ledger-এর অন্তর্ভুক্ত নয়।",
+                            ]);
+                        }
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Validate Amount
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        !isset($item['amount']) ||
+                        !is_numeric($item['amount']) ||
+                        !is_finite((float) $item['amount']) ||
+                        (float) $item['amount'] <= 0
+                    ) {
+                        throw ValidationException::withMessages([
+                            'items' => "আইটেম #{$itemNumber}-এর Amount অবশ্যই শূন্যের বেশি হতে হবে।",
+                        ]);
+                    }
+
+                    $amount = round((float) $item['amount'], 2);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Validate Optional Description
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        isset($item['description']) &&
+                        !is_string($item['description'])
+                    ) {
+                        throw ValidationException::withMessages([
+                            'items' => "আইটেম #{$itemNumber}-এর Description সঠিক নয়।",
+                        ]);
+                    }
+
+                    $totalAmount += $amount;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Validate Amount
-                |--------------------------------------------------------------------------
-                */
+                $totalAmount = round($totalAmount, 2);
 
                 if (
-                    !isset($item['amount']) ||
-                    !is_numeric($item['amount']) ||
-                    (float) $item['amount'] <= 0
+                    !is_finite($totalAmount) ||
+                    $totalAmount <= 0
                 ) {
-                    throw new \Exception(
-                        'আইটেম #' .
-                        ($index + 1) .
-                        '-এর Amount সঠিক নয়।'
-                    );
+                    throw ValidationException::withMessages([
+                        'items' => 'Transaction-এর মোট Amount সঠিক নয়।',
+                    ]);
                 }
-            }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Voucher
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | Generate Voucher Number
+                |--------------------------------------------------------------------------
+                */
 
-            $voucherNo = $this->generateUniqueVoucherNumber(
-                $type,
-                $institutionId
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Calculate Total
-            |--------------------------------------------------------------------------
-            */
-
-            $totalAmount = array_sum(
-                array_map(
-                    fn ($item) => (float) ($item['amount'] ?? 0),
-                    $items
-                )
-            );
-
-            if ($totalAmount <= 0) {
-                throw new \Exception(
-                    'Transaction-এর মোট Amount 0 হতে পারে না।'
+                $voucherNo = $this->generateUniqueVoucherNumber(
+                    $type,
+                    $institutionId
                 );
-            }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Create Transaction
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | Create Transaction
+                |--------------------------------------------------------------------------
+                */
 
-            $transaction = Transaction::create([
-                'institution_id' => $institutionId,
-                'voucher_no' => $voucherNo,
-                'type' => $type,
-                'fund_id' => $request->fund_id,
-                'payment_method_id' => $request->payment_method_id,
-                'cashier_id' => $request->cashier_id,
-                'total_amount' => $totalAmount,
-                'date' => $request->date,
-                'note' => $request->note
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create Transaction Items
-            |--------------------------------------------------------------------------
-            */
-
-            foreach ($items as $item) {
-
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'ledger_id' => $item['ledger_id'],
-                    'sub_ledger_id' => $item['sub_ledger_id'] ?? null,
-                    'amount' => $item['amount'],
-                    'description' => $item['description'] ?? null
-                ]);
-            }
-
-            DB::commit();
-
-            Log::info(
-                'Transaction committed successfully',
-                [
+                $transaction = Transaction::create([
                     'institution_id' => $institutionId,
-                    'type' => $type,
+
+                    // Automatically record the authenticated user.
+                    'created_by' => auth()->id(),
+
                     'voucher_no' => $voucherNo,
-                    'transaction_id' => $transaction->id
-                ]
-            );
+                    'type' => $type,
+                    'fund_id' => $fund->id,
+                    'payment_method_id' => $paymentMethod->id,
+                    'total_amount' => $totalAmount,
+                    'date' => $validated['date'],
+                    'note' => $validated['note'] ?? null,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create Transaction Items
+                |--------------------------------------------------------------------------
+                */
+
+                foreach ($items as $item) {
+                    TransactionItem::create([
+                        'transaction_id' => $transaction->id,
+                        'ledger_id' => (int) $item['ledger_id'],
+
+                        'sub_ledger_id' => (
+                            isset($item['sub_ledger_id']) &&
+                            $item['sub_ledger_id'] !== '' &&
+                            $item['sub_ledger_id'] !== null
+                        )
+                            ? (int) $item['sub_ledger_id']
+                            : null,
+
+                        'amount' => round((float) $item['amount'], 2),
+
+                        'description' => $item['description'] ?? null,
+                    ]);
+                }
+
+                return $transaction;
+            });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Success Log
+            |--------------------------------------------------------------------------
+            */
+
+            Log::info('Transaction saved successfully', [
+                'institution_id' => $institutionId,
+                'transaction_id' => $transaction->id,
+                'created_by' => auth()->id(),
+                'type' => $type,
+                'voucher_no' => $transaction->voucher_no,
+                'total_amount' => $transaction->total_amount,
+            ]);
 
             return redirect()
                 ->route(
@@ -405,246 +466,171 @@ class TransactionController extends Controller
                 )
                 ->with(
                     'success',
-                    "লেনদেন সফলভাবে সংরক্ষণ করা হয়েছে (ভাউচার: {$voucherNo})"
+                    "লেনদেন সফলভাবে সংরক্ষণ করা হয়েছে। ভাউচার: {$transaction->voucher_no}"
                 );
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
+            throw $e;
 
-            DB::rollBack();
-
-            Log::error(
-                'Transaction validation error',
-                [
-                    'errors' => $e->errors()
-                ]
-            );
-
-            return back()
-                ->with(
-                    'error',
-                    'ভ্যালিডেশন Error: ' .
-                    json_encode(
-                        $e->errors(),
-                        JSON_UNESCAPED_UNICODE
-                    )
-                )
-                ->withInput();
-
-        } catch (\Exception $e) {
-
-            DB::rollBack();
-
-            Log::error(
-                'Transaction store error',
-                [
-                    'message' => $e->getMessage(),
-                    'line' => $e->getLine()
-                ]
-            );
+        } catch (\Throwable $e) {
+            Log::error('Transaction store error', [
+                'institution_id' => $institutionId,
+                'user_id' => auth()->id(),
+                'type' => $type,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
 
             return back()
                 ->with(
                     'error',
-                    'লেনদেন সংরক্ষণ করতে ব্যর্থ: ' .
-                    $e->getMessage()
+                    'লেনদেন সংরক্ষণ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে তথ্য যাচাই করে আবার চেষ্টা করুন।'
                 )
                 ->withInput();
         }
     }
 
-
     /**
-     * Generate unique voucher number
+     * Generate the next voucher number for an institution and type.
+     *
+     * This preserves the existing numeric voucher format.
      */
     private function generateUniqueVoucherNumber(
-        $type,
-        $institutionId
-    ) {
-        $lastTransaction = Transaction::where(
+        string $type,
+        int $institutionId
+    ): string {
+        $lastVoucherNumber = Transaction::where(
                 'institution_id',
                 $institutionId
             )
             ->where('type', $type)
-            ->latest('id')
-            ->first();
+            ->get(['voucher_no'])
+            ->map(function ($transaction) {
+                return (int) $transaction->voucher_no;
+            })
+            ->max();
 
-        if ($lastTransaction) {
-
-            $lastNumber = (int) $lastTransaction->voucher_no;
-
-            $newNumber = $lastNumber + 1;
-
-        } else {
-
-            $newNumber = 1;
-        }
+        $newNumber = ((int) $lastVoucherNumber) + 1;
 
         return str_pad(
-            $newNumber,
+            (string) $newNumber,
             2,
             '0',
             STR_PAD_LEFT
         );
     }
 
-
+    /**
+     * Delete a transaction belonging to the active institution.
+     */
     public function destroy($id)
     {
+        $institutionId = $this->getInstitutionId();
+
         try {
+            DB::transaction(function () use (
+                $id,
+                $institutionId
+            ) {
+                $transaction = Transaction::where(
+                        'institution_id',
+                        $institutionId
+                    )
+                    ->lockForUpdate()
+                    ->findOrFail($id);
 
-            $institutionId = auth()->user()->active_institution_id;
+                /*
+                |--------------------------------------------------------------------------
+                | Delete Related Items
+                |--------------------------------------------------------------------------
+                */
 
-            if (!$institutionId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'কোনো প্রতিষ্ঠান নির্বাচন করা হয়নি।'
-                ], 403);
-            }
+                $transaction->items()->delete();
 
-            $transaction = Transaction::where(
-                    'institution_id',
-                    $institutionId
-                )
-                ->findOrFail($id);
+                /*
+                |--------------------------------------------------------------------------
+                | Delete Transaction
+                |--------------------------------------------------------------------------
+                */
 
-            $type = $transaction->type;
-
-            /*
-            |--------------------------------------------------------------------------
-            | Delete Items
-            |--------------------------------------------------------------------------
-            */
-
-            $transaction->items()->delete();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Delete Transaction
-            |--------------------------------------------------------------------------
-            */
-
-            $transaction->delete();
+                $transaction->delete();
+            });
 
             return response()->json([
                 'success' => true,
-                'type' => $type
+                'message' => 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে।',
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'লেনদেনটি পাওয়া যায়নি অথবা এই প্রতিষ্ঠানের অন্তর্ভুক্ত নয়।',
+            ], 404);
 
-            Log::error(
-                'Transaction delete error',
-                [
-                    'message' => $e->getMessage()
-                ]
-            );
+        } catch (\Throwable $e) {
+            Log::error('Transaction delete error', [
+                'institution_id' => $institutionId,
+                'transaction_id' => $id,
+                'user_id' => auth()->id(),
+                'message' => $e->getMessage(),
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'লেনদেন মুছে ফেলা সম্ভব হয়নি।',
             ], 500);
         }
     }
 
-
     /**
-     * Get payment method balance
-     * for current institution only.
+     * Calculate income, expense and net balance per payment method.
      */
-    private function getBalance($institutionId): array
+    private function getBalance(int $institutionId): array
     {
         $balance = [];
 
-        $paymentMethods = PaymentMethod::all();
+        $paymentMethods = PaymentMethod::where(
+                'institution_id',
+                $institutionId
+            )
+            ->orderBy('name')
+            ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Cashiers
-        |--------------------------------------------------------------------------
-        */
-
-        $cashiers = Cashier::all();
-
-        foreach ($paymentMethods as $pm) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Income
-            |--------------------------------------------------------------------------
-            */
-
+        foreach ($paymentMethods as $paymentMethod) {
             $incomeTotal = Transaction::where(
                     'institution_id',
                     $institutionId
                 )
-                ->where('payment_method_id', $pm->id)
+                ->where(
+                    'payment_method_id',
+                    $paymentMethod->id
+                )
                 ->where('type', 'income')
                 ->sum('total_amount');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Expense
-            |--------------------------------------------------------------------------
-            */
 
             $expenseTotal = Transaction::where(
                     'institution_id',
                     $institutionId
                 )
-                ->where('payment_method_id', $pm->id)
+                ->where(
+                    'payment_method_id',
+                    $paymentMethod->id
+                )
                 ->where('type', 'expense')
                 ->sum('total_amount');
 
-            $netBalance = $incomeTotal - $expenseTotal;
+            $netBalance = (float) $incomeTotal - (float) $expenseTotal;
 
-            $balance[$pm->id] = [
-                'name' => $pm->name,
-                'icon' => $pm->icon ?? 'fa-credit-card',
+            $balance[$paymentMethod->id] = [
+                'name' => $paymentMethod->name,
+                'icon' => $paymentMethod->icon ?? 'fa-credit-card',
                 'total' => $netBalance,
                 'total_display' => abs($netBalance),
                 'is_negative' => $netBalance < 0,
-                'income' => $incomeTotal,
-                'expense' => $expenseTotal,
-                'members' => []
+                'income' => (float) $incomeTotal,
+                'expense' => (float) $expenseTotal,
             ];
-
-            /*
-            |--------------------------------------------------------------------------
-            | Cashier Balance
-            |--------------------------------------------------------------------------
-            */
-
-            foreach ($cashiers as $cashier) {
-
-                $cashierIncome = Transaction::where(
-                        'institution_id',
-                        $institutionId
-                    )
-                    ->where('payment_method_id', $pm->id)
-                    ->where('cashier_id', $cashier->id)
-                    ->where('type', 'income')
-                    ->sum('total_amount');
-
-                $cashierExpense = Transaction::where(
-                        'institution_id',
-                        $institutionId
-                    )
-                    ->where('payment_method_id', $pm->id)
-                    ->where('cashier_id', $cashier->id)
-                    ->where('type', 'expense')
-                    ->sum('total_amount');
-
-                $cashierNet = $cashierIncome - $cashierExpense;
-
-                if ($cashierNet != 0) {
-
-                    $balance[$pm->id]['members'][] = [
-                        'name' => $cashier->name,
-                        'amount' => abs($cashierNet),
-                        'is_negative' => $cashierNet < 0
-                    ];
-                }
-            }
         }
 
         return $balance;

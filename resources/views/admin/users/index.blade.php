@@ -810,7 +810,7 @@
 
                                 {{-- Profile View --}}
                                 <a
-                                    href="{{ route('dashboard.user.show', $user->id) }}"
+                                    href="{{ route('dashboard.user.show', $user->username) }}"
                                     class="btn-view"
                                     title="প্রোফাইল ভিউ"
                                 >
@@ -855,7 +855,7 @@
                                         <a
                                             href="{{ route(
                                                 'dashboard.user.show',
-                                                $user->id
+                                                $user->username
                                             ) }}"
                                         >
 
@@ -870,7 +870,7 @@
                                         <a
                                             href="{{ route(
                                                 'dashboard.user.edit',
-                                                $user->id
+                                                $user->username
                                             ) }}"
                                         >
 
@@ -888,7 +888,7 @@
                                             onclick="
                                                 event.preventDefault();
                                                 document.getElementById(
-                                                    'toggle-form-{{ $user->id }}'
+                                                    'toggle-form-{{ $user->username }}'
                                                 ).submit();
                                             "
                                         >
@@ -910,10 +910,10 @@
 
                                         {{-- Toggle Status Form --}}
                                         <form
-                                            id="toggle-form-{{ $user->id }}"
+                                            id="toggle-form-{{ $user->username }}"
                                             action="{{ route(
                                                 'dashboard.user.toggle-status',
-                                                $user->id
+                                                $user->username
                                             ) }}"
                                             method="POST"
                                             style="display:none;"
@@ -930,7 +930,7 @@
                                         <form
                                             action="{{ route(
                                                 'dashboard.user.destroy',
-                                                $user->id
+                                                $user->username
                                             ) }}"
                                             method="POST"
                                             style="margin:0; padding:0;"

@@ -8,49 +8,91 @@ use App\Models\Student;
 use App\Models\AcademicYear;
 use App\Models\Classes;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class AdmissionController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Current Institution
+    |--------------------------------------------------------------------------
+    */
+
+    private function institutionId(): int
+    {
+        $user = auth()->user();
+
+        $institutionId = $user?->active_institution_id;
+
+        if (
+            !$institutionId
+            && app()->bound('institution_id')
+        ) {
+            $institutionId = app('institution_id');
+        }
+
+        abort_unless(
+            $user && $institutionId,
+            403,
+            'প্রতিষ্ঠান নির্ধারণ করা যায়নি।'
+        );
+
+        return (int) $institutionId;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institution Scoped Admission
+    |--------------------------------------------------------------------------
+    */
+
+    private function scopedAdmission($id): Admission
+    {
+        return Admission::where(
+            'institution_id',
+            $this->institutionId()
+        )->findOrFail($id);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admission List
+    |--------------------------------------------------------------------------
+    */
+
     public function index(Request $request)
     {
+        $institutionId = $this->institutionId();
+
         $query = Admission::with([
             'student.user',
             'academicYear',
-            'class'
-        ]);
+            'class',
+        ])
+        ->where('institution_id', $institutionId);
 
-        // Filter by academic year
-        if (
-            $request->has('academic_year_id')
-            && $request->academic_year_id
-        ) {
+        // Academic Year Filter
+        if ($request->filled('academic_year_id')) {
             $query->where(
                 'academic_year_id',
                 $request->academic_year_id
             );
         }
 
-        // Filter by class
-        if (
-            $request->has('class_id')
-            && $request->class_id
-        ) {
+        // Class Filter
+        if ($request->filled('class_id')) {
             $query->where(
                 'class_id',
                 $request->class_id
             );
         }
 
-        // Search by student name or ID
-        if (
-            $request->has('search')
-            && $request->search
-        ) {
+        // Search
+        if ($request->filled('search')) {
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
-
                 $q->where(
                     'admission_no',
                     'like',
@@ -59,106 +101,102 @@ class AdmissionController extends Controller
                 ->orWhereHas(
                     'student',
                     function ($sq) use ($search) {
-
                         $sq->where(
-                            'student_id',
-                            'like',
-                            "%{$search}%"
+                            'institution_id',
+                            $this->institutionId()
                         )
-                        ->orWhereHas(
-                            'user',
-                            function ($uq) use ($search) {
-
-                                $uq->where(
-                                    'name',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'name_bn',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'phone',
-                                    'like',
-                                    "%{$search}%"
-                                );
-                            }
-                        );
+                        ->where(function ($studentQuery) use ($search) {
+                            $studentQuery->where(
+                                'student_id',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhereHas(
+                                'user',
+                                function ($uq) use ($search) {
+                                    $uq->where(
+                                        'name',
+                                        'like',
+                                        "%{$search}%"
+                                    )
+                                    ->orWhere(
+                                        'name_bn',
+                                        'like',
+                                        "%{$search}%"
+                                    )
+                                    ->orWhere(
+                                        'phone',
+                                        'like',
+                                        "%{$search}%"
+                                    );
+                                }
+                            );
+                        });
                     }
                 );
             });
         }
 
         $admissions = $query
-            ->orderBy(
-                'created_at',
-                'desc'
-            )
-            ->paginate(15);
+            ->orderByDesc('created_at')
+            ->paginate(15)
+            ->withQueryString();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Selected Student
-        |--------------------------------------------------------------------------
-        |
-        | User List থেকে:
-        |
-        | /dashboard/admissions?student_id=5
-        |
-        | এভাবে আসলে students.id = 5 এর student
-        | automatically load হবে।
-        |
-        |--------------------------------------------------------------------------
-        */
-
+        // Selected Student
         $selectedStudent = null;
 
         if ($request->filled('student_id')) {
-
             $selectedStudent = Student::with([
                 'user',
-                'class'
-            ])->find(
-                $request->student_id
-            );
+                'class',
+            ])
+            ->where('institution_id', $institutionId)
+            ->find($request->student_id);
         }
 
-        // Active academic years
+        // Active Academic Years
         $academicYears = AcademicYear::where(
-            'status',
-            'active'
-        )->get();
+            'institution_id',
+            $institutionId
+        )
+        ->where('status', 'active')
+        ->get();
 
-        // Active classes
+        // Active Classes
         $classes = Classes::where(
-            'status',
-            'active'
-        )->get();
+            'institution_id',
+            $institutionId
+        )
+        ->where('status', 'active')
+        ->get();
 
-        // Stats
+        // Current Academic Year
         $currentYear = AcademicYear::where(
-            'is_current',
-            true
-        )->first();
+            'institution_id',
+            $institutionId
+        )
+        ->where('is_current', true)
+        ->first();
 
+        // Current Year Active Admissions
         $currentYearStudents = Admission::where(
-            'academic_year_id',
-            $currentYear
-                ? $currentYear->id
-                : null
+            'institution_id',
+            $institutionId
         )
         ->where(
-            'status',
-            'active'
+            'academic_year_id',
+            $currentYear?->id
         )
+        ->where('status', 'active')
         ->count();
 
+        // Total Active Students
         $totalStudents = Student::where(
-            'status',
-            'active'
-        )->count();
+            'institution_id',
+            $institutionId
+        )
+        ->where('status', 'active')
+        ->count();
 
         return view(
             'admin.admissions.index',
@@ -173,29 +211,43 @@ class AdmissionController extends Controller
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Create Admission Form
+    |--------------------------------------------------------------------------
+    */
+
     public function create()
     {
+        $institutionId = $this->institutionId();
+
         $students = Student::with('user')
+            ->where('institution_id', $institutionId)
             ->whereDoesntHave(
                 'admissions',
-                function ($q) {
+                function ($q) use ($institutionId) {
                     $q->where(
-                        'status',
-                        'active'
-                    );
+                        'institution_id',
+                        $institutionId
+                    )
+                    ->where('status', 'active');
                 }
             )
             ->get();
 
         $academicYears = AcademicYear::where(
-            'status',
-            'active'
-        )->get();
+            'institution_id',
+            $institutionId
+        )
+        ->where('status', 'active')
+        ->get();
 
         $classes = Classes::where(
-            'status',
-            'active'
-        )->get();
+            'institution_id',
+            $institutionId
+        )
+        ->where('status', 'active')
+        ->get();
 
         return view(
             'admin.admissions.create',
@@ -207,50 +259,75 @@ class AdmissionController extends Controller
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Store Admission
+    |--------------------------------------------------------------------------
+    */
+
     public function store(Request $request)
     {
-        $request->validate([
+        $institutionId = $this->institutionId();
 
-            'student_id' =>
-                'required|exists:students,id',
+        $validated = $request->validate([
+            'student_id' => [
+                'required',
+                Rule::exists('students', 'id')
+                    ->where('institution_id', $institutionId),
+            ],
 
-            'academic_year_id' =>
-                'required|exists:academic_years,id',
+            'academic_year_id' => [
+                'required',
+                Rule::exists('academic_years', 'id')
+                    ->where('institution_id', $institutionId)
+                    ->where('status', 'active'),
+            ],
 
-            'class_id' =>
-                'required|exists:classes,id',
+            'class_id' => [
+                'required',
+                Rule::exists('classes', 'id')
+                    ->where('institution_id', $institutionId)
+                    ->where('status', 'active'),
+            ],
 
-            'entry_date' =>
-                'required|date',
+            'entry_date' => [
+                'required',
+                'date',
+            ],
 
-            'financial_status' =>
-                'nullable|in:solvent,insolvent,orphan,helpless',
+            'financial_status' => [
+                'nullable',
+                'in:solvent,insolvent,orphan,helpless',
+            ],
 
-            'residence_status' =>
-                'nullable|in:resident,non-resident,daycare,nightcare',
+            'residence_status' => [
+                'nullable',
+                'in:resident,non-resident,daycare,nightcare',
+            ],
 
-            'admission_type' =>
-                'nullable|in:new,old',
+            'admission_type' => [
+                'nullable',
+                'in:new,old',
+            ],
         ]);
 
         try {
-
             DB::beginTransaction();
 
-            $student = Student::findOrFail(
-                $request->student_id
-            );
+            // Verify student belongs to current institution
+            $student = Student::where(
+                'institution_id',
+                $institutionId
+            )->findOrFail($validated['student_id']);
 
-            $lastAdmission =
-                Admission::latest('id')->first();
+            // Generate admission number
+            $lastAdmission = Admission::latest('id')->first();
 
-            $nextId =
-                $lastAdmission
-                    ? $lastAdmission->id + 1
-                    : 1;
+            $nextId = $lastAdmission
+                ? $lastAdmission->id + 1
+                : 1;
 
-            $admissionNo =
-                'ADM-'
+            $admissionNo = 'ADM-'
                 . date('Y')
                 . '-'
                 . str_pad(
@@ -260,86 +337,84 @@ class AdmissionController extends Controller
                     STR_PAD_LEFT
                 );
 
-            // CREATE ADMISSION
+            // Create Admission
             $admission = Admission::create([
+                'institution_id' => $institutionId,
 
-                'admission_no' =>
-                    $admissionNo,
+                'admission_no' => $admissionNo,
 
-                'student_id' =>
-                    $request->student_id,
+                'student_id' => $student->id,
 
                 'academic_year_id' =>
-                    $request->academic_year_id,
+                    $validated['academic_year_id'],
 
-                'class_id' =>
-                    $request->class_id,
+                'class_id' => $validated['class_id'],
 
-                'admission_date' =>
-                    $request->entry_date,
+                'admission_date' => $validated['entry_date'],
 
                 'financial_status' =>
-                    $request->financial_status
-                    ?? 'solvent',
+                    $validated['financial_status'] ?? 'solvent',
 
                 'residence_status' =>
-                    $request->residence_status
-                    ?? 'non-resident',
+                    $validated['residence_status'] ?? 'non-resident',
 
                 'admission_type' =>
-                    $request->admission_type
-                    ?? 'new',
+                    $validated['admission_type'] ?? 'new',
 
-                'status' =>
-                    'active',
+                'status' => 'active',
 
-                'created_by' =>
-                    auth()->id(),
+                'created_by' => auth()->id(),
             ]);
 
-            // SYNC STUDENT TABLE
+            // Update student academic information
             $student->update([
-
                 'academic_year_id' =>
-                    $request->academic_year_id,
+                    $validated['academic_year_id'],
 
-                'class_id' =>
-                    $request->class_id,
+                'class_id' => $validated['class_id'],
+
+                'updated_by' => auth()->id(),
             ]);
 
             DB::commit();
 
             return redirect()
-                ->route(
-                    'dashboard.admissions.index'
-                )
+                ->route('dashboard.admissions.index')
                 ->with(
                     'success',
                     'শিক্ষার্থী ভর্তি সম্পন্ন হয়েছে। ভর্তি নম্বর: '
                     . $admissionNo
                 );
 
-        } catch (\Exception $e) {
-
+        } catch (\Throwable $e) {
             DB::rollBack();
+
+            report($e);
 
             return back()
                 ->with(
                     'error',
-                    'ভর্তি করতে সমস্যা হয়েছে: '
-                    . $e->getMessage()
+                    'ভর্তি করতে সমস্যা হয়েছে। তথ্য ও Laravel log পরীক্ষা করুন।'
                 )
                 ->withInput();
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Show Admission
+    |--------------------------------------------------------------------------
+    */
+
     public function show($id)
     {
-        $admission = Admission::with([
+        $admission = $this->scopedAdmission($id);
+
+        $admission->load([
             'student.user',
             'academicYear',
-            'class'
-        ])->findOrFail($id);
+            'class',
+        ]);
 
         return view(
             'admin.admissions.show',
@@ -347,13 +422,27 @@ class AdmissionController extends Controller
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Edit Admission
+    |--------------------------------------------------------------------------
+    */
+
     public function edit($id)
     {
-        $admission = Admission::findOrFail($id);
+        $institutionId = $this->institutionId();
 
-        $academicYears = AcademicYear::all();
+        $admission = $this->scopedAdmission($id);
 
-        $classes = Classes::all();
+        $academicYears = AcademicYear::where(
+            'institution_id',
+            $institutionId
+        )->get();
+
+        $classes = Classes::where(
+            'institution_id',
+            $institutionId
+        )->get();
 
         return view(
             'admin.admissions.edit',
@@ -365,107 +454,147 @@ class AdmissionController extends Controller
         );
     }
 
-    public function update(
-        Request $request,
-        $id
-    ) {
-        $admission =
-            Admission::findOrFail($id);
+    /*
+    |--------------------------------------------------------------------------
+    | Update Admission
+    |--------------------------------------------------------------------------
+    */
 
-        $request->validate([
+    public function update(Request $request, $id)
+    {
+        $institutionId = $this->institutionId();
 
-            'class_id' =>
-                'required|exists:classes,id',
+        $admission = $this->scopedAdmission($id);
 
-            'financial_status' =>
-                'nullable|in:solvent,insolvent,orphan,helpless',
+        $validated = $request->validate([
+            'class_id' => [
+                'required',
+                Rule::exists('classes', 'id')
+                    ->where('institution_id', $institutionId),
+            ],
 
-            'residence_status' =>
-                'nullable|in:resident,non-resident,daycare,nightcare',
+            'financial_status' => [
+                'nullable',
+                'in:solvent,insolvent,orphan,helpless',
+            ],
 
-            'status' =>
-                'required|in:active,inactive,transferred,graduated,dropped',
+            'residence_status' => [
+                'nullable',
+                'in:resident,non-resident,daycare,nightcare',
+            ],
+
+            'status' => [
+                'required',
+                'in:active,inactive,transferred,graduated,dropped',
+            ],
+
+            'leaving_date' => [
+                'nullable',
+                'date',
+            ],
+
+            'leaving_reason' => [
+                'nullable',
+                'string',
+            ],
+
+            'remarks' => [
+                'nullable',
+                'string',
+            ],
         ]);
 
         try {
-
             DB::beginTransaction();
 
             $admission->update([
-
-                'class_id' =>
-                    $request->class_id,
+                'class_id' => $validated['class_id'],
 
                 'financial_status' =>
-                    $request->financial_status,
+                    $validated['financial_status']
+                    ?? $admission->financial_status,
 
                 'residence_status' =>
-                    $request->residence_status,
+                    $validated['residence_status']
+                    ?? $admission->residence_status,
 
-                'status' =>
-                    $request->status,
+                'status' => $validated['status'],
 
                 'leaving_date' =>
-                    $request->leaving_date,
+                    $validated['leaving_date'] ?? null,
 
                 'leaving_reason' =>
-                    $request->leaving_reason,
+                    $validated['leaving_reason'] ?? null,
 
                 'remarks' =>
-                    $request->remarks,
+                    $validated['remarks'] ?? null,
 
-                'updated_by' =>
-                    auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+
+            // Keep student class in sync
+            Student::where(
+                'institution_id',
+                $institutionId
+            )
+            ->where('id', $admission->student_id)
+            ->update([
+                'class_id' => $validated['class_id'],
+                'updated_by' => auth()->id(),
             ]);
 
             DB::commit();
 
             return redirect()
-                ->route(
-                    'dashboard.admissions.index'
-                )
+                ->route('dashboard.admissions.index')
                 ->with(
                     'success',
                     'ভর্তি তথ্য আপডেট করা হয়েছে।'
                 );
 
-        } catch (\Exception $e) {
-
+        } catch (\Throwable $e) {
             DB::rollBack();
+
+            report($e);
 
             return back()
                 ->with(
                     'error',
-                    'আপডেট করতে সমস্যা হয়েছে।'
+                    'আপডেট করতে সমস্যা হয়েছে। তথ্য ও Laravel log পরীক্ষা করুন।'
                 )
                 ->withInput();
         }
     }
 
-    /**
-     * Delete admission
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Admission
+    |--------------------------------------------------------------------------
+    */
+
     public function destroy($id)
     {
-        $admission = Admission::findOrFail($id);
+        $admission = $this->scopedAdmission($id);
 
-        // সরাসরি Admission delete হবে
         $admission->delete();
 
         return redirect()
-            ->route(
-                'dashboard.admissions.index'
-            )
+            ->route('dashboard.admissions.index')
             ->with(
                 'success',
                 'ভর্তি তথ্য ডিলিট করা হয়েছে।'
             );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Toggle Admission Status
+    |--------------------------------------------------------------------------
+    */
+
     public function toggleStatus($id)
     {
-        $admission =
-            Admission::findOrFail($id);
+        $admission = $this->scopedAdmission($id);
 
         $admission->status =
             $admission->status === 'active'
@@ -480,24 +609,28 @@ class AdmissionController extends Controller
         );
     }
 
-    /**
-     * Search students for admission
-     * Works with single digit ID as well
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Search Students
+    |--------------------------------------------------------------------------
+    */
+
     public function search(Request $request)
     {
-        $q = $request->q;
+        $institutionId = $this->institutionId();
 
-        if (!$q) {
+        $q = trim((string) $request->input('q', ''));
+
+        if ($q === '') {
             return response()->json([]);
         }
 
         $students = Student::with([
             'user',
-            'class'
+            'class',
         ])
+        ->where('institution_id', $institutionId)
         ->where(function ($query) use ($q) {
-
             $query->where(
                 'student_id',
                 'like',
@@ -506,7 +639,6 @@ class AdmissionController extends Controller
             ->orWhereHas(
                 'user',
                 function ($userQuery) use ($q) {
-
                     $userQuery->where(
                         'name',
                         'like',
@@ -529,61 +661,43 @@ class AdmissionController extends Controller
                     );
                 }
             );
-
         })
         ->limit(20)
         ->get();
 
         return response()->json(
+            $students->map(function ($student) {
+                $user = $student->user;
 
-            $students->map(
-                function ($student) {
+                return [
+                    'id' => $student->id,
 
-                    return [
+                    'institution_user_id' =>
+                        $user?->institution_user_id ?? '',
 
-                        'id' =>
-                            $student->id,
+                    'student_id' =>
+                        $student->student_id ?? '',
 
-                        'institution_user_id' =>
-                            $student->user
-                                ->institution_user_id
-                                ?? '',
+                    'name' =>
+                        $user?->name_bn
+                        ?: ($user?->name ?? ''),
 
-                        'student_id' =>
-                            $student->student_id
-                            ?? '',
+                    'father_name' =>
+                        $user?->father_name ?? '',
 
-                        'name' =>
-                            $student->user->name_bn
-                            ?? $student->user->name
-                            ?? '',
+                    'mobile' =>
+                        $user?->phone ?? '',
 
-                        'father_name' =>
-                            $student->user->father_name
-                            ?? '',
+                    'class_name' =>
+                        $student->class?->name_bn
+                        ?: ($student->class?->name ?? ''),
 
-                        'mobile' =>
-                            $student->user->phone
-                            ?? '',
-
-                        'class_name' =>
-                            optional(
-                                $student->class
-                            )->name_bn
-                            ?? '',
-
-                        'photo' =>
-                            $student->user->photo
-                                ? asset(
-                                    'storage/'
-                                    . $student->user->photo
-                                )
-                                : asset(
-                                    'images/default-user.png'
-                                ),
-                    ];
-                }
-            )
+                    'photo' =>
+                        $user?->photo
+                            ? asset('storage/' . $user->photo)
+                            : asset('images/default-user.png'),
+                ];
+            })
         );
     }
 }

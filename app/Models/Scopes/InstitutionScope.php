@@ -19,56 +19,43 @@ class InstitutionScope implements Scope
 
         /*
         |--------------------------------------------------------------------------
-        | Active Institution
+        | Determine Active Institution
         |--------------------------------------------------------------------------
-        |
-        | Priority:
-        | 1. Session Institution (Software Team)
-        | 2. User Institution
-        |
         */
 
-        $institutionId = session('institution_id');
-
-        if (!$institutionId) {
-            $institutionId = $user->institution_id;
-        }
+        $institutionId = session('active_institution_id')
+            ?: session('institution_id')
+            ?: $user->active_institution_id
+            ?: $user->institution_id;
 
         /*
         |--------------------------------------------------------------------------
-        | Software Users
+        | Super Admin
         |--------------------------------------------------------------------------
+        |
+        | Super Admin may need system-wide access.
+        | Do not restrict their queries here.
+        |
         */
 
-        if (
-            $user->is_super_admin ||
-            $user->is_soft_admin
-        ) {
-
-            if (!$institutionId) {
-                return;
-            }
-
-            $builder->where(
-                $model->getTable() . '.institution_id',
-                $institutionId
-            );
-
+        if ($user->is_super_admin) {
             return;
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Institution Users
+        | Institution Isolation
         |--------------------------------------------------------------------------
         */
 
         if (!$institutionId) {
+            $builder->whereRaw('1 = 0');
+
             return;
         }
 
         $builder->where(
-            $model->getTable() . '.institution_id',
+            $model->qualifyColumn('institution_id'),
             $institutionId
         );
     }

@@ -66,27 +66,17 @@
                     সাবস্ক্রিপশন
                 ======================================================= --}}
 
-                @sidebarPermission('online-payment.view')
-
-                    <li class="nav-item">
-
-                        <a class="nav-link text-white-50
-                            {{
-                                request()->routeIs(
-                                    'dashboard.payment.subscription.*'
-                                ) ? 'active' : ''
-                            }}"
-                           href="#">
-
-                            <i class="fas fa-sync-alt me-2"></i>
-
-                            সাবস্ক্রিপশন
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
+            @sidebarPermission('online-payment.view')
+            <li class="nav-item">
+                <a
+                    class="nav-link text-white-50 {{ request()->routeIs('dashboard.subscription.current') ? 'active' : '' }}"
+                    href="{{ route('dashboard.subscription.current') }}"
+                >
+                    <i class="fas fa-sync-alt me-2"></i>
+                    সাবস্ক্রিপশন
+                </a>
+            </li>
+            @endsidebarPermission
 
 
                 {{-- ======================================================

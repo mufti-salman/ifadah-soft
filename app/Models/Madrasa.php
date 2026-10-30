@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Model;
 
 class Madrasa extends Model
@@ -26,13 +27,22 @@ class Madrasa extends Model
         'madrasa_code',
         'name',
         'name_bn',
+        's_name',
         'email',
         'phone',
         'address',
+        'city',
+        'state',
+        'postal_code',
+        'country',
         'logo',
         'banner',
+        'website',
         'eiin_no',
+        'established_year',
+        'registration_no',
         'status',
+        'subscription_end_date',
         'created_by',
         'updated_by',
     ];
@@ -251,7 +261,12 @@ class Madrasa extends Model
     }
 
     public function subscriptionPayments()
-{
-    return $this->hasMany(SubscriptionPayment::class, 'institution_id');
-}
+    {
+        return $this->hasMany(SubscriptionPayment::class, 'institution_id');
+    }
+
+    public function calendarSetting(): HasOne
+    {
+        return $this->hasOne(InstitutionCalendarSetting::class, 'institution_id');
+    }
 }

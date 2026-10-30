@@ -177,62 +177,6 @@
 
                 @endsidebarPermission
 
-
-
-                {{-- =====================================================
-                | শিক্ষার্থীর তালিকা
-                ====================================================== --}}
-
-                @sidebarPermission('student.view')
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link text-white-50
-                            {{ request()->routeIs('dashboard.students.index') ? 'active' : '' }}"
-
-                            href="{{ route('dashboard.students.index') }}"
-                        >
-
-                            <i class="fas fa-users me-2"></i>
-
-                            শিক্ষার্থীর তালিকা
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-
-                {{-- =====================================================
-                | নতুন শিক্ষার্থী
-                ====================================================== --}}
-
-                @sidebarPermission('student.create')
-
-                    <li class="nav-item">
-
-                        <a
-                            class="nav-link text-white-50
-                            {{ request()->routeIs('dashboard.students.create') ? 'active' : '' }}"
-
-                            href="{{ route('dashboard.students.create') }}"
-                        >
-
-                            <i class="fas fa-user-plus me-2"></i>
-
-                            নতুন শিক্ষার্থী
-
-                        </a>
-
-                    </li>
-
-                @endsidebarPermission
-
-
-
                 {{-- =====================================================
                 | ডাটা এক্সপোর্ট
                 ====================================================== --}}

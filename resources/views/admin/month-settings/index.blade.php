@@ -625,74 +625,122 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function setupSmartInputs() {
-        document.querySelectorAll('.smart-month').forEach(input => {
-            const monthNum = input.dataset.month;
-            const suggestEl = el(`suggest${monthNum}`);
-            if (!suggestEl) return;
+function setupSmartInputs() {
+    const banglaDigits = {
+        '০': '0',
+        '১': '1',
+        '২': '2',
+        '৩': '3',
+        '৪': '4',
+        '৫': '5',
+        '৬': '6',
+        '৭': '7',
+        '৮': '8',
+        '৯': '9'
+    };
 
-            input.addEventListener('input', function () {
-                const val = this.value.trim();
-                clearTimeout(suggestTimer);
-
-                if (!val) {
-                    suggestEl.style.display = 'none';
-                    suggestEl.innerHTML     = '';
-                    return;
-                }
-
-                suggestTimer = setTimeout(() => {
-                    fetch(`${ROUTES.suggest}?q=${encodeURIComponent(val)}`, {
-                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (!data.length) {
-                            suggestEl.style.display = 'none';
-                            return;
-                        }
-                        suggestEl.innerHTML = data.map(item => `
-                            <div class="suggestion-item" data-value="${item.value}">
-                                <span>${item.label}</span>
-                                <span class="suggestion-badge badge-${item.type}">
-                                    ${item.type === 'bangla' ? 'বাংলা' : 'English'}
-                                </span>
-                            </div>
-                        `).join('');
-                        suggestEl.style.display = 'block';
-
-                        suggestEl.querySelectorAll('.suggestion-item').forEach(sItem => {
-                            sItem.addEventListener('mousedown', function (e) {
-                                e.preventDefault(); // prevent blur before click
-                                input.value = this.dataset.value;
-                                suggestEl.style.display = 'none';
-                                input.focus();
-                            });
-                        });
-                    })
-                    .catch(() => { suggestEl.style.display = 'none'; });
-                }, 180);
-            });
-
-            input.addEventListener('blur', function () {
-                setTimeout(() => { suggestEl.style.display = 'none'; }, 220);
-            });
-
-            input.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const first = suggestEl.querySelector('.suggestion-item');
-                    if (first) {
-                        input.value = first.dataset.value;
-                        suggestEl.style.display = 'none';
-                    }
-                }
-                if (e.key === 'Escape') {
-                    suggestEl.style.display = 'none';
-                }
-            });
-        });
+    function normalizeDigits(value) {
+        return value.replace(/[০-৯]/g, digit => banglaDigits[digit]);
     }
+
+    document.querySelectorAll('.smart-month').forEach(input => {
+        const monthNum = input.dataset.month;
+        const suggestEl = el(`suggest${monthNum}`);
+
+        if (!suggestEl) return;
+
+        input.addEventListener('input', function () {
+            const val = this.value.trim();
+            const normalizedVal = normalizeDigits(val);
+
+            clearTimeout(suggestTimer);
+
+            if (!val) {
+                suggestEl.style.display = 'none';
+                suggestEl.innerHTML = '';
+                return;
+            }
+
+            suggestTimer = setTimeout(() => {
+                fetch(
+                    `${ROUTES.suggest}?q=${encodeURIComponent(normalizedVal)}`,
+                    {
+                        headers: {
+                            'X-CSRF-TOKEN': CSRF,
+                            'Accept': 'application/json'
+                        }
+                    }
+                )
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Suggestion request failed');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.length) {
+                        suggestEl.style.display = 'none';
+                        suggestEl.innerHTML = '';
+                        return;
+                    }
+
+                    suggestEl.innerHTML = data.map(item => `
+                        <div
+                            class="suggestion-item"
+                            data-value="${item.value}"
+                        >
+                            <span>${item.label}</span>
+
+                            <span class="suggestion-badge badge-${item.type}">
+                                ${item.type === 'bangla' ? 'বাংলা' : 'English'}
+                            </span>
+                        </div>
+                    `).join('');
+
+                    suggestEl.style.display = 'block';
+
+                    suggestEl.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('mousedown', function (event) {
+                            event.preventDefault();
+
+                            input.value = this.dataset.value;
+                            suggestEl.style.display = 'none';
+                            input.focus();
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Month suggestion error:', error);
+                    suggestEl.style.display = 'none';
+                });
+            }, 180);
+        });
+
+        input.addEventListener('blur', function () {
+            setTimeout(() => {
+                suggestEl.style.display = 'none';
+            }, 220);
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const first = suggestEl.querySelector('.suggestion-item');
+
+                if (first) {
+                    input.value = first.dataset.value;
+                    suggestEl.style.display = 'none';
+                }
+            }
+
+            if (event.key === 'Escape') {
+                suggestEl.style.display = 'none';
+            }
+        });
+    });
+}
 
     // ── Save ──────────────────────────────────────────────────
     async function saveRecord() {

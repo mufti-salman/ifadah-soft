@@ -323,6 +323,8 @@ class RoleSeeder extends Seeder
 
                 'user.view',
                 'user.create',
+                'user.edit',
+                'user.delete',
                 'user.photo',
                 'user.report',
 

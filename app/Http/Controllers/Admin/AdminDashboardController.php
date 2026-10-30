@@ -10,6 +10,7 @@ use App\Models\Exam;
 use App\Models\Result;
 use App\Models\FeeGroup;
 use App\Models\FeeCollection;
+use App\Models\Subscription;
 use Illuminate\Support\Facades\Auth;
 
 class AdminDashboardController extends Controller
@@ -188,6 +189,48 @@ class AdminDashboardController extends Controller
         )->sum('due_amount');
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Institution Subscription
+            |--------------------------------------------------------------------------
+            */
+
+            $currentSubscription = Subscription::with('plan')
+                ->where('institution_id', $institutionId)
+                ->orderByRaw("
+                    CASE
+                        WHEN status = 'trialing'
+                            AND (ends_at IS NULL OR ends_at > CURRENT_TIMESTAMP)
+                            THEN 0
+                        WHEN status = 'active'
+                            AND (ends_at IS NULL OR ends_at > CURRENT_TIMESTAMP)
+                            THEN 1
+                        ELSE 2
+                    END
+                ")
+                ->latest('id')
+                ->first();
+
+            $subscriptionRemainingDays = null;
+
+            if (
+                $currentSubscription
+                && $currentSubscription->ends_at
+                && in_array(
+                    $currentSubscription->status,
+                    ['active', 'trialing'],
+                    true
+                )
+            ) {
+                $subscriptionRemainingDays = max(
+                    0,
+                    (int) now()->startOfDay()->diffInDays(
+                        $currentSubscription->ends_at->copy()->startOfDay(),
+                        false
+                    )
+                );
+            }
+
         /*
         |--------------------------------------------------------------------------
         | Dashboard
@@ -206,7 +249,9 @@ class AdminDashboardController extends Controller
                 'resultsCount',
                 'totalFees',
                 'totalPaid',
-                'totalDue'
+                'totalDue',
+                'currentSubscription',
+                'subscriptionRemainingDays',
             )
         );
     }
