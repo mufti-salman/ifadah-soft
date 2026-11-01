@@ -9,11 +9,13 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserPhotoController;
 use App\Http\Controllers\Admin\UserReportController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\DataExportController;
 use App\Http\Controllers\Admin\AdmissionController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\Admin\SectionController;
+use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Admin\CalendarSettingController;
 
 use App\Http\Controllers\Admin\TransactionController;
@@ -869,7 +871,11 @@ Route::prefix('user-reports')
                     'search',
                     [StudentController::class, 'search']
                 )->name('students.search');
-
+                Route::get(
+                    'data-export',
+                    [StudentController::class, 'dataExport']
+                )
+                    ->name('students.data-export');
                 Route::get(
                     'create',
                     [StudentController::class, 'create']
@@ -917,6 +923,43 @@ Route::prefix('user-reports')
 
             });
 
+
+Route::prefix('students')
+    ->middleware('permission:student.view')
+    ->group(function () {
+
+        // Existing student routes থাকবে
+
+        Route::get(
+            'data-export',
+            [DataExportController::class, 'index']
+        )->name('students.data-export');
+
+        Route::post(
+            'data-export/reports',
+            [DataExportController::class, 'store']
+        )->name('students.data-export.store');
+
+        Route::delete(
+            'data-export/reports/clear-all',
+            [DataExportController::class, 'clearAll']
+        )->name('students.data-export.clear-all');
+
+        Route::delete(
+            'data-export/reports/{id}',
+            [DataExportController::class, 'destroy']
+        )->whereNumber('id')->name('students.data-export.destroy');
+
+        Route::post(
+            'data-export/custom-columns',
+            [DataExportController::class, 'storeCustomColumn']
+        )->name('students.data-export.custom-columns.store');
+
+        Route::post(
+            'data-export/student-values',
+            [DataExportController::class, 'saveStudentValue']
+        )->name('students.data-export.student-values');
+    });
 
         /*
         |--------------------------------------------------------------------------
@@ -1573,7 +1616,111 @@ Route::prefix('user-reports')
 
             });
 
+Route::prefix('teachers')
+    ->middleware('permission:teacher.view')
+    ->group(function () {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Teacher List
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/',
+            [TeacherController::class, 'index']
+        )->name('teacher.index');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Teacher
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'create',
+            [TeacherController::class, 'create']
+        )
+            ->middleware('permission:teacher.create')
+            ->name('teacher.create');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Store Teacher
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            'store',
+            [TeacherController::class, 'store']
+        )
+            ->middleware('permission:teacher.create')
+            ->name('teacher.store');
+
+        /*
+        |--------------------------------------------------------------------------
+        | AJAX District
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'get-districts/{divisionId}',
+            [TeacherController::class, 'getDistricts']
+        )->name('teacher.get.districts');
+
+        /*
+        |--------------------------------------------------------------------------
+        | AJAX Upazila
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'get-upazilas/{districtId}',
+            [TeacherController::class, 'getUpazilas']
+        )->name('teacher.get.upazilas');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Teacher ID
+        |--------------------------------------------------------------------------
+        */
+
+        Route::prefix('{id}')->group(function () {
+
+            Route::get(
+                '/',
+                [TeacherController::class, 'show']
+            )->name('teacher.show');
+
+            Route::get(
+                'edit',
+                [TeacherController::class, 'edit']
+            )
+                ->middleware('permission:teacher.edit')
+                ->name('teacher.edit');
+
+            Route::post(
+                '/',
+                [TeacherController::class, 'update']
+            )
+                ->middleware('permission:teacher.edit')
+                ->name('teacher.update');
+
+            Route::delete(
+                '/',
+                [TeacherController::class, 'destroy']
+            )
+                ->middleware('permission:teacher.delete')
+                ->name('teacher.destroy');
+
+            Route::patch(
+                'toggle-status',
+                [TeacherController::class, 'toggleStatus']
+            )
+                ->middleware('permission:teacher.edit')
+                ->name('teacher.toggle-status');
+        });
+    });
         /*
         |--------------------------------------------------------------------------
         | ACCOUNTING

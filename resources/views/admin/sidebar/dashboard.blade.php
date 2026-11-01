@@ -213,8 +213,10 @@
                     <li class="nav-item">
 
                         <a
-                            class="nav-link text-white-50"
-                            href="#"
+                            class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.user-photos.*') ? 'active' : '' }}"
+
+                            href="{{ route('dashboard.user-photos.index') }}"
                         >
 
                             <i class="fas fa-image me-2"></i>
@@ -238,8 +240,10 @@
                     <li class="nav-item">
 
                         <a
-                            class="nav-link text-white-50"
-                            href="#"
+                            class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.user-reports.*') ? 'active' : '' }}"
+
+                            href="{{ route('dashboard.user-reports.index') }}"
                         >
 
                             <i class="fas fa-chart-bar me-2"></i>
