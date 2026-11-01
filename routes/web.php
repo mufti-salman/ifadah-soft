@@ -850,6 +850,7 @@ Route::prefix('user-reports')
             '/preview',
             [UserReportController::class, 'preview']
         )->name('preview');
+        
     });
 
         /*
@@ -959,6 +960,10 @@ Route::prefix('students')
             'data-export/student-values',
             [DataExportController::class, 'saveStudentValue']
         )->name('students.data-export.student-values');
+        Route::delete(
+            '/students/data-export/custom-columns/{column}',
+            [DataExportController::class, 'destroyCustomColumn']
+        )->name('students.data-export.custom-columns.destroy');
     });
 
         /*

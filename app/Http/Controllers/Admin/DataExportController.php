@@ -358,6 +358,73 @@ public function index(Request $request)
         ]);
     }
 
+public function destroyCustomColumn(
+    \Illuminate\Http\Request $request,
+    \App\Models\DataExportCustomColumn $column
+) {
+    // নিশ্চিত করো, কলামটি বর্তমান প্রতিষ্ঠানের।
+    // তোমার DataExportCustomColumn model-এ institution_id থাকলে
+    // নিচের শর্তটি ব্যবহার করো।
+    if (
+        \Illuminate\Support\Facades\Schema::hasColumn(
+            $column->getTable(),
+            'institution_id'
+        )
+    ) {
+        abort_unless(
+            (int) $column->institution_id ===
+            (int) auth()->user()->active_institution_id,
+            403,
+            'এই কাস্টম কলামটি মুছে ফেলার অনুমতি নেই।'
+        );
+    }
+
+    // সংরক্ষিত রিপোর্টে এই কলাম ব্যবহৃত হচ্ছে কি না পরীক্ষা।
+    $columnKey = 'custom_' . $column->id;
+
+    $usedInReports = \App\Models\DataExportReport::query()
+        ->get()
+        ->contains(function ($report) use ($columnKey) {
+            $columns = $report->columns;
+
+            if (is_string($columns)) {
+                $columns = json_decode($columns, true);
+            }
+
+            return is_array($columns)
+                && in_array($columnKey, $columns, true);
+        });
+
+    if ($usedInReports) {
+        $message = 'এই কাস্টম কলামটি সংরক্ষিত রিপোর্টে ব্যবহার করা হচ্ছে। '
+            . 'আগে সংশ্লিষ্ট রিপোর্ট থেকে কলামটি সরিয়ে নিন।';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], 422);
+        }
+
+        return back()->with('error', $message);
+    }
+
+    $column->delete();
+
+    if ($request->expectsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'কাস্টম কলাম সফলভাবে মুছে ফেলা হয়েছে।',
+            'id' => $column->id,
+        ]);
+    }
+
+    return back()->with(
+        'success',
+        'কাস্টম কলাম সফলভাবে মুছে ফেলা হয়েছে।'
+    );
+}
+
     /**
      * Save an individual student's custom value.
      */

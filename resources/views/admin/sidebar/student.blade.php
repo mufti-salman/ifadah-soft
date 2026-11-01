@@ -187,9 +187,9 @@
 
                         <a
                             class="nav-link text-white-50
-                            {{ request()->routeIs('dashboard.students.export.*') ? 'active' : '' }}"
+                            {{ request()->routeIs('dashboard.students.data-export.*') ? 'active' : '' }}"
 
-                            href="#"
+                            href="{{ route('dashboard.students.data-export') }}"
                         >
 
                             <i class="fas fa-file-export me-2"></i>

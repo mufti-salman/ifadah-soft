@@ -403,7 +403,7 @@
                         </button>
                     </td>
                     <td>{{ $ms->academic_year }}</td>
-                    <td>{{ $ms->studentClass->name ?? '—' }}</td>
+                    <td>{{ $ms->studentClass->name_bn ?: ($ms->studentClass->name ?? '—') }}</td>
                     <td>{{ $ms->month_1 ?? '—' }}</td>
                     <td>{{ $ms->month_2 ?? '—' }}</td>
                     <td>{{ $ms->month_3 ?? '—' }}</td>
@@ -482,8 +482,15 @@
                     <div class="form-group">
                         <label class="form-label" for="academicYear">শিক্ষাবর্ষ <span style="color:var(--danger)">*</span></label>
                         <select id="academicYear" name="academic_year" class="ms-input ms-select" required>
+                            <option value="">শিক্ষাবর্ষ নির্বাচন করুন</option>
+
                             @foreach($years as $year)
-                            <option value="{{ $year }}" {{ $year == $currentYear ? 'selected' : '' }}>{{ $year }}</option>
+                                <option
+                                    value="{{ $year->name_bn ?: $year->name }}"
+                                    {{ $year->id == $currentYear ? 'selected' : '' }}
+                                >
+                                    {{ $year->name_bn ?: $year->name }}
+                                </option>
                             @endforeach
                         </select>
                         <div class="field-error" id="err_academic_year"></div>
@@ -494,7 +501,9 @@
                         <select id="classId" name="class_id" class="ms-input ms-select" required>
                             <option value="">নির্বাচন করুন</option>
                             @foreach($classes as $class)
-                            <option value="{{ $class->id }}">{{ $class->name }}</option>
+                           <option value="{{ $class->id }}">
+                                {{ $class->name_bn ?: $class->name }}
+                            </option>
                             @endforeach
                         </select>
                         <div class="field-error" id="err_class_id"></div>

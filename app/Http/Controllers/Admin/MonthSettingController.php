@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MonthSetting;
 use App\Models\Classes;
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -61,35 +62,52 @@ class MonthSettingController extends Controller
     /**
      * List Month Settings for the current institution.
      */
-    public function index()
-    {
-        $institutionId = $this->institutionId();
+  /**
+ * List Month Settings for the current institution.
+ */
+public function index()
+{
+    $institutionId = $this->institutionId();
 
-        $monthSettings = MonthSetting::query()
-            ->where('institution_id', $institutionId)
-            ->with([
-                'studentClass' => function ($query) use ($institutionId) {
-                    $query->where('institution_id', $institutionId);
-                },
-            ])
-            ->orderByDesc('academic_year')
-            ->paginate(15);
+    // প্রতিষ্ঠানের মাস সেটিং তালিকা
+    $monthSettings = MonthSetting::query()
+        ->where('institution_id', $institutionId)
+        ->with([
+            'studentClass' => function ($query) use ($institutionId) {
+                $query->where('institution_id', $institutionId);
+            },
+        ])
+        ->orderByDesc('academic_year')
+        ->paginate(15);
 
-        $classes = Classes::query()
-            ->where('institution_id', $institutionId)
-            ->orderBy('name')
-            ->get();
+    // প্রতিষ্ঠানের ক্লাসগুলো লোড করা
+    $classes = Classes::query()
+        ->where('institution_id', $institutionId)
+        ->orderBy('id')
+        ->get();
 
-        $currentYear = date('Y');
-        $years = range($currentYear - 2, $currentYear + 5);
+    // Academic Years পেজ থেকে তৈরি শিক্ষাবর্ষগুলো লোড করা
+    $years = AcademicYear::query()
+        ->where('institution_id', $institutionId)
+        ->where('status', 'active')
+        ->orderByDesc('start_date')
+        ->orderByDesc('id')
+        ->get();
 
-        return view('admin.month-settings.index', compact(
-            'monthSettings',
-            'classes',
-            'years',
-            'currentYear'
-        ));
-    }
+    // বর্তমান শিক্ষাবর্ষ নির্ধারণ
+    $currentAcademicYear = $years->firstWhere('is_current', true);
+
+    $currentYear = $currentAcademicYear
+        ? $currentAcademicYear->id
+        : ($years->first()?->id);
+
+    return view('admin.month-settings.index', compact(
+        'monthSettings',
+        'classes',
+        'years',
+        'currentYear'
+    ));
+}
 
     /**
      * Store a MonthSetting for the current institution.

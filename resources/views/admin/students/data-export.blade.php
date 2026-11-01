@@ -110,7 +110,6 @@
 @endphp
 
 <meta name="csrf-token" content="{{ csrf_token() }}">
-
 <style>
     /* =====================================================
        DATA EXPORT PAGE
@@ -247,14 +246,14 @@
     .de-page .de-btn-primary,
     .de-modal .de-btn-primary {
         border-color: var(--de-primary);
-        background: var(--de-primary);
+        background: #000;
         color: #fff;
     }
 
     .de-page .de-btn-primary:hover,
     .de-modal .de-btn-primary:hover {
         border-color: var(--de-primary-hover);
-        background: var(--de-primary-hover);
+        background: #000;
         color: #fff;
     }
 
@@ -372,9 +371,7 @@
     }
 
     /* =====================================================
-       MODAL
-       IMPORTANT: These selectors are global because the
-       modal elements are outside .de-page.
+       MODAL OVERLAY
     ===================================================== */
 
     .de-modal {
@@ -387,16 +384,17 @@
         justify-content: center;
 
         width: 100%;
-        height: 100%;
+        height: 100vh;
         height: 100dvh;
 
-        padding: 18px;
+        padding: 12px;
 
         background: rgba(15, 23, 42, .62);
+
         overflow-x: hidden;
         overflow-y: auto;
-        overscroll-behavior: contain;
 
+        overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
     }
 
@@ -404,20 +402,34 @@
         display: flex !important;
     }
 
+    /* =====================================================
+       MODAL DIALOG
+    ===================================================== */
+
     .de-modal-dialog {
         position: relative;
-        flex: 0 0 auto;
-
-        width: 100%;
-        max-width: 850px;
-
-        max-height: calc(100vh - 36px);
-        max-height: calc(100dvh - 36px);
 
         display: flex;
         flex-direction: column;
 
+        flex: 0 1 auto;
+
+        width: 100%;
+        max-width: 850px;
+
+        /*
+         * Modal screen-এর চেয়ে বড় হবে না।
+         * Content বেশি হলে body-এর মধ্যে scroll হবে।
+         */
+        height: auto;
+
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+
+        min-height: 0;
+
         margin: auto;
+
         overflow: hidden;
 
         border: 1px solid rgba(255, 255, 255, .15);
@@ -435,6 +447,11 @@
         max-width: 500px;
     }
 
+    /* =====================================================
+       MODAL HEADER
+       Header scroll করবে না।
+    ===================================================== */
+
     .de-modal-header {
         flex: 0 0 auto;
 
@@ -443,7 +460,7 @@
         justify-content: space-between;
         gap: 15px;
 
-        padding: 19px 22px;
+        padding: 16px 22px;
 
         border-bottom: 1px solid #e5eaf2;
         background: #fff;
@@ -451,6 +468,7 @@
 
     .de-modal-header h3 {
         margin: 0;
+
         color: #172033;
         font-size: 18px;
         font-weight: 800;
@@ -459,6 +477,7 @@
 
     .de-modal-header .de-modal-subtitle {
         margin-top: 5px;
+
         color: #64748b;
         font-size: 12px;
         line-height: 1.7;
@@ -492,18 +511,47 @@
         background: #e2e8f0;
     }
 
+    /* =====================================================
+       MODAL FORMS
+       Form-কে flex container করতে হবে, যেন body scroll
+       নিতে পারে এবং footer নিচে স্থির থাকে।
+    ===================================================== */
+
+    #reportConfigForm,
+    #customColumnForm {
+        display: flex;
+        flex-direction: column;
+
+        flex: 1 1 auto;
+
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* =====================================================
+       MODAL BODY
+       মূল scrolling area।
+    ===================================================== */
+
     .de-modal-body {
         flex: 1 1 auto;
 
         min-height: 0;
-        padding: 22px;
+        padding: 18px 22px;
 
         overflow-x: hidden;
         overflow-y: auto;
-        overscroll-behavior: contain;
+
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
 
         -webkit-overflow-scrolling: touch;
     }
+
+    /* =====================================================
+       MODAL FOOTER
+       Save / Cancel বাটন সবসময় নিচে থাকবে।
+    ===================================================== */
 
     .de-modal-footer {
         flex: 0 0 auto;
@@ -514,11 +562,15 @@
         flex-wrap: wrap;
         gap: 9px;
 
-        padding: 15px 22px;
+        padding: 13px 22px;
 
         border-top: 1px solid #e5eaf2;
         background: #fff;
     }
+
+    /* =====================================================
+       FORM GROUPS
+    ===================================================== */
 
     .de-modal .de-form-group {
         margin-bottom: 18px;
@@ -528,11 +580,15 @@
         margin-bottom: 0;
     }
 
-    /* Column sections */
+    /* =====================================================
+       COLUMN SECTIONS
+    ===================================================== */
 
     .de-modal .de-column-section {
-        margin-top: 19px;
+        margin-top: 16px;
+
         overflow: hidden;
+
         border: 1px solid #e5eaf2;
         border-radius: 11px;
     }
@@ -562,15 +618,31 @@
         font-weight: 800;
     }
 
+    /* =====================================================
+       COLUMN GRID
+       Column list-এ আলাদা scrolling থাকবে।
+    ===================================================== */
+
     .de-modal .de-column-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0;
 
+        width: 100%;
+
         max-height: 300px;
+        max-height: min(34vh, 300px);
+        max-height: min(34dvh, 300px);
+
+        min-height: 0;
+
+        overflow-x: hidden;
         overflow-y: auto;
 
         padding: 8px 12px;
+
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
     }
 
     .de-modal .de-column-option {
@@ -597,9 +669,12 @@
 
     .de-modal .de-column-option input[type="checkbox"] {
         flex: 0 0 auto;
+
         width: 16px;
         height: 16px;
+
         margin: 3px 0 0;
+
         accent-color: #1a3375;
         cursor: pointer;
     }
@@ -619,27 +694,45 @@
 
     .de-modal .de-empty-columns {
         grid-column: 1 / -1;
+
         padding: 20px 12px;
+
         color: #64748b;
         text-align: center;
         font-size: 13px;
     }
 
+    /* =====================================================
+       FORM ERRORS
+    ===================================================== */
+
     .de-modal .de-form-error {
         display: none;
+
         margin-top: 15px;
         padding: 11px 13px;
+
         border: 1px solid #fecdd3;
         border-radius: 9px;
+
         background: #fff1f2;
         color: #9f1239;
+
         font-size: 12px;
         line-height: 1.7;
     }
 
+    /* =====================================================
+       BODY LOCK WHEN MODAL IS OPEN
+    ===================================================== */
+
     body.de-modal-open {
         overflow: hidden !important;
     }
+
+    /* =====================================================
+       MODAL ANIMATION
+    ===================================================== */
 
     @keyframes deModalEnter {
         from {
@@ -653,7 +746,9 @@
         }
     }
 
-    /* Dark theme compatibility */
+    /* =====================================================
+       DARK THEME COMPATIBILITY
+    ===================================================== */
 
     body.dark-mode .de-page .de-card {
         background: var(--card, #0f172a);
@@ -669,8 +764,50 @@
         background: var(--card, #0f172a);
         color: var(--text, #e5e7eb);
     }
+/* Custom column item with delete button */
+.de-modal .de-custom-column-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    border-radius: 7px;
+}
 
-    /* Responsive */
+.de-modal .de-custom-column-item .de-column-option {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+.de-modal .de-delete-custom-column {
+    flex: 0 0 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #fecaca;
+    border-radius: 7px;
+    background: #fff1f2;
+    color: #dc2626;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+}
+
+.de-modal .de-delete-custom-column:hover {
+    background: #dc2626;
+    color: #fff;
+}
+
+.de-modal .de-delete-custom-column:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+    /* =====================================================
+       TABLET
+    ===================================================== */
 
     @media (max-width: 991.98px) {
         .de-page .de-filter-grid {
@@ -681,6 +818,10 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
 
     @media (max-width: 575.98px) {
         .de-page .de-header {
@@ -716,6 +857,7 @@
         .de-modal-dialog {
             max-height: calc(100vh - 16px);
             max-height: calc(100dvh - 16px);
+
             border-radius: 12px;
         }
 
@@ -728,11 +870,56 @@
 
         .de-modal .de-column-grid {
             grid-template-columns: 1fr;
+
             max-height: 250px;
+            max-height: 30vh;
+            max-height: 30dvh;
         }
 
         .de-modal-footer .de-btn {
             flex: 1 1 auto;
+        }
+    }
+
+    /* =====================================================
+       SHORT SCREEN / LOW LAPTOP HEIGHT
+       ছোট উচ্চতার স্ক্রিনে modal আরও compact হবে।
+    ===================================================== */
+
+    @media (max-height: 800px) {
+        .de-modal {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .de-modal-dialog {
+            max-height: calc(100vh - 16px);
+            max-height: calc(100dvh - 16px);
+        }
+
+        .de-modal-header {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        .de-modal-body {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        .de-modal-footer {
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .de-modal .de-column-section {
+            margin-top: 12px;
+        }
+
+        .de-modal .de-column-grid {
+            max-height: 260px;
+            max-height: min(30vh, 260px);
+            max-height: min(30dvh, 260px);
         }
     }
 </style>
@@ -1201,25 +1388,40 @@
 
                         @forelse($customColumns as $column)
 
-                            <label class="de-column-option">
+                            <div class="de-custom-column-item" id="custom-column-{{ $column->id }}">
 
-                                <input
-                                    type="checkbox"
-                                    class="js-report-column"
-                                    name="columns[]"
-                                    value="custom_{{ $column->id }}"
-                                    {{ in_array('custom_' . $column->id, $selectedColumns, true) ? 'checked' : '' }}
+                                <label class="de-column-option">
+
+                                    <input
+                                        type="checkbox"
+                                        class="js-report-column"
+                                        name="columns[]"
+                                        value="custom_{{ $column->id }}"
+                                        {{ in_array('custom_' . $column->id, $selectedColumns, true) ? 'checked' : '' }}
+                                    >
+
+                                    <span>
+                                        {{ $column->name }}
+
+                                        <small class="d-block text-muted">
+                                            {{ $column->type }}
+                                        </small>
+                                    </span>
+
+                                </label>
+
+                                <button
+                                    type="button"
+                                    class="de-delete-custom-column"
+                                    data-id="{{ $column->id }}"
+                                    data-name="{{ $column->name }}"
+                                    title="কাস্টম কলাম মুছুন"
+                                    aria-label="{{ $column->name }} মুছুন"
                                 >
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
 
-                                <span>
-                                    {{ $column->name }}
-
-                                    <small class="d-block text-muted">
-                                        {{ $column->type }}
-                                    </small>
-                                </span>
-
-                            </label>
+                            </div>
 
                         @empty
 
@@ -2054,7 +2256,115 @@
     if (hasReportValidationErrors) {
         openModal(reportModal);
     }
+/*
+|--------------------------------------------------------------------------
+| DELETE CUSTOM COLUMN
+|--------------------------------------------------------------------------
+*/
 
+document.addEventListener('click', async function (event) {
+    const button = event.target.closest('.de-delete-custom-column');
+
+    if (!button) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const columnId = button.dataset.id;
+    const columnName = button.dataset.name || 'এই কলাম';
+
+    if (!columnId) {
+        return;
+    }
+
+    const confirmed = window.confirm(
+        '"' + columnName + '" কাস্টম কলামটি মুছে ফেলতে চান?'
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const originalContent = button.innerHTML;
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const url = @json(
+            route('dashboard.students.data-export.custom-columns.destroy', [
+                'column' => '__COLUMN_ID__'
+            ])
+        ).replace('__COLUMN_ID__', encodeURIComponent(columnId));
+
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        const result = await response.json().catch(function () {
+            return {};
+        });
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || 'কাস্টম কলামটি মুছে ফেলা যায়নি।'
+            );
+        }
+
+        const item = document.getElementById(
+            'custom-column-' + columnId
+        );
+
+        if (item) {
+            const checkbox = item.querySelector('.js-report-column');
+
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+
+            item.remove();
+        }
+
+        // Custom column list খালি হয়ে গেলে বার্তা দেখাও।
+        const grid = document.getElementById('customColumnGrid');
+
+        if (
+            grid &&
+            !grid.querySelector('.de-custom-column-item')
+        ) {
+            const emptyMessage = document.createElement('div');
+
+            emptyMessage.className = 'de-empty-columns';
+            emptyMessage.id = 'noCustomColumnsMessage';
+            emptyMessage.textContent =
+                'এখনো কোনো কাস্টম কলাম তৈরি করা হয়নি।';
+
+            grid.appendChild(emptyMessage);
+        }
+
+        updateColumnCounter();
+
+        window.alert(result.message || 'কাস্টম কলাম মুছে ফেলা হয়েছে।');
+
+    } catch (error) {
+        window.alert(
+            error.message || 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।'
+        );
+
+    } finally {
+        if (button.isConnected) {
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        }
+    }
+});
 })();
 </script>
 @endpush
