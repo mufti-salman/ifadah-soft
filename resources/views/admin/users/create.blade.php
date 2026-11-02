@@ -1447,197 +1447,153 @@
         </div>
 
 
-        <div class="code-modal-body">
+        
+<div class="code-modal-body">
 
+    <!-- Step 1: User Type -->
+    <div class="code-form-section" id="codeUserTypeSection">
+        <div class="code-section-title">ব্যবহারকারীর ধরণ:</div>
 
-            <div class="code-form-section">
+        <select id="code_setting_user_type" class="form-select">
+            <option value="">নির্বাচন করুন</option>
+            <option value="student">শিক্ষার্থী</option>
+            <option value="user">ইউজার</option>
+        </select>
+    </div>
 
-                <div class="code-section-title">
-                    ব্যবহারকারীর ধরণ:
-                </div>
+    <!-- Step 2: Generation Type -->
+    <div class="code-form-section" id="codeGenerationTypeSection" style="display:none;">
+        <div class="code-section-title">ধরন:</div>
 
+        <div class="code-radio-group">
+            <div class="code-radio-card">
+                <input type="radio"
+                       name="code_generation_type"
+                       id="code_auto"
+                       value="auto">
 
-                <select id="code_setting_user_type"
-                        class="form-select">
-
-                    <option value="">
-                        নির্বাচন করুন
-                    </option>
-
-
-                    @foreach($userTypes as $key => $type)
-
-                        <option value="{{ $key }}">
-                            {{ $type }}
-                        </option>
-
-                    @endforeach
-
-                </select>
-
+                <label for="code_auto">
+                    <i class="fas fa-magic"></i> নির্দিষ্ট কোড হতে অটো
+                </label>
             </div>
 
+            <div class="code-radio-card">
+                <input type="radio"
+                       name="code_generation_type"
+                       id="code_manual"
+                       value="manual">
 
-            <div class="code-form-section">
+                <label for="code_manual">
+                    <i class="fas fa-keyboard"></i> ম্যানুয়াল
+                </label>
+            </div>
+        </div>
+    </div>
 
-                <div class="code-section-title">
-                    ধরন:
-                </div>
+    <!-- Step 3: User Code -->
+    <div class="code-form-section" id="codeInputSection" style="display:none;">
+        <label for="setting_user_code" class="form-label">
+            ইউজার কোড:
+        </label>
 
+        <input type="text"
+               id="setting_user_code"
+               class="form-control"
+               inputmode="numeric"
+               autocomplete="off"
+               placeholder="প্রাথমিক ইউজার কোড লিখুন">
 
-                <div class="code-radio-group">
+        <small id="setting_user_code_help" class="text-muted">
+            ইউজার কোড লিখুন।
+        </small>
+    </div>
 
+    <!-- Gender -->
+    <div class="code-form-section">
+        <div class="code-section-title">লিঙ্গ:</div>
 
-                    <div class="code-radio-card">
-
-                        <input type="radio"
-                               name="code_generation_type"
-                               id="code_auto"
-                               value="auto"
-                               checked>
-
-                        <label for="code_auto">
-
-                            <i class="fas fa-magic"></i>
-
-                            নির্দিষ্ট কোড হতে অটো
-
-                        </label>
-
-                    </div>
-
-
-                    <div class="code-radio-card">
-
-                        <input type="radio"
-                               name="code_generation_type"
-                               id="code_manual"
-                               value="manual">
-
-                        <label for="code_manual">
-
-                            <i class="fas fa-keyboard"></i>
-
-                            ম্যানুয়াল
-
-                        </label>
-
-                    </div>
-
-                </div>
-
-
-                <div class="manual-code-field"
-                     id="manualCodeField">
-
-                    <label class="form-label">
-
-                        ইউজার কোড:
-
-                    </label>
-
-
-                    <input type="text"
-                           id="manual_user_code"
-                           class="form-control"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           placeholder="খালি রাখলে role অনুযায়ী পরবর্তী কোড হবে">
-
-
-                    <div class="manual-preview-info"
-                         id="manualPreviewInfo">
-
-                        <i class="fas fa-check-circle"></i>
-
-                        কোড খালি রাখলে সিস্টেম নির্বাচিত role অনুযায়ী
-                        পরবর্তী available manual code তৈরি করবে।
-
-                    </div>
-
-                </div>
-
-
-                <div class="entry-info"
-                     id="autoCodeInfo">
-
-                    <i class="fas fa-info-circle"></i>
-
-                    অটো নির্বাচন করলে সিস্টেম নির্ধারিত
-                    role অনুযায়ী serial code তৈরি করবে।
-
-                    <br>
-
-                    Student: <strong>101+</strong> &nbsp; |
-                    User: <strong>201+</strong> &nbsp; |
-                    User Admin: <strong>301+</strong> &nbsp; |
-                    Support Admin: <strong>401+</strong>
-
-                </div>
-
+        <div class="code-radio-group">
+            <div class="code-radio-card">
+                <input type="radio" name="code_setting_gender"
+                       id="code_gender_male" value="male">
+                <label for="code_gender_male">পুরুষ</label>
             </div>
 
+            <div class="code-radio-card">
+                <input type="radio" name="code_setting_gender"
+                       id="code_gender_female" value="female">
+                <label for="code_gender_female">মহিলা</label>
+            </div>
+
+            <div class="code-radio-card">
+                <input type="radio" name="code_setting_gender"
+                       id="code_gender_entry" value="entry">
+                <label for="code_gender_entry">এন্ট্রির মাধ্যমে</label>
+            </div>
         </div>
+    </div>
 
+    <div class="code-modal-footer">
+        <button type="button" class="btn-modal-cancel" id="cancelCodeSetting">
+            বাতিল
+        </button>
 
-        <div class="code-modal-footer">
-
-            <button type="button"
-                    class="btn-modal-cancel"
-                    id="cancelCodeSetting">
-
-                বাতিল
-
-            </button>
-
-
-            <button type="button"
-                    class="btn-modal-save"
-                    id="saveCodeSetting">
-
-                <i class="fas fa-save"></i>
-
-                সংরক্ষণ করুন
-
-            </button>
-
-        </div>
-
+        <button type="button" class="btn-modal-save" id="saveCodeSetting">
+            <i class="fas fa-save"></i> সংরক্ষণ করুন
+        </button>
     </div>
 
 </div>
 
-@push('scripts')
+</div>
+
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-
 $(document).ready(function () {
+    'use strict';
 
     /* ============================================================
-       CODE START MAP
+       CONFIGURATION
        ============================================================ */
 
-    var codeStartMap = {
+    const codeStartMap = {
         student: 101,
         user: 201,
         user_admin: 301,
         support_admin: 401
     };
 
+    const codeSettingsGetUrl =
+        @json(route('dashboard.user.code-settings.get'));
 
-    /* ============================================================
-       CODE SETTING STATE
-       ============================================================ */
+    const codeSettingsSaveUrl =
+        @json(route('dashboard.user.code-settings.save'));
 
-    var modalOriginalSetting = null;
+    const previewIdUrl =
+        @json(route('dashboard.user.preview-id'));
 
-    var currentMainManualCode = '';
+    const csrfToken =
+        $('meta[name="csrf-token"]').attr('content');
 
-    var currentMainManualCodeExplicit = false;
+    let savedCodeSettings = {};
 
-    var mainManualPreviewOnly = false;
+    let currentMainManualCode = '';
 
-    var modalManualCodeTouched = false;
+    let currentMainManualCodeExplicit = false;
+
+    let mainManualPreviewOnly = false;
+
+    let modalOriginalSetting = null;
+
+    let modalManualCodeTouched = false;
+
+    let codeSettingRequestNumber = 0;
 
 
     /* ============================================================
@@ -1645,62 +1601,50 @@ $(document).ready(function () {
        ============================================================ */
 
     function calculateAge() {
-
-        var birthDate = $('#date_of_birth').val();
+        const birthDate = $('#date_of_birth').val();
 
         if (!birthDate) {
             $('#age').val('');
             return;
         }
 
-        var today = new Date();
-
-        var birth = new Date(birthDate);
+        const today = new Date();
+        const birth = new Date(birthDate);
 
         if (birth > today) {
-
             $('#age').val('');
 
-            alert(
-                'জন্ম তারিখ ভবিষ্যতের হতে পারে না!'
-            );
+            alert('জন্ম তারিখ ভবিষ্যতের হতে পারে না!');
 
             $('#date_of_birth').val('');
 
             return;
         }
 
-        var age =
+        let age =
             today.getFullYear() -
             birth.getFullYear();
 
-        var m =
+        const monthDifference =
             today.getMonth() -
             birth.getMonth();
 
         if (
-            m < 0 ||
+            monthDifference < 0 ||
             (
-                m === 0 &&
+                monthDifference === 0 &&
                 today.getDate() < birth.getDate()
             )
         ) {
             age--;
         }
 
-        if (age < 0) {
-            age = 0;
-        }
-
-        $('#age').val(age);
+        $('#age').val(Math.max(age, 0));
     }
 
-
-    $('#date_of_birth').on(
-        'change',
-        calculateAge
-    );
-
+    $('#date_of_birth')
+        .off('change.userAge')
+        .on('change.userAge', calculateAge);
 
     if ($('#date_of_birth').val()) {
         calculateAge();
@@ -1708,846 +1652,573 @@ $(document).ready(function () {
 
 
     /* ============================================================
-       GET INSTITUTION ID
+       INSTITUTION ID
        ============================================================ */
 
     function getInstitutionId() {
-
         return $('#institution_id').val() || '';
     }
 
 
     /* ============================================================
-       GET SAVED CODE SETTING
+       USER TYPE
        ============================================================ */
 
-    function getSavedCodeSetting() {
-
-        try {
-
-            var saved =
-                sessionStorage.getItem(
-                    'user_code_setting'
-                );
-
-            if (!saved) {
-                return null;
-            }
-
-            return JSON.parse(saved);
-
-        } catch (e) {
-
-            console.error(
-                'Code setting parse error:',
-                e
-            );
-
-            return null;
-        }
+    function getCurrentUserType() {
+        return $('#user_type').val() || '';
     }
 
-/* ============================================================
-   MANUAL CODE PERSISTENCE
-   ============================================================ */
-
-function getSavedManualCode() {
-
-    try {
-
-        var saved = sessionStorage.getItem(
-            'user_manual_code_setting'
-        );
-
-        if (!saved) {
-            return null;
-        }
-
-        return JSON.parse(saved);
-
-    } catch (e) {
-
-        console.error(
-            'Manual code restore error:',
-            e
-        );
-
-        return null;
+    function getModalUserType() {
+        return $('#code_setting_user_type').val() || '';
     }
+
+    function getSelectedGenerationType() {
+    return $('input[name="code_generation_type"]:checked').val() || '';
 }
-
-
-function saveManualCode(
-    userType,
-    institutionId,
-    manualCode
-) {
-
-    var data = {
-
-        user_type: userType,
-
-        institution_id: String(
-            institutionId || ''
-        ),
-
-        manual_code: String(
-            manualCode || ''
-        )
-    };
-
-    sessionStorage.setItem(
-        'user_manual_code_setting',
-        JSON.stringify(data)
-    );
-}
-
-
-function clearSavedManualCode() {
-
-    sessionStorage.removeItem(
-        'user_manual_code_setting'
-    );
-}
-
-
-function restoreSavedManualCode(
-    userType,
-    institutionId
-) {
-
-    var saved = getSavedManualCode();
-
-    if (!saved) {
-        return false;
-    }
-
-    if (
-        saved.user_type !== userType ||
-        saved.institution_id !== String(
-            institutionId || ''
-        ) ||
-        !saved.manual_code
-    ) {
-        return false;
-    }
-
-    currentMainManualCode = saved.manual_code;
-
-    currentMainManualCodeExplicit = true;
-
-    mainManualPreviewOnly = false;
-
-    $('#custom_id').val(
-        saved.manual_code
-    );
-
-    $('#manual_user_code').val(
-        saved.manual_code
-    );
-
-    return true;
-}
-
-    /* ============================================================
-       UPDATE MAIN HIDDEN CODE TYPE
-       ============================================================ */
-
-    function updateHiddenCodeType(type) {
-
-        $('#code_generation_type')
-            .val(type || 'auto');
-    }
-
-
-    /* ============================================================
-       GET ROLE START CODE
-       ============================================================ */
 
     function getRoleStart(userType) {
+        const saved = savedCodeSettings[userType];
+
+        if (
+            saved &&
+            Number.isInteger(Number(saved.start_code)) &&
+            Number(saved.start_code) > 0
+        ) {
+            return Number(saved.start_code);
+        }
 
         return codeStartMap[userType] || 101;
     }
 
 
     /* ============================================================
-       GET CURRENT MAIN CODE SETTING
+       SESSION STORAGE
        ============================================================ */
 
+    function getSavedCodeSetting() {
+        try {
+            const value =
+                sessionStorage.getItem('user_code_setting');
+
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('Code setting parse error:', error);
+            return null;
+        }
+    }
+
+    function saveCodeSettingToSession(setting) {
+        try {
+            sessionStorage.setItem(
+                'user_code_setting',
+                JSON.stringify(setting)
+            );
+        } catch (error) {
+            console.error('Code setting session error:', error);
+        }
+    }
+
+    function getSavedManualCode() {
+        try {
+            const value =
+                sessionStorage.getItem('user_manual_code_setting');
+
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('Manual code restore error:', error);
+            return null;
+        }
+    }
+
+    function saveManualCode(userType, institutionId, manualCode) {
+        const data = {
+            user_type: userType,
+            institution_id: String(institutionId || ''),
+            manual_code: String(manualCode || '')
+        };
+
+        sessionStorage.setItem(
+            'user_manual_code_setting',
+            JSON.stringify(data)
+        );
+    }
+
+    function clearSavedManualCode() {
+        sessionStorage.removeItem('user_manual_code_setting');
+    }
+
+    function restoreSavedManualCode(userType, institutionId) {
+        const saved = getSavedManualCode();
+
+        if (!saved) {
+            return false;
+        }
+
+        if (
+            saved.user_type !== userType ||
+            saved.institution_id !== String(institutionId || '') ||
+            !saved.manual_code
+        ) {
+            return false;
+        }
+
+        currentMainManualCode = String(saved.manual_code);
+        currentMainManualCodeExplicit = true;
+        mainManualPreviewOnly = false;
+
+        $('#custom_id').val(currentMainManualCode);
+
+        $('#manual_user_code').val(currentMainManualCode);
+
+        return true;
+    }
+
+
+    /* ============================================================
+       MAIN FORM CODE TYPE
+       ============================================================ */
+
+    function updateHiddenCodeType(type) {
+        $('#code_generation_type').val(type || 'auto');
+    }
+
     function getCurrentMainCodeSetting() {
-
         return {
-
-            user_type:
-                $('#user_type').val() || '',
-
+            user_type: getCurrentUserType(),
             generation_type:
-                $('#code_generation_type').val() ||
-                'auto',
-
-            /*
-             * শুধু Main Form-এর explicit manual code।
-             * Modal-এর value এখানে আসবে না।
-             */
-            manual_code:
-                currentMainManualCode || ''
+                $('#code_generation_type').val() || 'auto',
+            manual_code: currentMainManualCode || ''
         };
     }
 
 
     /* ============================================================
-       SET AUTO MODE UI
+       AUTO MODE UI
        ============================================================ */
 
     function setAutoModeUI() {
-
-        $('#manualCodeField')
-            .removeClass('show');
-
-        $('#manualPreviewInfo')
-            .removeClass('show');
-
-        $('#autoCodeInfo')
-            .show();
+        $('#manualCodeField').removeClass('show');
+        $('#manualPreviewInfo').removeClass('show');
+        $('#autoCodeInfo').show();
 
         $('#codeModeHint')
             .text('Auto Code')
-            .css(
-                'color',
-                '#6b7280'
-            );
+            .css('color', '#6b7280');
     }
 
 
     /* ============================================================
-       SET MANUAL MODE UI
+       MANUAL MODE UI
        ============================================================ */
 
     function setManualModeUI() {
+        const userType = getCurrentUserType();
 
-        var userType =
-            $('#user_type').val();
+        $('#manualCodeField').addClass('show');
+        $('#manualPreviewInfo').addClass('show');
+        $('#autoCodeInfo').hide();
 
-        $('#manualCodeField')
-            .addClass('show');
-
-        $('#manualPreviewInfo')
-            .addClass('show');
-
-        $('#autoCodeInfo')
-            .hide();
-
-        $('#manual_user_code')
-            .attr(
-                'placeholder',
-                'খালি রাখলে ' +
-                getRoleStart(userType) +
-                ' থেকে পরবর্তী কোড হবে'
-            );
+        $('#manual_user_code').attr(
+            'placeholder',
+            'খালি রাখলে পরবর্তী Manual Code তৈরি হবে'
+        );
 
         $('#codeModeHint')
             .text('Manual Code')
-            .css(
-                'color',
-                '#047857'
-            );
+            .css('color', '#047857');
     }
 
 
     /* ============================================================
-       AUTO USER ID PREVIEW
+       LOAD SETTINGS FROM DATABASE
        ============================================================ */
 
-    function autoFillId(
-        userType,
-        institutionId
-    ) {
+    function loadUserCodeSettings() {
+        return $.ajax({
+            url: codeSettingsGetUrl,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(function (response) {
+            if (!response || !response.success) {
+                throw new Error(
+                    response && response.message
+                        ? response.message
+                        : 'User Code Setting লোড করা যায়নি।'
+                );
+            }
+
+            savedCodeSettings = response.settings || {};
+
+            return savedCodeSettings;
+        });
+    }
+
+    function loadSettingForRole(userType) {
+        const requestNumber = ++codeSettingRequestNumber;
 
         if (!userType) {
-
-            $('#custom_id')
-                .val('')
-                .attr(
-                    'placeholder',
-                    'প্রথমে ইউজার ধরণ নির্বাচন করুন'
-                );
-
+            $('#setting_user_code').val('');
             return;
         }
 
-        var roleStart =
-            getRoleStart(userType);
+        $('#setting_user_code').val('');
 
-        $('#custom_id')
-            .val('লোড হচ্ছে...')
-            .attr(
-                'placeholder',
-                'অটো কোড লোড হচ্ছে...'
-            );
-
-        $.ajax({
-
-            url:
-                '{{ route('dashboard.user.preview-id') }}',
-
-            type: 'GET',
-
-            data: {
-
-                user_type: userType,
-
-                institution_id: institutionId,
-
-                generation_type: 'auto'
-            },
-
-            dataType: 'json',
-
-            success: function (response) {
-
-                console.log(
-                    'Auto User Code Preview:',
-                    response
-                );
-
-                if (
-                    response &&
-                    response.success &&
-                    response.preview_id
-                ) {
-
-                    var previewId =
-                        parseInt(
-                            response.preview_id,
-                            10
-                        );
-
-                    if (
-                        !isNaN(previewId) &&
-                        previewId >= roleStart
-                    ) {
-
-                        $('#custom_id')
-                            .val(
-                                response.preview_id
-                            );
-
-                        return;
-                    }
-
-                    $('#custom_id')
-                        .val(roleStart);
-
+        loadUserCodeSettings()
+            .done(function (settings) {
+                if (requestNumber !== codeSettingRequestNumber) {
                     return;
                 }
 
-                $('#custom_id')
-                    .val(roleStart);
-            },
+                const setting = settings[userType];
 
-            error: function (xhr) {
+                $('#setting_user_code').val(
+                    setting
+                        ? setting.start_code
+                        : (codeStartMap[userType] || 101)
+                );
+            })
+            .fail(function (xhr) {
+                if (requestNumber !== codeSettingRequestNumber) {
+                    return;
+                }
 
                 console.error(
-                    'Auto User Code Preview Error:',
-                    xhr.responseJSON ||
-                    xhr.responseText
+                    'Load User Code Setting Error:',
+                    xhr.responseJSON || xhr.responseText
                 );
 
-                $('#custom_id')
-                    .val(roleStart);
-            }
-        });
+                $('#setting_user_code').val(
+                    codeStartMap[userType] || 101
+                );
+            });
     }
 
 
     /* ============================================================
-       MANUAL USER ID PREVIEW - MAIN FORM
-       ============================================================
-
-       IMPORTANT:
-
-       এখানে Manual preview শুধুমাত্র Backend থেকে আসবে।
-
-       Backend যদি 501 দেয়:
-           501
-
-       Backend যদি 801 দেয়:
-           801
-
-       Backend error হলে আর 101 দেখানো হবে না।
-
+       AUTO ID PREVIEW
        ============================================================ */
 
-    function manualFillId(
-        userType,
-        institutionId
-    ) {
-
+    function autoFillId(userType, institutionId) {
         if (!userType) {
-
             $('#custom_id')
                 .val('')
-                .attr(
-                    'placeholder',
-                    'প্রথমে ইউজার ধরণ নির্বাচন করুন'
-                );
+                .attr('placeholder', 'প্রথমে ইউজার ধরণ নির্বাচন করুন');
 
             return;
         }
 
         $('#custom_id')
             .val('লোড হচ্ছে...')
-            .attr(
-                'placeholder',
-                'পরবর্তী Manual Code লোড হচ্ছে...'
-            );
+            .attr('placeholder', 'অটো কোড লোড হচ্ছে...');
 
         $.ajax({
-
-            url:
-                '{{ route('dashboard.user.preview-id') }}',
-
+            url: previewIdUrl,
             type: 'GET',
-
-            data: {
-
-                user_type: userType,
-
-                institution_id: institutionId,
-
-                generation_type: 'manual'
-            },
-
             dataType: 'json',
-
-            success: function (response) {
-
-                console.log(
-                    'Manual User Code Preview:',
-                    response
-                );
-
-                if (
-                    response &&
-                    response.success &&
-                    response.preview_id
-                ) {
-
-                    var previewId =
-                        parseInt(
-                            response.preview_id,
-                            10
-                        );
-
-                    if (
-                        !isNaN(previewId) &&
-                        previewId >= getRoleStart(userType)
-                    ) {
-
-                        /*
-                         * শুধু Preview হিসেবে দেখানো হচ্ছে।
-                         * currentMainManualCode-এ save করা হচ্ছে না।
-                         */
-                        $('#custom_id')
-                            .val(
-                                response.preview_id
-                            )
-                            .attr(
-                                'placeholder',
-                                'পরবর্তী Manual Code'
-                            );
-
-                        return;
-                    }
-                }
-
-                /*
-                 * Backend valid code না দিলে
-                 * ভুল করে 101/201/301/401 দেখাবো না।
-                 */
-                $('#custom_id')
-                    .val('')
-                    .attr(
-                        'placeholder',
-                        'Manual Code পাওয়া যায়নি'
-                    );
-            },
-
-            error: function (xhr) {
-
-                console.error(
-                    'Manual User Code Preview Error:',
-                    xhr.responseJSON ||
-                    xhr.responseText
-                );
-
-                /*
-                 * AJAX fail হলে ভুল fallback code
-                 * দেখানো হবে না।
-                 */
-                $('#custom_id')
-                    .val('')
-                    .attr(
-                        'placeholder',
-                        'পরবর্তী Manual Code লোড করা যায়নি'
-                    );
-            }
-        });
-    }
-
-
-    /* ============================================================
-       MANUAL CODE PREVIEW - MODAL ONLY
-       ============================================================ */
-
-    function previewManualCodeInModal(
-        userType,
-        institutionId
-    ) {
-
-        if (!userType) {
-
-            $('#manualPreviewInfo')
-                .text('');
-
-            return;
-        }
-
-        $('#manualPreviewInfo')
-            .text(
-                'পরবর্তী Manual Code লোড হচ্ছে...'
-            );
-
-        $.ajax({
-
-            url:
-                '{{ route('dashboard.user.preview-id') }}',
-
-            type: 'GET',
-
             data: {
-
                 user_type: userType,
-
                 institution_id: institutionId,
-
-                generation_type: 'manual'
+                generation_type: 'auto'
             },
-
-            dataType: 'json',
-
-            success: function (response) {
-
-                console.log(
-                    'Manual Modal Preview:',
-                    response
-                );
-
-                if (
-                    response &&
-                    response.success &&
-                    response.preview_id
-                ) {
-
-                    var previewId =
-                        parseInt(
-                            response.preview_id,
-                            10
-                        );
-
-                    if (
-                        !isNaN(previewId) &&
-                        previewId >= getRoleStart(userType)
-                    ) {
-
-                        $('#manualPreviewInfo')
-                            .text(
-                                'পরবর্তী Manual Code: ' +
-                                response.preview_id
-                            );
-
-                        return;
-                    }
-                }
-
-                /*
-                 * Backend valid preview না দিলে
-                 * আর 101/201/301/401 দেখাবে না।
-                 */
-                $('#manualPreviewInfo')
-                    .text(
-                        'পরবর্তী Manual Code পাওয়া যায়নি।'
-                    );
-            },
-
-            error: function (xhr) {
-
-                console.error(
-                    'Manual Modal Preview Error:',
-                    xhr.responseJSON ||
-                    xhr.responseText
-                );
-
-                $('#manualPreviewInfo')
-                    .text(
-                        'পরবর্তী Manual Code লোড করা যায়নি।'
-                    );
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
-        });
-    }
+        })
+        .done(function (response) {
+            console.log('Auto User Code Preview:', response);
 
-
-function prepareManualMainId() {
-
-    var userType = $('#user_type').val();
-
-    var institutionId = getInstitutionId();
-
-    if (!userType) {
-
-        $('#custom_id').val('');
-
-        return;
-    }
-
-    /*
-     * প্রথমে বর্তমান JavaScript State পরীক্ষা।
-     */
-
-    if (
-        currentMainManualCodeExplicit &&
-        currentMainManualCode
-    ) {
-
-        $('#custom_id').val(
-            currentMainManualCode
-        );
-
-        return;
-    }
-
-    /*
-     * Reload-এর পর Saved Manual Code restore।
-     */
-
-    if (
-        restoreSavedManualCode(
-            userType,
-            institutionId
-        )
-    ) {
-
-        $('#custom_id')
-            .val(currentMainManualCode)
-            .attr(
-                'placeholder',
-                'ম্যানুয়াল কোড'
-            );
-
-        return;
-    }
-
-    /*
-     * কোনো Explicit Code পাওয়া না গেলে
-     * Backend থেকে পরবর্তী Preview।
-     */
-
-    currentMainManualCode = '';
-
-    currentMainManualCodeExplicit = false;
-
-    mainManualPreviewOnly = true;
-
-    manualFillId(
-        userType,
-        institutionId
-    );
-}
-
-
-    /* ============================================================
-       USER TYPE CHANGE
-       ============================================================ */
-
-    $('#user_type').on(
-        'change',
-        function () {
-
-            var userType =
-                $(this).val();
-
-            var institutionId =
-                getInstitutionId();
-
-            currentMainManualCode = '';
-
-            currentMainManualCodeExplicit = false;
-
-            mainManualPreviewOnly = false;
-
-
-            if (userType === 'student') {
-
-                $('#studentFields')
-                    .addClass('show');
-
-            } else {
-
-                $('#studentFields')
-                    .removeClass('show');
-            }
-
-
-            if (!userType) {
-
+            if (
+                response &&
+                response.success &&
+                response.preview_id !== undefined &&
+                response.preview_id !== null
+            ) {
                 $('#custom_id')
-                    .val('');
-
-                $('#codeModeHint')
-                    .text('User Code');
-
-                updateHiddenCodeType('auto');
+                    .val(response.preview_id)
+                    .attr('placeholder', 'Auto Code Preview');
 
                 return;
             }
 
-
-            var savedSetting =
-                getSavedCodeSetting();
-
-
-            /*
-             * Saved setting একই role হলে
-             * generation type ব্যবহার হবে।
-             */
-            if (
-                savedSetting &&
-                savedSetting.user_type === userType
-            ) {
-
-                if (
-                    savedSetting.generation_type ===
-                    'manual'
-                ) {
-
-                    $('input[name="code_generation_type"][value="manual"]')
-                        .prop(
-                            'checked',
-                            true
-                        );
-
-                    updateHiddenCodeType(
-                        'manual'
-                    );
-
-                    setManualModeUI();
-
-                    $('#manual_user_code')
-                        .val('');
-
-                    prepareManualMainId();
-
-                    return;
-                }
-            }
-
-
-            /*
-             * AUTO
-             */
-
-            $('input[name="code_generation_type"][value="auto"]')
-                .prop(
-                    'checked',
-                    true
-                );
-
-            updateHiddenCodeType(
-                'auto'
+            $('#custom_id')
+                .val('')
+                .attr('placeholder', 'Auto Code পাওয়া যায়নি');
+        })
+        .fail(function (xhr) {
+            console.error(
+                'Auto User Code Preview Error:',
+                xhr.responseJSON || xhr.responseText
             );
 
-            setAutoModeUI();
-
-            autoFillId(
-                userType,
-                institutionId
-            );
-        }
-    );
-
-
-    /* ============================================================
-       GENDER
-       ============================================================ */
-
-    $('input[name="gender"]').on(
-        'change',
-        function () {
-
-            /*
-             * Gender-এর সাথে ID generation-এর
-             * কোনো সম্পর্ক নেই।
-             */
-
-        }
-    );
-
-
-    /* ============================================================
-       INITIAL USER TYPE
-       ============================================================ */
-
-    if ($('#user_type').val()) {
-
-        $('#user_type')
-            .trigger('change');
-
-    } else {
-
-        var oldCodeType =
-            $('#code_generation_type').val() ||
-            'auto';
-
-        if (oldCodeType === 'manual') {
-
-            $('input[name="code_generation_type"][value="manual"]')
-                .prop(
-                    'checked',
-                    true
-                );
-
-            updateHiddenCodeType('manual');
-
-            setManualModeUI();
-
-        } else {
-
-            $('input[name="code_generation_type"][value="auto"]')
-                .prop(
-                    'checked',
-                    true
-                );
-
-            updateHiddenCodeType('auto');
-
-            setAutoModeUI();
-        }
+            $('#custom_id')
+                .val('')
+                .attr('placeholder', 'Auto Code লোড করা যায়নি');
+        });
     }
 
 
     /* ============================================================
-       CLASS -> SECTION
+       MANUAL ID PREVIEW - MAIN FORM
        ============================================================ */
 
-    $('#class_id').on(
-        'change',
-        function () {
+    function manualFillId(userType, institutionId) {
+        if (!userType) {
+            $('#custom_id')
+                .val('')
+                .attr('placeholder', 'প্রথমে ইউজার ধরণ নির্বাচন করুন');
 
-            var classId =
-                $(this).val();
+            return;
+        }
 
-            var sectionSelect =
-                $('#section_id');
+        $('#custom_id')
+            .val('লোড হচ্ছে...')
+            .attr('placeholder', 'পরবর্তী Manual Code লোড হচ্ছে...');
+
+        $.ajax({
+            url: previewIdUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                user_type: userType,
+                institution_id: institutionId,
+                generation_type: 'manual'
+            },
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .done(function (response) {
+            console.log('Manual User Code Preview:', response);
+
+            if (
+                response &&
+                response.success &&
+                response.preview_id !== undefined &&
+                response.preview_id !== null
+            ) {
+                $('#custom_id')
+                    .val(response.preview_id)
+                    .attr('placeholder', 'পরবর্তী Manual Code');
+
+                mainManualPreviewOnly = true;
+
+                return;
+            }
+
+            $('#custom_id')
+                .val('')
+                .attr('placeholder', 'Manual Code পাওয়া যায়নি');
+        })
+        .fail(function (xhr) {
+            console.error(
+                'Manual User Code Preview Error:',
+                xhr.responseJSON || xhr.responseText
+            );
+
+            $('#custom_id')
+                .val('')
+                .attr(
+                    'placeholder',
+                    'পরবর্তী Manual Code লোড করা যায়নি'
+                );
+        });
+    }
+
+
+    /* ============================================================
+       MANUAL ID PREVIEW - MODAL
+       ============================================================ */
+
+    function previewManualCodeInModal(userType, institutionId) {
+        if (!userType) {
+            $('#manualPreviewInfo').text('');
+            return;
+        }
+
+        $('#manualPreviewInfo')
+            .text('পরবর্তী Manual Code লোড হচ্ছে...');
+
+        $.ajax({
+            url: previewIdUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                user_type: userType,
+                institution_id: institutionId,
+                generation_type: 'manual'
+            },
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .done(function (response) {
+            console.log('Manual Modal Preview:', response);
+
+            if (
+                response &&
+                response.success &&
+                response.preview_id !== undefined &&
+                response.preview_id !== null
+            ) {
+                $('#manualPreviewInfo').text(
+                    'পরবর্তী Manual Code: ' + response.preview_id
+                );
+
+                return;
+            }
+
+            $('#manualPreviewInfo').text(
+                'পরবর্তী Manual Code পাওয়া যায়নি।'
+            );
+        })
+        .fail(function (xhr) {
+            console.error(
+                'Manual Modal Preview Error:',
+                xhr.responseJSON || xhr.responseText
+            );
+
+$('#setting_user_code_help').text(
+    'পরবর্তী Manual Code: ' + response.preview_id
+);
+        });
+    }
+
+
+    /* ============================================================
+       PREPARE MANUAL MAIN FORM
+       ============================================================ */
+
+    function prepareManualMainId() {
+        const userType = getCurrentUserType();
+        const institutionId = getInstitutionId();
+
+        if (!userType) {
+            $('#custom_id').val('');
+            return;
+        }
+
+        if (
+            currentMainManualCodeExplicit &&
+            currentMainManualCode
+        ) {
+            $('#custom_id').val(currentMainManualCode);
+            return;
+        }
+
+        if (restoreSavedManualCode(userType, institutionId)) {
+            $('#custom_id').val(currentMainManualCode);
+            return;
+        }
+
+        currentMainManualCode = '';
+        currentMainManualCodeExplicit = false;
+        mainManualPreviewOnly = true;
+
+        manualFillId(userType, institutionId);
+    }
+
+
+    /* ============================================================
+       USER TYPE CHANGE - MAIN FORM
+       ============================================================ */
+
+    $('#user_type')
+        .off('change.userCode')
+        .on('change.userCode', function () {
+            const userType = $(this).val();
+            const institutionId = getInstitutionId();
+
+            currentMainManualCode = '';
+            currentMainManualCodeExplicit = false;
+            mainManualPreviewOnly = false;
+
+            if (userType === 'student') {
+                $('#studentFields').addClass('show');
+            } else {
+                $('#studentFields').removeClass('show');
+            }
+
+            if (!userType) {
+                $('#custom_id').val('');
+                updateHiddenCodeType('auto');
+                setAutoModeUI();
+                return;
+            }
+
+            const setting = getSavedCodeSetting();
+
+            if (
+                setting &&
+                setting.user_type === userType &&
+                setting.generation_type === 'manual'
+            ) {
+                updateHiddenCodeType('manual');
+                setManualModeUI();
+                prepareManualMainId();
+                return;
+            }
+
+            updateHiddenCodeType('auto');
+            setAutoModeUI();
+            autoFillId(userType, institutionId);
+        });
+
+
+    /* ============================================================
+       GENERATION TYPE CHANGE - MAIN FORM
+       ============================================================ */
+
+    $('#code_generation_type')
+        .off('change.userCode')
+        .on('change.userCode', function () {
+            const type = $(this).val();
+
+            if (type === 'manual') {
+                setManualModeUI();
+                prepareManualMainId();
+            } else {
+                currentMainManualCode = '';
+                currentMainManualCodeExplicit = false;
+                mainManualPreviewOnly = false;
+
+                setAutoModeUI();
+
+                autoFillId(
+                    getCurrentUserType(),
+                    getInstitutionId()
+                );
+            }
+        });
+
+
+    /* ============================================================
+       AGE AND GENDER
+       ============================================================ */
+
+    $('input[name="gender"]')
+        .off('change.userGender')
+        .on('change.userGender', function () {
+            // Gender selection does not affect code generation.
+        });
+
+
+    /* ============================================================
+       CLASS -> SECTION AJAX
+       ============================================================ */
+
+    $('#class_id')
+        .off('change.userSection')
+        .on('change.userSection', function () {
+            const classId = $(this).val();
+
+            const sectionSelect = $('#section_id');
 
             sectionSelect.html(
                 '<option value="">শাখা নির্বাচন করুন</option>'
@@ -2558,38 +2229,29 @@ function prepareManualMainId() {
             }
 
             $.getJSON(
-
-                '{{ url('/dashboard/user/sections') }}/' +
-                classId,
-
-                function (data) {
-
-                    $.each(
-                        data,
-                        function (
-                            index,
-                            section
-                        ) {
-
-                            sectionSelect.append(
-
-                                '<option value="' +
-                                section.id +
-                                '">' +
-                                section.section_name +
-                                '</option>'
-
-                            );
-                        }
+                '{{ url('/dashboard/user/sections') }}/' + classId
+            )
+            .done(function (data) {
+                $.each(data, function (index, section) {
+                    sectionSelect.append(
+                        $('<option>', {
+                            value: section.id,
+                            text: section.section_name
+                        })
                     );
-                }
-            );
-        }
-    );
+                });
+            })
+            .fail(function (xhr) {
+                console.error(
+                    'Section Load Error:',
+                    xhr.responseText
+                );
+            });
+        });
 
 
     /* ============================================================
-       ADDRESS AJAX
+       ADDRESS AJAX HELPERS
        ============================================================ */
 
     function loadDistricts(
@@ -2597,7 +2259,6 @@ function prepareManualMainId() {
         districtSelect,
         upazilaSelect
     ) {
-
         $(districtSelect).html(
             '<option value="">জেলা নির্বাচন করুন</option>'
         );
@@ -2611,40 +2272,27 @@ function prepareManualMainId() {
         }
 
         $.getJSON(
-
-            '{{ url('/get-districts') }}/' +
-            divisionId,
-
-            function (data) {
-
-                $.each(
-                    data,
-                    function (
-                        key,
-                        value
-                    ) {
-
-                        $(districtSelect).append(
-
-                            '<option value="' +
-                            value.id +
-                            '">' +
-                            value.name_bn +
-                            '</option>'
-
-                        );
-                    }
+            '{{ url('/get-districts') }}/' + divisionId
+        )
+        .done(function (data) {
+            $.each(data, function (key, value) {
+                $(districtSelect).append(
+                    $('<option>', {
+                        value: value.id,
+                        text: value.name_bn
+                    })
                 );
-            }
-        );
+            });
+        })
+        .fail(function (xhr) {
+            console.error(
+                'District Load Error:',
+                xhr.responseText
+            );
+        });
     }
 
-
-    function loadUpazilas(
-        districtId,
-        upazilaSelect
-    ) {
-
+    function loadUpazilas(districtId, upazilaSelect) {
         $(upazilaSelect).html(
             '<option value="">থানা নির্বাচন করুন</option>'
         );
@@ -2654,32 +2302,24 @@ function prepareManualMainId() {
         }
 
         $.getJSON(
-
-            '{{ url('/get-upazilas') }}/' +
-            districtId,
-
-            function (data) {
-
-                $.each(
-                    data,
-                    function (
-                        key,
-                        value
-                    ) {
-
-                        $(upazilaSelect).append(
-
-                            '<option value="' +
-                            value.id +
-                            '">' +
-                            value.name_bn +
-                            '</option>'
-
-                        );
-                    }
+            '{{ url('/get-upazilas') }}/' + districtId
+        )
+        .done(function (data) {
+            $.each(data, function (key, value) {
+                $(upazilaSelect).append(
+                    $('<option>', {
+                        value: value.id,
+                        text: value.name_bn
+                    })
                 );
-            }
-        );
+            });
+        })
+        .fail(function (xhr) {
+            console.error(
+                'Upazila Load Error:',
+                xhr.responseText
+            );
+        });
     }
 
 
@@ -2687,1040 +2327,738 @@ function prepareManualMainId() {
        PERMANENT ADDRESS
        ============================================================ */
 
-    $('#permanent_division').on(
-        'change',
-        function () {
-
+    $('#permanent_division')
+        .off('change.userAddress')
+        .on('change.userAddress', function () {
             loadDistricts(
                 $(this).val(),
                 '#permanent_district',
                 '#permanent_upazila'
             );
-        }
-    );
+        });
 
-
-    $('#permanent_district').on(
-        'change',
-        function () {
-
+    $('#permanent_district')
+        .off('change.userAddress')
+        .on('change.userAddress', function () {
             loadUpazilas(
                 $(this).val(),
                 '#permanent_upazila'
             );
-        }
-    );
+        });
 
 
     /* ============================================================
        PRESENT ADDRESS
        ============================================================ */
 
-    $('#present_division').on(
-        'change',
-        function () {
-
+    $('#present_division')
+        .off('change.userAddress')
+        .on('change.userAddress', function () {
             loadDistricts(
                 $(this).val(),
                 '#present_district',
                 '#present_upazila'
             );
-        }
-    );
+        });
 
-
-    $('#present_district').on(
-        'change',
-        function () {
-
+    $('#present_district')
+        .off('change.userAddress')
+        .on('change.userAddress', function () {
             loadUpazilas(
                 $(this).val(),
                 '#present_upazila'
             );
-        }
-    );
+        });
 
 
     /* ============================================================
        SAME ADDRESS
        ============================================================ */
 
-    $('#same_as_permanent').on(
-        'change',
-        function () {
-
+    $('#same_as_permanent')
+        .off('change.userAddress')
+        .on('change.userAddress', function () {
             if (!$(this).is(':checked')) {
                 return;
             }
 
-            var pDiv =
+            const permanentDivision =
                 $('#permanent_division').val();
 
-            var pDistrict =
+            const permanentDistrict =
                 $('#permanent_district').val();
 
-            var pUpazila =
+            const permanentUpazila =
                 $('#permanent_upazila').val();
 
+            $('#present_division').val(permanentDivision);
 
-            $('#present_division')
-                .val(pDiv);
-
-
-            if (pDiv) {
-
+            if (permanentDivision) {
                 loadDistricts(
-                    pDiv,
+                    permanentDivision,
                     '#present_district',
                     '#present_upazila'
                 );
 
+                setTimeout(function () {
+                    $('#present_district').val(permanentDistrict);
 
-                setTimeout(
-                    function () {
+                    if (permanentDistrict) {
+                        loadUpazilas(
+                            permanentDistrict,
+                            '#present_upazila'
+                        );
 
-                        $('#present_district')
-                            .val(pDistrict);
-
-
-                        if (pDistrict) {
-
-                            loadUpazilas(
-                                pDistrict,
-                                '#present_upazila'
+                        setTimeout(function () {
+                            $('#present_upazila').val(
+                                permanentUpazila
                             );
-
-
-                            setTimeout(
-                                function () {
-
-                                    $('#present_upazila')
-                                        .val(pUpazila);
-
-                                },
-                                300
-                            );
-                        }
-
-                    },
-                    300
-                );
+                        }, 300);
+                    }
+                }, 300);
             }
 
+            $('input[name="present_post_office"]').val(
+                $('input[name="permanent_post_office"]').val()
+            );
 
-            $('input[name="present_post_office"]')
-                .val(
-                    $('input[name="permanent_post_office"]')
-                        .val()
-                );
-
-
-            $('input[name="present_village_road"]')
-                .val(
-                    $('input[name="permanent_village_road"]')
-                        .val()
-                );
-        }
-    );
+            $('input[name="present_village_road"]').val(
+                $('input[name="permanent_village_road"]').val()
+            );
+        });
 
 
     /* ============================================================
-       LOAD OLD PERMANENT ADDRESS
+       RESTORE OLD ADDRESS VALUES
        ============================================================ */
 
+    const oldPermanentDistrict =
+        @json(old('permanent_district_id'));
+
+    const oldPermanentUpazila =
+        @json(old('permanent_upazila_id'));
+
     if ($('#permanent_division').val()) {
-
-        var oldPermanentDistrict =
-            '{{ old('permanent_district_id') }}';
-
-        var oldPermanentUpazila =
-            '{{ old('permanent_upazila_id') }}';
-
-
         loadDistricts(
             $('#permanent_division').val(),
             '#permanent_district',
             '#permanent_upazila'
         );
 
+        setTimeout(function () {
+            if (oldPermanentDistrict) {
+                $('#permanent_district').val(
+                    oldPermanentDistrict
+                );
 
-        setTimeout(
-            function () {
+                loadUpazilas(
+                    oldPermanentDistrict,
+                    '#permanent_upazila'
+                );
 
-                if (oldPermanentDistrict) {
-
-                    $('#permanent_district')
-                        .val(oldPermanentDistrict);
-
-
-                    loadUpazilas(
-                        oldPermanentDistrict,
-                        '#permanent_upazila'
+                setTimeout(function () {
+                    $('#permanent_upazila').val(
+                        oldPermanentUpazila
                     );
-
-
-                    setTimeout(
-                        function () {
-
-                            $('#permanent_upazila')
-                                .val(
-                                    oldPermanentUpazila
-                                );
-
-                        },
-                        300
-                    );
-                }
-
-            },
-            300
-        );
+                }, 300);
+            }
+        }, 300);
     }
 
+    const oldPresentDistrict =
+        @json(old('present_district_id'));
 
-    /* ============================================================
-       LOAD OLD PRESENT ADDRESS
-       ============================================================ */
+    const oldPresentUpazila =
+        @json(old('present_upazila_id'));
 
     if ($('#present_division').val()) {
-
-        var oldPresentDistrict =
-            '{{ old('present_district_id') }}';
-
-        var oldPresentUpazila =
-            '{{ old('present_upazila_id') }}';
-
-
         loadDistricts(
             $('#present_division').val(),
             '#present_district',
             '#present_upazila'
         );
 
+        setTimeout(function () {
+            if (oldPresentDistrict) {
+                $('#present_district').val(
+                    oldPresentDistrict
+                );
 
-        setTimeout(
-            function () {
+                loadUpazilas(
+                    oldPresentDistrict,
+                    '#present_upazila'
+                );
 
-                if (oldPresentDistrict) {
-
-                    $('#present_district')
-                        .val(oldPresentDistrict);
-
-
-                    loadUpazilas(
-                        oldPresentDistrict,
-                        '#present_upazila'
+                setTimeout(function () {
+                    $('#present_upazila').val(
+                        oldPresentUpazila
                     );
-
-
-                    setTimeout(
-                        function () {
-
-                            $('#present_upazila')
-                                .val(
-                                    oldPresentUpazila
-                                );
-
-                        },
-                        300
-                    );
-                }
-
-            },
-            300
-        );
+                }, 300);
+            }
+        }, 300);
     }
 
+/* ============================================================
+   CODE SETTING MODAL OPEN / CLOSE
+   ============================================================ */
 
-    /* ============================================================
-       CODE SETTING MODAL
-       ============================================================ */
+function resetCodeSettingModal() {
 
-    function openCodeSettingModal() {
+    $('#code_setting_user_type').val('');
 
-        /*
-         * Main form-এর বর্তমান setting snapshot।
-         */
-        modalOriginalSetting =
-            getCurrentMainCodeSetting();
+    $('input[name="code_generation_type"]')
+        .prop('checked', false);
 
-        modalManualCodeTouched = false;
+    $('#setting_user_code').val('');
 
+    $('#setting_user_code_help').text(
+        'প্রথমে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
+    );
 
-        var mainUserType =
-            modalOriginalSetting.user_type;
+    $('#codeGenerationTypeSection').hide();
 
+    $('#codeInputSection').hide();
 
-        if (mainUserType) {
-
-            $('#code_setting_user_type')
-                .val(mainUserType);
-
-        } else {
-
-            $('#code_setting_user_type')
-                .val('');
-        }
+    modalManualCodeTouched = false;
+}
 
 
-        var currentGenerationType =
-            modalOriginalSetting.generation_type ||
-            'auto';
+function openCodeSettingModal() {
 
+    modalOriginalSetting = getCurrentMainCodeSetting();
 
-        $('input[name="code_generation_type"]')
-            .prop(
-                'checked',
-                false
-            );
+    modalManualCodeTouched = false;
 
+    resetCodeSettingModal();
+
+    const userType =
+        modalOriginalSetting.user_type || getCurrentUserType();
+
+    if (userType) {
+
+        $('#code_setting_user_type').val(userType);
+
+        $('#codeGenerationTypeSection').show();
+
+        const generationType =
+            modalOriginalSetting.generation_type || 'auto';
 
         $(
             'input[name="code_generation_type"][value="' +
-            currentGenerationType +
+            generationType +
             '"]'
-        )
-            .prop(
-                'checked',
-                true
+        ).prop('checked', true);
+
+        $('#codeInputSection').show();
+
+        if (generationType === 'auto') {
+
+            loadSettingForRole(userType);
+
+            $('#setting_user_code_help').text(
+                'অটো জেনারেশনের প্রাথমিক কোড। প্রয়োজনে পরিবর্তন করতে পারবেন।'
             );
-
-
-        /*
-         * শুধুমাত্র explicit main manual code।
-         */
-        $('#manual_user_code')
-            .val(
-                modalOriginalSetting.manual_code || ''
-            );
-
-
-        if (
-            currentGenerationType === 'manual'
-        ) {
-
-            $('#manualCodeField')
-                .addClass('show');
-
-            $('#manualPreviewInfo')
-                .addClass('show');
-
-            $('#autoCodeInfo')
-                .hide();
-
-
-            $('#manual_user_code')
-                .attr(
-                    'placeholder',
-                    'খালি রাখলে ' +
-                    getRoleStart(mainUserType) +
-                    ' থেকে পরবর্তী কোড হবে'
-                );
-
-
-            /*
-             * Explicit code না থাকলে
-             * Modal-এ শুধু backend preview।
-             */
-            if (
-                !modalOriginalSetting.manual_code &&
-                mainUserType
-            ) {
-
-                previewManualCodeInModal(
-                    mainUserType,
-                    getInstitutionId()
-                );
-
-            } else {
-
-                $('#manualPreviewInfo')
-                    .text(
-                        'Manual Code: ' +
-                        modalOriginalSetting.manual_code
-                    );
-            }
 
         } else {
 
-            $('#manualCodeField')
-                .removeClass('show');
+            const manualCode =
+                modalOriginalSetting.manual_code || '';
 
-            $('#manualPreviewInfo')
-                .removeClass('show');
+            $('#setting_user_code').val(manualCode);
 
-            $('#autoCodeInfo')
-                .show();
-        }
+            $('#setting_user_code').attr(
+                'placeholder',
+                'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন'
+            );
 
+            $('#setting_user_code_help').text(
+                'নিজের পছন্দমতো Manual Code লিখুন।'
+            );
 
-        $('#codeSettingModal')
-            .addClass('show');
+            if (!manualCode) {
 
-        $('body').css(
-            'overflow',
-            'hidden'
-        );
-    }
-
-
-    function closeCodeSettingModal() {
-
-        $('#codeSettingModal')
-            .removeClass('show');
-
-        $('body').css(
-            'overflow',
-            ''
-        );
-
-        modalManualCodeTouched = false;
-    }
-
-
-    $('#openCodeSetting').on(
-        'click',
-        function () {
-
-            openCodeSettingModal();
-        }
-    );
-
-
-    $('#closeCodeSetting').on(
-        'click',
-        function () {
-
-            closeCodeSettingModal();
-        }
-    );
-
-
-    $('#cancelCodeSetting').on(
-        'click',
-        function () {
-
-            /*
-             * Cancel করলে Main Form untouched।
-             */
-            closeCodeSettingModal();
-        }
-    );
-
-
-    /* ============================================================
-       CLICK OUTSIDE MODAL
-       ============================================================ */
-
-    $('#codeSettingModal').on(
-        'click',
-        function (e) {
-
-            if (e.target === this) {
-
-                closeCodeSettingModal();
-            }
-        }
-    );
-
-
-    /* ============================================================
-       ESC
-       ============================================================ */
-
-    $(document).on(
-        'keydown',
-        function (e) {
-
-            if (
-                e.key === 'Escape' &&
-                $('#codeSettingModal')
-                    .hasClass('show')
-            ) {
-
-                closeCodeSettingModal();
-            }
-        }
-    );
-
-
-    /* ============================================================
-       MODAL USER TYPE CHANGE
-       ============================================================ */
-
-    $('#code_setting_user_type').on(
-        'change',
-        function () {
-
-            var userType =
-                $(this).val();
-
-
-            /*
-             * Modal role change হলে
-             * Main Form touch হবে না।
-             */
-
-            $('#code_auto')
-                .prop(
-                    'checked',
-                    true
+                previewManualCodeInModal(
+                    userType,
+                    getInstitutionId()
                 );
+            }
+        }
+    }
+
+    $('#codeSettingModal').addClass('show');
+
+    $('body').css('overflow', 'hidden');
+
+    console.log('Code Setting Modal Opened');
+}
 
 
-            $('#manual_user_code')
-                .val('');
+function closeCodeSettingModal() {
+
+    $('#codeSettingModal').removeClass('show');
+
+    $('body').css('overflow', '');
+
+    modalManualCodeTouched = false;
+}
 
 
-            $('#manualCodeField')
-                .removeClass('show');
+// OPEN BUTTON
+$(document)
+    .off('click.userCodeModal', '#openCodeSetting')
+    .on('click.userCodeModal', '#openCodeSetting', function (event) {
 
-            $('#manualPreviewInfo')
-                .removeClass('show');
+        event.preventDefault();
+        event.stopPropagation();
 
-            $('#autoCodeInfo')
-                .show();
+        openCodeSettingModal();
+    });
 
+
+// CLOSE AND CANCEL BUTTON
+$(document)
+    .off(
+        'click.userCodeModal',
+        '#closeCodeSetting, #cancelCodeSetting'
+    )
+    .on(
+        'click.userCodeModal',
+        '#closeCodeSetting, #cancelCodeSetting',
+        function (event) {
+
+            event.preventDefault();
+
+            closeCodeSettingModal();
+        }
+    );
+
+
+// OUTSIDE CLICK
+$(document)
+    .off('click.userCodeModal', '#codeSettingModal')
+    .on('click.userCodeModal', '#codeSettingModal', function (event) {
+
+        if (event.target === this) {
+            closeCodeSettingModal();
+        }
+    });
+
+
+// ESCAPE KEY
+$(document)
+    .off('keydown.userCodeModal')
+    .on('keydown.userCodeModal', function (event) {
+
+        if (
+            event.key === 'Escape' &&
+            $('#codeSettingModal').hasClass('show')
+        ) {
+            closeCodeSettingModal();
+        }
+    });
+
+
+/* ============================================================
+   MODAL USER TYPE CHANGE
+   ============================================================ */
+
+$(document)
+    .off('change.userCodeModal', '#code_setting_user_type')
+    .on(
+        'change.userCodeModal',
+        '#code_setting_user_type',
+        function () {
+
+            const userType = $(this).val();
+
+            // আগের কোড পরিষ্কার
+            $('#setting_user_code').val('');
+
+            $('input[name="code_generation_type"]')
+                .prop('checked', false);
 
             modalManualCodeTouched = false;
 
+            // User Type না থাকলে পরবর্তী Section Hide
+            if (!userType) {
 
-            if (userType) {
+                $('#codeGenerationTypeSection').hide();
 
-                $('#manual_user_code')
-                    .attr(
-                        'placeholder',
-                        'খালি রাখলে ' +
-                        getRoleStart(userType) +
-                        ' থেকে পরবর্তী কোড হবে'
-                    );
+                $('#codeInputSection').hide();
+
+                return;
             }
+
+            // Generation Type দেখাও
+            $('#codeGenerationTypeSection').slideDown(200);
+
+            // Auto/Manual নির্বাচন না করা পর্যন্ত Input Hide
+            $('#codeInputSection').hide();
+
+            $('#setting_user_code_help').text(
+                'এখন Auto অথবা Manual নির্বাচন করুন।'
+            );
         }
     );
 
 
-    /* ============================================================
-       MODAL CODE GENERATION TYPE
-       ============================================================ */
+/* ============================================================
+   MODAL GENERATION TYPE CHANGE
+   ============================================================ */
 
-    $('input[name="code_generation_type"]')
-        .on(
-            'change',
-            function () {
-
-                var type =
-                    $(this).val();
-
-                var modalUserType =
-                    $('#code_setting_user_type')
-                        .val();
-
-
-                /*
-                 * Main Form-এর কোনো value এখানে
-                 * পরিবর্তন হবে না।
-                 */
-
-                if (type === 'manual') {
-
-                    $('#manualCodeField')
-                        .addClass('show');
-
-                    $('#manualPreviewInfo')
-                        .addClass('show');
-
-                    $('#autoCodeInfo')
-                        .hide();
-
-
-                    $('#manual_user_code')
-                        .attr(
-                            'placeholder',
-                            'খালি রাখলে ' +
-                            getRoleStart(modalUserType) +
-                            ' থেকে পরবর্তী কোড হবে'
-                        );
-
-
-                    if (
-                        modalUserType &&
-                        !$.trim(
-                            $('#manual_user_code').val()
-                        )
-                    ) {
-
-                        modalManualCodeTouched = false;
-
-
-                        previewManualCodeInModal(
-                            modalUserType,
-                            getInstitutionId()
-                        );
-                    }
-
-                } else {
-
-                    $('#manualCodeField')
-                        .removeClass('show');
-
-                    $('#manualPreviewInfo')
-                        .removeClass('show');
-
-                    $('#autoCodeInfo')
-                        .show();
-
-
-                    $('#manual_user_code')
-                        .val('');
-
-                    modalManualCodeTouched = false;
-                }
-            }
-        );
-
-
-    /* ============================================================
-       MANUAL CODE INPUT
-       ============================================================ */
-
-    $('#manual_user_code').on(
-        'input',
+$(document)
+    .off(
+        'change.userCodeModal',
+        'input[name="code_generation_type"]'
+    )
+    .on(
+        'change.userCodeModal',
+        'input[name="code_generation_type"]',
         function () {
 
-            var value =
-                $(this).val();
+            const type = getSelectedGenerationType();
 
+            const userType = getModalUserType();
 
-            value =
-                value.replace(
-                    /[^0-9]/g,
-                    ''
+            const institutionId = getInstitutionId();
+
+            if (!userType || !type) {
+                return;
+            }
+
+            // Input সঙ্গে সঙ্গে দেখাও
+            $('#codeInputSection').slideDown(200);
+
+            modalManualCodeTouched = false;
+
+            // AUTO MODE
+            if (type === 'auto') {
+
+                $('#setting_user_code')
+                    .val('')
+                    .attr(
+                        'placeholder',
+                        'প্রাথমিক ইউজার কোড'
+                    );
+
+                $('#setting_user_code_help').text(
+                    'অটো কোড লোড হচ্ছে...'
                 );
 
-
-            $(this).val(value);
-
-
-            modalManualCodeTouched = true;
-
-
-            if (value) {
-
-                $('#manualPreviewInfo')
-                    .text(
-                        'Manual Code: ' +
-                        value
-                    );
+                // Database থেকে Start Code Load
+                loadSettingForRole(userType);
 
                 return;
             }
 
 
-            /*
-             * Blank করলে Modal-এ শুধু
-             * next Manual preview।
-             */
-            var modalUserType =
-                $('#code_setting_user_type')
-                    .val();
+            // MANUAL MODE
+            if (type === 'manual') {
 
+                $('#setting_user_code')
+                    .val('')
+                    .attr(
+                        'placeholder',
+                        'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন'
+                    );
 
-            if (modalUserType) {
-
-                modalManualCodeTouched = false;
-
-
-                previewManualCodeInModal(
-                    modalUserType,
-                    getInstitutionId()
+                $('#setting_user_code_help').text(
+                    'আপনার পছন্দমতো Manual Code লিখুন।'
                 );
+
+                // পরবর্তী Manual Code Preview
+                previewManualCodeInModal(
+                    userType,
+                    institutionId
+                );
+
+                return;
             }
         }
     );
 
+
+/* ============================================================
+   MODAL CODE INPUT
+   ============================================================ */
+
+$(document)
+    .off('input.userCodeModal', '#setting_user_code')
+    .on(
+        'input.userCodeModal',
+        '#setting_user_code',
+        function () {
+
+            const value = $(this).val();
+
+            modalManualCodeTouched = true;
+
+            // শুধু Numeric Code
+            const numericValue = value.replace(/[^0-9]/g, '');
+
+            if (value !== numericValue) {
+                $(this).val(numericValue);
+            }
+
+            const generationType =
+                getSelectedGenerationType();
+
+            if (generationType === 'manual') {
+
+                if (numericValue) {
+
+                    $('#setting_user_code_help').text(
+                        'Manual Code: ' + numericValue
+                    );
+
+                } else {
+
+                    $('#setting_user_code_help').text(
+                        'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন।'
+                    );
+                }
+            }
+
+            if (generationType === 'auto') {
+
+                $('#setting_user_code_help').text(
+                    'প্রাথমিক কোড: ' + numericValue
+                );
+            }
+        }
+    );
 
     /* ============================================================
        SAVE CODE SETTING
        ============================================================ */
 
-    $('#saveCodeSetting').on(
-        'click',
-        function () {
+    $('#saveCodeSetting')
+        .off('click.userCodeModal')
+        .on('click.userCodeModal', function (event) {
+            event.preventDefault();
 
-            var userType =
-                $('#code_setting_user_type')
-                    .val();
+            const userType = getModalUserType();
 
+            const generationType =
+                getSelectedGenerationType();
 
-            var generationType =
-                $(
-                    'input[name="code_generation_type"]:checked'
-                )
-                .val();
+            const enteredCode =
+                $.trim($('#setting_user_code').val());
 
-
-            var manualCode =
-                $.trim(
-                    $('#manual_user_code').val()
-                );
-
-
-            /* ROLE VALIDATION */
-
-            if (!userType) {
-
+            if (!['student', 'user'].includes(userType)) {
                 alert(
-                    'অনুগ্রহ করে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
+                    'শুধুমাত্র Student অথবা User নির্বাচন করুন।'
                 );
 
                 return;
             }
 
+            let startCode;
 
-            /* GENERATION TYPE */
+            /*
+             * Auto mode: input must be the starting code.
+             * Manual mode: preserve the configured start code;
+             * entered code is the optional manual ID.
+             */
+            if (generationType === 'auto') {
+                if (
+                    !/^\d+$/.test(enteredCode) ||
+                    Number(enteredCode) < 1 ||
+                    Number(enteredCode) > 999999999
+                ) {
+                    alert(
+                        'সঠিক প্রাথমিক ইউজার কোড লিখুন।'
+                    );
 
-            if (!generationType) {
-                generationType = 'auto';
-            }
+                    $('#setting_user_code').focus();
 
+                    return;
+                }
 
-            /* MANUAL VALIDATION */
+                startCode = Number(enteredCode);
+            } else {
+                const existingSetting =
+                    savedCodeSettings[userType];
 
-            if (
-                generationType === 'manual'
-            ) {
+                startCode = existingSetting
+                    ? Number(existingSetting.start_code)
+                    : (codeStartMap[userType] || 101);
 
-                if (manualCode) {
+                if (enteredCode && !/^\d+$/.test(enteredCode)) {
+                    alert(
+                        'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
+                    );
 
-                    if (!/^\d+$/.test(manualCode)) {
+                    $('#setting_user_code').focus();
 
-                        alert(
-                            'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
-                        );
-
-                        $('#manual_user_code')
-                            .focus();
-
-                        return;
-                    }
-
-
-                    var roleStart =
-                        getRoleStart(userType);
-
-
-                    if (
-                        parseInt(
-                            manualCode,
-                            10
-                        ) < roleStart
-                    ) {
-
-                        alert(
-                            'এই Role-এর Manual Code ' +
-                            roleStart +
-                            ' বা তার বেশি হতে হবে।'
-                        );
-
-                        $('#manual_user_code')
-                            .focus();
-
-                        return;
-                    }
+                    return;
                 }
             }
 
+            const $button = $('#saveCodeSetting');
 
-            /* ====================================================
-               APPLY TO MAIN FORM ONLY AFTER SAVE
-               ==================================================== */
-
-            var mainUserType =
-                $('#user_type').val();
-
-
-            if (
-                mainUserType !== userType
-            ) {
-
-                $('#user_type')
-                    .val(userType);
-            }
-
-
-            /* SAVE GENERATION TYPE */
-
-            updateHiddenCodeType(
-                generationType
-            );
-
-
-            /* ====================================================
-               MANUAL
-               ==================================================== */
-
-            if (
-                generationType === 'manual'
-            ) {
-
-                setManualModeUI();
-
-
-if (manualCode) {
-
-    currentMainManualCode = manualCode;
-
-    currentMainManualCodeExplicit = true;
-
-    mainManualPreviewOnly = false;
-
-    /*
-     * Manual Code sessionStorage-এ সংরক্ষণ।
-     */
-
-    saveManualCode(
-        userType,
-        getInstitutionId(),
-        manualCode
-    );
-
-    $('#custom_id')
-        .val(manualCode)
-        .attr(
-            'placeholder',
-            'ম্যানুয়াল কোড'
-        );
-
-    $('#manual_user_code')
-        .val(manualCode);
-
-} else {
-
-    /*
-     * Blank Manual হলে আগের Explicit Code মুছে যাবে।
-     */
-
-    currentMainManualCode = '';
-
-    currentMainManualCodeExplicit = false;
-
-    mainManualPreviewOnly = true;
-
-    clearSavedManualCode();
-
-    $('#manual_user_code').val('');
-
-    manualFillId(
-        userType,
-        getInstitutionId()
-    );
-}
-
-            } else {
-
-                /* =================================================
-                   AUTO
-                   ================================================= */
-
-                currentMainManualCode =
-                    '';
-
-                currentMainManualCodeExplicit =
-                    false;
-
-                mainManualPreviewOnly =
-                    false;
-
-
-                $('#manual_user_code')
-                    .val('');
-
-
-                setAutoModeUI();
-
-
-                autoFillId(
-                    userType,
-                    getInstitutionId()
-                );
-            }
-
-
-            /* ====================================================
-               SESSION STORAGE
-               ==================================================== */
+            $button.prop('disabled', true);
 
             /*
-             * Manual code sessionStorage-এ রাখা হবে না।
+             * Save starting code in database.
              */
-            var settings = {
-
-                user_type:
-                    userType,
-
-                generation_type:
-                    generationType
-            };
-
-
-            sessionStorage.setItem(
-                'user_code_setting',
-                JSON.stringify(settings)
-            );
-
-
-            /* CLOSE MODAL */
-
-            closeCodeSettingModal();
-
-
-            /* MESSAGE */
-
-            alert(
-
-                generationType === 'manual'
-
-                    ? (
-                        manualCode
-                            ? 'Manual Code Setting সংরক্ষণ করা হয়েছে।'
-                            : 'Manual Code Setting সংরক্ষণ করা হয়েছে। পরবর্তী Manual Code Backend থেকে তৈরি হবে।'
-                    )
-
-                    : 'Auto Code Setting সংরক্ষণ করা হয়েছে.'
-            );
-        }
-    );
-
-
-    /* ============================================================
-       RESTORE CODE SETTING
-       ============================================================ */
-
-    try {
-
-        var setting =
-            getSavedCodeSetting();
-
-
-        if (setting) {
-
-            /*
-             * Modal role
-             */
-            if (setting.user_type) {
-
-                $('#code_setting_user_type')
-                    .val(
-                        setting.user_type
+            $.ajax({
+                url: codeSettingsSaveUrl,
+                type: 'POST',
+                data: JSON.stringify({
+                    user_type: userType,
+                    start_code: startCode
+                }),
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .done(function (response) {
+                if (!response || !response.success) {
+                    alert(
+                        response && response.message
+                            ? response.message
+                            : 'Setting সংরক্ষণ করা যায়নি।'
                     );
-            }
 
+                    return;
+                }
 
-            /*
-             * Generation type
-             */
-        if (setting.generation_type === 'manual') {
-
-            updateHiddenCodeType('manual');
-
-            setManualModeUI();
-
-            prepareManualMainId();
-        }
-
-
-            /*
-             * Manual code কখনো sessionStorage
-             * থেকে restore হবে না।
-             */
-            $('#manual_user_code')
-                .val('');
-
-
-            /*
-             * Main form-এর current role saved role হলে
-             * setting apply হবে।
-             */
-            if (
-                $('#user_type').val() &&
-                $('#user_type').val() ===
-                setting.user_type
-            ) {
+                savedCodeSettings[userType] = {
+                    start_code: startCode
+                };
 
                 /*
-                 * MANUAL
+                 * Save the selected UI mode in sessionStorage.
+                 * The numeric starting code is saved in database.
                  */
-                if (
-                    setting.generation_type ===
-                    'manual'
-                ) {
+                saveCodeSettingToSession({
+                    user_type: userType,
+                    generation_type: generationType
+                });
 
-                    updateHiddenCodeType(
-                        'manual'
-                    );
+                /*
+                 * Apply the selected type and mode to main form.
+                 */
+                $('#user_type').val(userType);
 
+                updateHiddenCodeType(generationType);
 
-                    currentMainManualCode =
-                        '';
+                if (generationType === 'auto') {
+                    currentMainManualCode = '';
+                    currentMainManualCodeExplicit = false;
+                    mainManualPreviewOnly = false;
 
-                    currentMainManualCodeExplicit =
-                        false;
+                    clearSavedManualCode();
 
-                    mainManualPreviewOnly =
-                        true;
-
-
-                    setManualModeUI();
-
-
-                    /*
-                     * এখানে Backend থেকে
-                     * last saved manual + 1
-                     * preview হবে।
-                     */
-                    manualFillId(
-                        setting.user_type,
-                        getInstitutionId()
-                    );
-
-
-                } else {
-
-                    /*
-                     * AUTO
-                     */
-                    updateHiddenCodeType(
-                        'auto'
-                    );
-
-
-                    currentMainManualCode =
-                        '';
-
-                    currentMainManualCodeExplicit =
-                        false;
-
-                    mainManualPreviewOnly =
-                        false;
-
+                    $('#manual_user_code').val('');
 
                     setAutoModeUI();
 
-
+                    /*
+                     * Preview is only a preview.
+                     * Form submit clears custom_id for auto mode.
+                     */
                     autoFillId(
-                        $('#user_type').val(),
+                        userType,
                         getInstitutionId()
                     );
+                } else {
+                    const manualCode = enteredCode;
+
+                    setManualModeUI();
+
+                    if (manualCode) {
+                        currentMainManualCode = manualCode;
+                        currentMainManualCodeExplicit = true;
+                        mainManualPreviewOnly = false;
+
+                        saveManualCode(
+                            userType,
+                            getInstitutionId(),
+                            manualCode
+                        );
+
+                        $('#manual_user_code').val(manualCode);
+                        $('#custom_id').val(manualCode);
+                    } else {
+                        currentMainManualCode = '';
+                        currentMainManualCodeExplicit = false;
+                        mainManualPreviewOnly = true;
+
+                        clearSavedManualCode();
+
+                        $('#manual_user_code').val('');
+
+                        manualFillId(
+                            userType,
+                            getInstitutionId()
+                        );
+                    }
                 }
-            }
+
+                closeCodeSettingModal();
+
+                alert(
+                    response.message ||
+                    'User Code Setting সফলভাবে সংরক্ষণ করা হয়েছে।'
+                );
+            })
+            .fail(function (xhr) {
+                console.error(
+                    'Save User Code Setting Error:',
+                    xhr.responseJSON || xhr.responseText
+                );
+
+                const response = xhr.responseJSON || {};
+
+                alert(
+                    response.message ||
+                    'User Code Setting সংরক্ষণ করা যায়নি।'
+                );
+            })
+            .always(function () {
+                $button.prop('disabled', false);
+            });
+        });
+
+
+    /* ============================================================
+       INITIAL CODE SETTING
+       ============================================================ */
+
+    const initialSetting = getSavedCodeSetting();
+
+    if (initialSetting) {
+        if (
+            initialSetting.generation_type === 'manual'
+        ) {
+            updateHiddenCodeType('manual');
+        } else {
+            updateHiddenCodeType('auto');
         }
+    }
 
-    } catch (e) {
+    if (getCurrentUserType()) {
+        if (
+            $('#code_generation_type').val() === 'manual'
+        ) {
+            setManualModeUI();
+            prepareManualMainId();
+        } else {
+            setAutoModeUI();
 
-        console.error(
-            'Code setting restore error:',
-            e
-        );
+            autoFillId(
+                getCurrentUserType(),
+                getInstitutionId()
+            );
+        }
+    } else {
+        setAutoModeUI();
     }
 
 
@@ -3728,25 +3066,16 @@ if (manualCode) {
        BEFORE FORM SUBMIT
        ============================================================ */
 
-    $('#userCreateForm').on(
-        'submit',
-        function (e) {
+    $('#userCreateForm')
+        .off('submit.userCode')
+        .on('submit.userCode', function (event) {
+            const userType = getCurrentUserType();
 
-            var userType =
-                $('#user_type').val();
+            const generationType =
+                $('#code_generation_type').val() || 'auto';
 
-
-            var generationType =
-                $('#code_generation_type').val() ||
-                'auto';
-
-
-            /*
-             * USER TYPE VALIDATION
-             */
             if (!userType) {
-
-                e.preventDefault();
+                event.preventDefault();
 
                 alert(
                     'অনুগ্রহ করে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
@@ -3755,45 +3084,28 @@ if (manualCode) {
                 return false;
             }
 
-
-            /* ====================================================
-               AUTO
-               ==================================================== */
-
-            if (
-                generationType === 'auto'
-            ) {
-
-                /*
-                 * Preview value submit হবে না।
-                 * Backend Auto code তৈরি করবে।
-                 */
-                $('#custom_id')
-                    .val('');
-
+            /*
+             * AUTO:
+             * Backend generates the final code.
+             */
+            if (generationType === 'auto') {
+                $('#custom_id').val('');
                 return true;
             }
 
-
-            /* ====================================================
-               MANUAL + EXPLICIT CODE
-               ==================================================== */
-
+            /*
+             * MANUAL with explicit code:
+             * Submit the exact code entered by the user.
+             */
             if (
-                generationType === 'manual' &&
                 currentMainManualCodeExplicit &&
                 currentMainManualCode
             ) {
-
-                var manualCode =
-                    $.trim(
-                        currentMainManualCode
-                    );
-
+                const manualCode =
+                    String(currentMainManualCode).trim();
 
                 if (!/^\d+$/.test(manualCode)) {
-
-                    e.preventDefault();
+                    event.preventDefault();
 
                     alert(
                         'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
@@ -3802,77 +3114,24 @@ if (manualCode) {
                     return false;
                 }
 
-
-                var roleStart =
-                    getRoleStart(userType);
-
-
-                if (
-                    parseInt(
-                        manualCode,
-                        10
-                    ) < roleStart
-                ) {
-
-                    e.preventDefault();
-
-                    alert(
-                        'এই Role-এর Manual Code ' +
-                        roleStart +
-                        ' বা তার বেশি হতে হবে।'
-                    );
-
-                    return false;
-                }
-
-
-                /*
-                 * User যে Manual code Save করেছে
-                 * সেটাই submit হবে।
-                 */
-                $('#custom_id')
-                    .val(manualCode);
+                $('#custom_id').val(manualCode);
 
                 return true;
             }
 
-
-            /* ====================================================
-               MANUAL + BLANK
-               ==================================================== */
-
-            if (
-                generationType === 'manual'
-            ) {
-
-                /*
-                 * Main form-এ preview হিসেবে
-                 * 501 / 801 দেখা গেলেও সেটা
-                 * database-এ submit হবে না।
-                 *
-                 * Controller:
-                 *
-                 * generateManualCode()
-                 *
-                 * ব্যবহার করে last saved Manual + 1
-                 * তৈরি করবে।
-                 */
-                $('#custom_id')
-                    .val('');
-
-                return true;
-            }
-
+            /*
+             * MANUAL with blank code:
+             * Backend must generate the next manual code.
+             * Preview must not be submitted as an explicit ID.
+             */
+            $('#custom_id').val('');
 
             return true;
-        }
-    );
+        });
 
 });
 
 </script>
-
-@endpush
 
 
 @endsection

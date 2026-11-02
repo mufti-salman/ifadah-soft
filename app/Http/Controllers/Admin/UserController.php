@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserCodeSetting;
 use App\Models\Student;
 use App\Models\Role;
 use App\Models\Madrasa;
@@ -14,6 +15,7 @@ use App\Models\Division;
 use App\Models\District;
 use App\Models\Upazila;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -803,8 +805,10 @@ if ($generationType === 'manual') {
             ]);
         }
 
-        $minimumCode =
-            self::CODE_STARTS[$roleSlug];
+$minimumCode = $this->getConfiguredCodeStart(
+    $institutionId,
+    $roleSlug
+);
 
         if (
             (int) $customId < $minimumCode
@@ -1168,148 +1172,61 @@ private function generateRoleCode(
     string $roleSlug,
     ?int $excludeUserId = null
 ): string {
-
-    if (!array_key_exists(
-        $roleSlug,
-        self::CODE_STARTS
-    )) {
-
+    if (!array_key_exists($roleSlug, self::CODE_STARTS)) {
         throw ValidationException::withMessages([
-            'user_type' =>
-                'এই Role-এর জন্য User Code তৈরি করা যাবে না।',
+            'user_type' => 'এই Role-এর জন্য User Code তৈরি করা যাবে না।',
         ]);
     }
 
-    $role = Role::where(
-        'slug',
+    $role = Role::where('slug', $roleSlug)->firstOrFail();
+
+    // Database setting অনুযায়ী Auto Code শুরু হবে।
+    $nextCode = $this->getConfiguredCodeStart(
+        $institutionId,
         $roleSlug
-    )->firstOrFail();
+    );
 
-    /*
-     * Role-specific AUTO starting number.
-     *
-     * student       => 101
-     * user          => 201
-     * user_admin    => 301
-     * support_admin => 401
-     */
-    $nextCode =
-        self::CODE_STARTS[$roleSlug];
-
-    /*
-     * Only AUTO generated codes are considered.
-     *
-     * MANUAL codes are completely ignored.
-     */
     $query = User::query()
-        ->where(
-            'role_id',
-            $role->id
-        )
-        ->whereNotNull(
-            'institution_user_id'
-        )
-        ->where(
-            'code_generation_type',
-            'auto'
-        );
+        ->where('role_id', $role->id)
+        ->whereNotNull('institution_user_id')
+        ->where('code_generation_type', 'auto');
 
-    /*
-     * Institution-based roles:
-     *
-     * student
-     * user
-     * user_admin
-     */
-    if (
-        in_array(
-            $roleSlug,
-            self::INSTITUTION_CODE_ROLES,
-            true
-        )
-    ) {
-
+    if (in_array($roleSlug, self::INSTITUTION_CODE_ROLES, true)) {
         if (!$institutionId) {
-
-            return (string)
-                self::CODE_STARTS[$roleSlug];
+            return (string) $nextCode;
         }
 
-        $query->where(
-            'institution_id',
-            $institutionId
-        );
-
-    } elseif (
-        $roleSlug === 'support_admin'
-    ) {
-
-        /*
-         * Support Admin has no institution.
-         */
-        $query->whereNull(
-            'institution_id'
-        );
+        $query->where('institution_id', $institutionId);
+    } elseif ($roleSlug === 'support_admin') {
+        $query->whereNull('institution_id');
     }
 
     if ($excludeUserId) {
-
-        $query->where(
-            'id',
-            '!=',
-            $excludeUserId
-        );
+        $query->where('id', '!=', $excludeUserId);
     }
 
-    /*
-     * Get all existing AUTO codes.
-     *
-     * We do NOT use MAX() here.
-     *
-     * This is important because an old/manual code like:
-     *
-     * Student => 1001
-     *
-     * must NOT make Auto start from 1002.
-     */
-    $existingAutoCodes = $query
-        ->whereRaw(
-            'institution_user_id REGEXP "^[0-9]+$"'
-        )
-        ->pluck(
-            'institution_user_id'
-        )
-        ->map(function ($code) {
-            return (int)$code;
-        })
-        ->filter(function ($code) use ($nextCode) {
-            return $code >= $nextCode;
-        })
+    $existingCodes = $query
+        ->whereRaw("institution_user_id REGEXP '^[0-9]+$'")
+        ->pluck('institution_user_id')
+        ->map(fn ($code) => (int) $code)
+        ->filter(fn ($code) => $code >= $nextCode)
         ->unique()
         ->sort()
         ->values();
 
-
-    foreach ($existingAutoCodes as $existingCode) {
-
+    foreach ($existingCodes as $existingCode) {
         if ($existingCode === $nextCode) {
-
             $nextCode++;
-
             continue;
         }
 
-        /*
-         * First gap found.
-         */
         if ($existingCode > $nextCode) {
             break;
         }
     }
 
-    return (string)$nextCode;
+    return (string) $nextCode;
 }
-
     /**
      * Generate MANUAL sequence code.
      *
@@ -1342,6 +1259,12 @@ private function generateManualCode(
 
     $role = Role::where('slug', $roleSlug)->firstOrFail();
 
+    // Database setting অনুযায়ী Manual Code শুরু হবে।
+    $nextCode = $this->getConfiguredCodeStart(
+        $institutionId,
+        $roleSlug
+    );
+
     $query = User::query()
         ->where('role_id', $role->id)
         ->where('code_generation_type', 'manual')
@@ -1349,7 +1272,7 @@ private function generateManualCode(
 
     if (in_array($roleSlug, self::INSTITUTION_CODE_ROLES, true)) {
         if (!$institutionId) {
-            return (string) self::CODE_STARTS[$roleSlug];
+            return (string) $nextCode;
         }
 
         $query->where('institution_id', $institutionId);
@@ -1361,16 +1284,28 @@ private function generateManualCode(
         $query->where('id', '!=', $excludeUserId);
     }
 
-    $lastManualCode = $query
-        ->whereRaw('institution_user_id REGEXP "^[0-9]+$"')
-        ->orderByDesc('id')
-        ->value('institution_user_id');
+    $existingCodes = $query
+        ->whereRaw("institution_user_id REGEXP '^[0-9]+$'")
+        ->pluck('institution_user_id')
+        ->map(fn ($code) => (int) $code)
+        ->filter(fn ($code) => $code >= $nextCode)
+        ->unique()
+        ->sort()
+        ->values();
 
-    if ($lastManualCode !== null && is_numeric($lastManualCode)) {
-        return (string) ((int) $lastManualCode + 1);
+    // Manual Code-এর মধ্যে প্রথম খালি সংখ্যা খুঁজে বের করবে।
+    foreach ($existingCodes as $existingCode) {
+        if ($existingCode === $nextCode) {
+            $nextCode++;
+            continue;
+        }
+
+        if ($existingCode > $nextCode) {
+            break;
+        }
     }
 
-    return (string) self::CODE_STARTS[$roleSlug];
+    return (string) $nextCode;
 }
 
     private function generateStudentId(
@@ -2278,9 +2213,10 @@ public function update(
                     /*
                      * Role starting number.
                      */
-                    $minimumCode =
-                        self::CODE_STARTS[$roleSlug];
-
+$minimumCode = $this->getConfiguredCodeStart(
+    $institutionId,
+    $roleSlug
+);
                     if (
                         (int)$customId
                         < $minimumCode
@@ -3153,22 +3089,136 @@ public function toggleStatus($username)
             $parts
         );
     }
+/**
+ * Get configurable starting code for an institution and role.
+ *
+ * Existing defaults are preserved when no setting exists.
+ */
+private function getConfiguredCodeStart(
+    $institutionId,
+    string $roleSlug
+): int {
+    $defaults = [
+        'student' => 101,
+        'user'    => 201,
+    ];
 
+    // অন্যান্য Role-এর পুরোনো Starting Code অপরিবর্তিত।
+    if (!array_key_exists($roleSlug, $defaults)) {
+        return self::CODE_STARTS[$roleSlug] ?? 201;
+    }
+
+    // Institution না থাকলে default value।
+    if (!$institutionId) {
+        return $defaults[$roleSlug];
+    }
+
+    $setting = UserCodeSetting::query()
+        ->where('institution_id', $institutionId)
+        ->where('role_slug', $roleSlug)
+        ->first();
+
+    return $setting
+        ? (int) $setting->start_code
+        : $defaults[$roleSlug];
+}
 public function previewId(Request $request)
 {
-    $userType = $request->input('user_type');
-    $institutionId = $request->input('institution_id');
-    $generationType = $request->input('generation_type', 'auto');
+    $userType = strtolower(trim(
+        (string) $request->input('user_type')
+    ));
+
+    $generationType = $request->input(
+        'generation_type',
+        'auto'
+    );
+
+    if (!in_array($generationType, ['auto', 'manual'], true)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Code Generation Type সঠিক নয়।',
+        ], 422);
+    }
+
+    if (!in_array($userType, self::CODE_ROLES, true)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User Type সঠিক নয়।',
+        ], 422);
+    }
+
+    $authUser = auth()->user();
+
+    $allowedRoles = [];
+
+    if ($authUser->is_super_admin) {
+        if (session()->has('active_institution_id')) {
+            $allowedRoles = ['student', 'user'];
+        } else {
+            $allowedRoles = ['user_admin', 'support_admin'];
+        }
+    } elseif ($authUser->is_support_admin) {
+        $allowedRoles = ['user_admin'];
+    } elseif ($authUser->is_user_admin) {
+        $allowedRoles = ['student', 'user'];
+    }
+
+    if (!in_array($userType, $allowedRoles, true)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'এই User Type-এর Code Preview দেখার অনুমতি নেই।',
+        ], 403);
+    }
+
+    /*
+     * Institution ID current user's context থেকে নির্ধারণ।
+     */
+    if ($userType === 'support_admin') {
+        $institutionId = null;
+    } elseif ($authUser->is_super_admin) {
+        if (session()->has('active_institution_id')) {
+            $institutionId = session('active_institution_id');
+        } else {
+            $institutionId = $request->input('institution_id');
+        }
+    } elseif ($authUser->is_support_admin) {
+        $institutionId = $request->input('institution_id');
+    } else {
+        $institutionId = $authUser->institution_id;
+    }
+
+    /*
+     * Institution-based Role-এর জন্য প্রতিষ্ঠানের ID আবশ্যক।
+     */
+    if (
+        in_array($userType, self::INSTITUTION_CODE_ROLES, true)
+        && !$institutionId
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'প্রতিষ্ঠান নির্বাচন করুন।',
+        ], 422);
+    }
+
+    /*
+     * Request থেকে আসা Institution ID অবশ্যই বৈধ হতে হবে।
+     */
+    if (
+        $institutionId
+        && !Madrasa::where('id', $institutionId)->exists()
+    ) {
+        return response()->json([
+            'success' => false,
+            'message' => 'নির্বাচিত প্রতিষ্ঠান পাওয়া যায়নি।',
+        ], 422);
+    }
 
     if ($generationType === 'manual') {
-
         $previewId = $this->generateManualCode(
             $institutionId,
             $userType
         );
-
     } else {
-
         $previewId = $this->previewRoleCode(
             $institutionId,
             $userType
@@ -3210,4 +3260,139 @@ public function previewId(Request $request)
             $roleSlug
         );
     }
+private function getCodeSettingInstitutionId(): ?int
+{
+    $user = auth()->user();
+
+    if (!$user) {
+        return null;
+    }
+
+    /*
+     * Super Admin যখন কোনো প্রতিষ্ঠানে প্রবেশ করেছেন,
+     * তখন সেই প্রতিষ্ঠানের Setting ব্যবহার হবে।
+     */
+    if ($user->is_super_admin) {
+        $institutionId = session('active_institution_id');
+
+        return $institutionId
+            ? (int) $institutionId
+            : null;
+    }
+
+    /*
+     * User Admin নিজের প্রতিষ্ঠানের Setting ব্যবহার করবেন।
+     */
+    if ($user->is_user_admin) {
+        return $user->institution_id
+            ? (int) $user->institution_id
+            : null;
+    }
+
+    /*
+     * Support Admin-এর জন্য Student/User Setting
+     * অনুমোদিত নয়।
+     */
+    return null;
+}
+public function getCodeSetting()
+{
+    $institutionId = $this->getCodeSettingInstitutionId();
+
+    if (!$institutionId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
+        ], 422);
+    }
+
+    $defaults = [
+        'student' => 101,
+        'user'    => 201,
+    ];
+
+    $settings = [];
+
+    foreach ($defaults as $roleSlug => $defaultStart) {
+        $setting = UserCodeSetting::query()
+            ->where('institution_id', $institutionId)
+            ->where('role_slug', $roleSlug)
+            ->first();
+
+        $settings[$roleSlug] = [
+            'start_code' => $setting
+                ? (int) $setting->start_code
+                : $defaultStart,
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'settings' => $settings,
+    ]);
+}
+public function saveCodeSetting(Request $request)
+{
+    $institutionId = $this->getCodeSettingInstitutionId();
+
+    if (!$institutionId) {
+        return response()->json([
+            'success' => false,
+            'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
+        ], 422);
+    }
+
+    $validator = Validator::make($request->all(), [
+        'user_type' => [
+            'required',
+            'in:student,user',
+        ],
+        'start_code' => [
+            'required',
+            'integer',
+            'min:1',
+            'max:999999999',
+        ],
+    ], [
+        'user_type.required' => 'User Type নির্বাচন করুন।',
+        'user_type.in' => 'শুধু Student অথবা User নির্বাচন করা যাবে।',
+        'start_code.required' => 'Starting Code দিতে হবে।',
+        'start_code.integer' => 'Starting Code অবশ্যই পূর্ণসংখ্যা হতে হবে।',
+        'start_code.min' => 'Starting Code কমপক্ষে 1 হতে হবে।',
+        'start_code.max' => 'Starting Code অনেক বড় হয়ে গেছে।',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()->first(),
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $roleSlug = $request->input('user_type');
+    $startCode = (int) $request->input('start_code');
+
+    $setting = UserCodeSetting::updateOrCreate(
+        [
+            'institution_id' => $institutionId,
+            'role_slug' => $roleSlug,
+        ],
+        [
+            'start_code' => $startCode,
+        ]
+    );
+
+    return response()->json([
+        'success' => true,
+        'message' => 'User Code Setting সফলভাবে সংরক্ষণ করা হয়েছে।',
+        'settings' => [
+            $roleSlug => [
+                'start_code' => (int) $setting->start_code,
+            ],
+        ],
+        'start_code' => (int) $setting->start_code,
+    ]);
+}
+
 }

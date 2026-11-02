@@ -722,85 +722,118 @@ Route::post(
         |--------------------------------------------------------------------------
         */
 
-        Route::prefix('users')
-            ->middleware('permission:user.view')
-            ->group(function () {
 
-                Route::get(
-                    '/',
-                    [UserController::class, 'index']
-                )->name('user.index');
+Route::prefix('users')
+    ->middleware('permission:user.view')
+    ->group(function () {
 
-                Route::get(
-                    'create',
-                    [UserController::class, 'create']
-                )
-                    ->middleware('permission:user.create')
-                    ->name('user.create');
+        // User List
+        Route::get(
+            '/',
+            [UserController::class, 'index']
+        )->name('user.index');
 
-                Route::post(
-                    'store',
-                    [UserController::class, 'store']
-                )
-                    ->middleware('permission:user.create')
-                    ->name('user.store');
+        // Create User
+        Route::get(
+            'create',
+            [UserController::class, 'create']
+        )
+            ->middleware('permission:user.create')
+            ->name('user.create');
 
-                Route::get(
-                    'search',
-                    [UserController::class, 'search']
-                )->name('user.search');
+        // Store User
+        Route::post(
+            'store',
+            [UserController::class, 'store']
+        )
+            ->middleware('permission:user.create')
+            ->name('user.store');
 
-                Route::get(
-                    'advanced-search',
-                    [UserController::class, 'advancedSearch']
-                )->name('user.advanced-search');
+        // User Search
+        Route::get(
+            'search',
+            [UserController::class, 'search']
+        )->name('user.search');
 
-                Route::get(
-                    'preview-id',
-                    [UserController::class, 'previewId']
-                )
-                    ->middleware('permission:user.create')
-                    ->name('user.preview-id');
+        // Advanced Search
+        Route::get(
+            'advanced-search',
+            [UserController::class, 'advancedSearch']
+        )->name('user.advanced-search');
 
+        // Preview User ID
+        Route::get(
+            'preview-id',
+            [UserController::class, 'previewId']
+        )
+            ->middleware('permission:user.create')
+            ->name('user.preview-id');
 
-                Route::prefix('{id}')->group(function () {
+        // ==========================================
+        // User Code Settings
+        // These routes must stay outside {id}
+        // ==========================================
 
-                    Route::get(
-                        '/',
-                        [UserController::class, 'show']
-                    )->name('user.show');
+        Route::get(
+            'code-settings',
+            [UserController::class, 'getCodeSetting']
+        )
+            ->middleware('permission:user.create')
+            ->name('user.code-settings.get');
 
-                    Route::get(
-                        'edit',
-                        [UserController::class, 'edit']
-                    )
-                        ->middleware('permission:user.edit')
-                        ->name('user.edit');
+        Route::post(
+            'code-settings',
+            [UserController::class, 'saveCodeSetting']
+        )
+            ->middleware('permission:user.create')
+            ->name('user.code-settings.save');
 
-                    Route::post(
-                        '/',
-                        [UserController::class, 'update']
-                    )
-                        ->middleware('permission:user.edit')
-                        ->name('user.update');
+        // ==========================================
+        // Individual User Routes
+        // ==========================================
 
-                    Route::delete(
-                        '/',
-                        [UserController::class, 'destroy']
-                    )
-                        ->middleware('permission:user.delete')
-                        ->name('user.destroy');
+        Route::prefix('{id}')->group(function () {
 
-                    Route::patch(
-                        'toggle-status',
-                        [UserController::class, 'toggleStatus']
-                    )
-                        ->middleware('permission:user.edit')
-                        ->name('user.toggle-status');
+            // Show User
+            Route::get(
+                '/',
+                [UserController::class, 'show']
+            )->name('user.show');
 
-                });
+            // Edit User
+            Route::get(
+                'edit',
+                [UserController::class, 'edit']
+            )
+                ->middleware('permission:user.edit')
+                ->name('user.edit');
 
-            });
+            // Update User
+            Route::post(
+                '/',
+                [UserController::class, 'update']
+            )
+                ->middleware('permission:user.edit')
+                ->name('user.update');
+
+            // Delete User
+            Route::delete(
+                '/',
+                [UserController::class, 'destroy']
+            )
+                ->middleware('permission:user.delete')
+                ->name('user.destroy');
+
+            // Toggle User Status
+            Route::patch(
+                'toggle-status',
+                [UserController::class, 'toggleStatus']
+            )
+                ->middleware('permission:user.edit')
+                ->name('user.toggle-status');
+        });
+    });
+
 
 Route::prefix('user-photos')
     ->middleware('permission:user.view')
