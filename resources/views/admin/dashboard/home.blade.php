@@ -597,11 +597,6 @@
 
         @else
 
-            <div class="dashboard-year-badge">
-                <i class="fas fa-calendar-alt"></i>
-                শিক্ষাবর্ষ নির্ধারণ করা হয়নি
-            </div>
-
         @endif
 
     </div>
