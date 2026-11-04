@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Division;
 use App\Models\District;
 use App\Models\Upazila;
+use App\Models\UserType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +39,7 @@ class User extends Authenticatable
         */
         'institution_id',
         'role_id',
+        'user_type_id',
 
         /*
         |----------------------------------------------------------------------
@@ -258,6 +260,20 @@ class User extends Authenticatable
             'user_id'
         );
     }
+
+/*
+|--------------------------------------------------------------------------
+| User Type
+|--------------------------------------------------------------------------
+*/
+
+public function userType()
+{
+    return $this->belongsTo(
+        UserType::class,
+        'user_type_id'
+    );
+}
 
     /**
      * ---------------------------------------------------------
@@ -500,10 +516,10 @@ public function permanentUpazila(): BelongsTo
         return $this->roleSlug === 'user';
     }
 
-    public function getIsStudentAttribute(): bool
-    {
-        return $this->roleSlug === 'student';
-    }
+public function getIsStudentAttribute(): bool
+{
+    return optional($this->userType)->slug === 'student';
+}
 
     /**
      * ---------------------------------------------------------

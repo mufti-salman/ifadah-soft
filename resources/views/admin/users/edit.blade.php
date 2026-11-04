@@ -5,36 +5,39 @@
 @php
     /*
     |--------------------------------------------------------------------------
-    | Current User / Role Information
+    | Current User Information
     |--------------------------------------------------------------------------
     */
 
-    $currentRoleSlug = optional($user->role)->slug
-        ?? str_replace(
-            [' ', '-'],
-            '_',
-            strtolower(
-                trim(
-                    optional($user->role)->role_name ?? ''
-                )
-            )
-        );
+    $currentRoleSlug = optional($user->role)->slug ?? '';
 
-    $myRole = str_replace(
-        [' ', '-'],
-        '_',
-        strtolower(
-            trim(
-                optional(Auth::user()->role)->role_name ?? 'user'
-            )
-        )
+    $currentUserType = $user->userType ?? null;
+
+    $currentUserTypeId = old(
+        'user_type_id',
+        $currentUserType->id
+            ?? ($currentRoleSlug === 'student'
+                ? optional($userTypes->firstWhere('slug', 'student'))->id
+                : '')
     );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Code Generation
-    |--------------------------------------------------------------------------
-    */
+    $selectedUserType = $userTypes->firstWhere(
+        'id',
+        $currentUserTypeId
+    );
+
+    $selectedUserTypeSlug = old(
+        'user_type_slug',
+        optional($selectedUserType)->slug
+    );
+
+    $selectedUserTypeLabel = $selectedUserType
+        ? (
+            strtolower(trim((string) $selectedUserType->slug)) === 'teacher'
+                ? 'শিক্ষক/স্টাফ'
+                : $selectedUserType->display_name
+        )
+        : 'নির্ধারিত নয়';
 
     $currentGenerationType = old(
         'code_generation_type',
@@ -43,14 +46,8 @@
 
     $currentCode = old(
         'custom_id',
-        $user->institution_user_id ?? ''
+        $user->institution_user_id ?? $user->custom_id ?? ''
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Current Values
-    |--------------------------------------------------------------------------
-    */
 
     $selectedInstitution = old(
         'institution_id',
@@ -66,28 +63,13 @@
         'status',
         $user->status
     );
-
-    $selectedUserType = old(
-        'user_type',
-        $currentRoleSlug
-    );
-
-    $codeStartMap = [
-        'student'       => 101,
-        'user'          => 201,
-        'user_admin'    => 301,
-        'support_admin' => 401,
-    ];
 @endphp
 
 
 <div class="container-fluid py-4">
 
-    {{-- =========================================================
-         PAGE HEADER
-    ========================================================== --}}
+    {{-- PAGE HEADER --}}
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-
         <div>
             <h4 class="mb-1">
                 <i class="bi bi-person-gear me-2"></i>
@@ -95,24 +77,19 @@
             </h4>
 
             <p class="text-muted mb-0">
-                ইউজারের তথ্য, Role এবং User Code পরিবর্তন করুন।
+                ইউজারের তথ্য, User Type এবং User Code পরিবর্তন করুন।
             </p>
         </div>
 
-        <div>
-            <a href="{{ route('dashboard.user.index') }}"
-               class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>
-                ফিরে যান
-            </a>
-        </div>
-
+        <a href="{{ route('dashboard.user.index') }}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            ফিরে যান
+        </a>
     </div>
 
 
-    {{-- =========================================================
-         SUCCESS / ERROR MESSAGE
-    ========================================================== --}}
+    {{-- SUCCESS / ERROR --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-1"></i>
@@ -120,11 +97,9 @@
 
             <button type="button"
                     class="btn-close"
-                    data-bs-dismiss="alert">
-            </button>
+                    data-bs-dismiss="alert"></button>
         </div>
     @endif
-
 
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show">
@@ -133,18 +108,12 @@
 
             <button type="button"
                     class="btn-close"
-                    data-bs-dismiss="alert">
-            </button>
+                    data-bs-dismiss="alert"></button>
         </div>
     @endif
 
-
-    {{-- =========================================================
-         VALIDATION ERRORS
-    ========================================================== --}}
     @if($errors->any())
         <div class="alert alert-danger">
-
             <strong>
                 <i class="bi bi-exclamation-triangle me-1"></i>
                 কিছু তথ্য সঠিক নয়:
@@ -155,26 +124,25 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-
         </div>
     @endif
 
 
-    {{-- =========================================================
-         MAIN FORM
-    ========================================================== --}}
+    {{-- MAIN FORM --}}
     <form method="POST"
+          id="editUserForm"
           action="{{ route('dashboard.user.update', $user->username) }}"
           enctype="multipart/form-data">
 
         @csrf
 
-        {{-- Hidden User ID --}}
-        <input type="hidden"
-               name="id"
-               value="{{ $user->id }}">
+        <input type="hidden" name="id" value="{{ $user->id }}">
 
-        {{-- Hidden Code Generation Type --}}
+        {{-- Current Role Preserve --}}
+        <input type="hidden"
+               name="role_id"
+               value="{{ old('role_id', $user->role_id) }}">
+
         <input type="hidden"
                name="code_generation_type"
                id="code_generation_type"
@@ -183,11 +151,9 @@
 
         <div class="row g-4">
 
-
-            {{-- =================================================
-                 LEFT COLUMN
-            ================================================== --}}
+            {{-- LEFT COLUMN --}}
             <div class="col-lg-8">
+
 
                 {{-- =================================================
                      BASIC INFORMATION
@@ -202,13 +168,10 @@
                     </div>
 
                     <div class="card-body">
-
                         <div class="row g-3">
-
 
                             {{-- Name Bangla --}}
                             <div class="col-md-6">
-
                                 <label class="form-label">
                                     নাম (বাংলা)
                                     <span class="text-danger">*</span>
@@ -222,20 +185,14 @@
                                        required>
 
                                 @error('name_bn')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Name English --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    নাম (English)
-                                </label>
+                                <label class="form-label">নাম (English)</label>
 
                                 <input type="text"
                                        name="name"
@@ -244,17 +201,13 @@
                                        placeholder="Enter name in English">
 
                                 @error('name')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Phone --}}
                             <div class="col-md-6">
-
                                 <label class="form-label">
                                     ফোন নম্বর
                                     <span class="text-danger">*</span>
@@ -268,20 +221,14 @@
                                        required>
 
                                 @error('phone')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Email --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Email
-                                </label>
+                                <label class="form-label">Email</label>
 
                                 <input type="email"
                                        name="email"
@@ -290,20 +237,14 @@
                                        placeholder="example@email.com">
 
                                 @error('email')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Username --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Username
-                                </label>
+                                <label class="form-label">Username</label>
 
                                 <input type="text"
                                        class="form-control bg-light"
@@ -313,13 +254,11 @@
                                 <small class="text-muted">
                                     Username পরিবর্তন করা যাবে না।
                                 </small>
-
                             </div>
 
 
                             {{-- Gender --}}
                             <div class="col-md-6">
-
                                 <label class="form-label">
                                     লিঙ্গ
                                     <span class="text-danger">*</span>
@@ -329,9 +268,7 @@
                                         class="form-select @error('gender') is-invalid @enderror"
                                         required>
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     <option value="male"
                                         {{ $selectedGender === 'male' ? 'selected' : '' }}>
@@ -342,24 +279,17 @@
                                         {{ $selectedGender === 'female' ? 'selected' : '' }}>
                                         নারী
                                     </option>
-
                                 </select>
 
                                 @error('gender')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Password --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    নতুন Password
-                                </label>
+                                <label class="form-label">নতুন Password</label>
 
                                 <input type="password"
                                        name="password"
@@ -371,326 +301,242 @@
                                 </small>
 
                                 @error('password')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
                             {{-- Blood Group --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Blood Group
-                                </label>
+                                <label class="form-label">Blood Group</label>
 
                                 <input type="text"
                                        name="blood_group"
                                        class="form-control"
                                        value="{{ old('blood_group', $user->blood_group) }}"
                                        placeholder="যেমন: A+">
-
                             </div>
 
 
                             {{-- Date of Birth --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    জন্ম তারিখ
-                                </label>
+                                <label class="form-label">জন্ম তারিখ</label>
 
                                 <input type="date"
                                        name="date_of_birth"
                                        class="form-control"
                                        value="{{ old('date_of_birth', $user->date_of_birth ? \Carbon\Carbon::parse($user->date_of_birth)->format('Y-m-d') : '') }}">
-
                             </div>
 
 
                             {{-- Religion --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    ধর্ম
-                                </label>
+                                <label class="form-label">ধর্ম</label>
 
                                 <input type="text"
                                        name="religion"
                                        class="form-control"
                                        value="{{ old('religion', $user->religion) }}"
                                        placeholder="ধর্ম">
-
                             </div>
 
 
                             {{-- NID --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    NID
-                                </label>
+                                <label class="form-label">NID</label>
 
                                 <input type="text"
                                        name="nid"
                                        class="form-control"
                                        value="{{ old('nid', $user->nid) }}"
                                        placeholder="NID Number">
-
                             </div>
 
 
                             {{-- Birth Certificate --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    জন্ম নিবন্ধন
-                                </label>
+                                <label class="form-label">জন্ম নিবন্ধন</label>
 
                                 <input type="text"
                                        name="birth_certificate"
                                        class="form-control"
                                        value="{{ old('birth_certificate', $user->birth_certificate) }}"
                                        placeholder="Birth Certificate Number">
-
                             </div>
 
                         </div>
-
                     </div>
-
                 </div>
 
 
                 {{-- =================================================
-                     ROLE & CODE SETTINGS
+                     USER TYPE & USER CODE
                 ================================================== --}}
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
-                        <div class="d-flex justify-content-between align-items-center">
-
-                            <h5 class="mb-0">
-                                <i class="bi bi-shield-lock me-2"></i>
-                                Role & User Code
-                            </h5>
-
-                            @if($currentCode)
-                                <span class="badge bg-primary">
-                                    Current Code:
-                                    {{ $currentCode }}
-                                </span>
-                            @else
-                                <span class="badge bg-secondary">
-                                    No Code
-                                </span>
-                            @endif
-
-                        </div>
-
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge me-2"></i>
+                            User Information & Code Setting
+                        </h5>
                     </div>
 
-
                     <div class="card-body">
-
                         <div class="row g-3">
 
-
-                            {{-- Role --}}
+                            {{-- USER TYPE --}}
                             <div class="col-md-6">
-
                                 <label class="form-label">
-                                    User Role
+                                    ব্যবহারকারীর ধরণ (User Type)
                                     <span class="text-danger">*</span>
                                 </label>
 
-                                <select name="user_type"
-                                        id="user_type"
-                                        class="form-select @error('user_type') is-invalid @enderror"
+                                <select name="user_type_id"
+                                        id="user_type_id"
+                                        class="form-select @error('user_type_id') is-invalid @enderror"
                                         required>
 
-                                    <option value="">
-                                        Role নির্বাচন করুন
-                                    </option>
+                                    <option value="">User Type নির্বাচন করুন</option>
 
-                                    @foreach($roles as $role)
+                                    @foreach($userTypes as $type)
+                                        @php
+                                            $typeSlug = strtolower(trim((string) $type->slug));
 
-                                        @if(in_array($role->slug, [
-                                            'super_admin',
-                                            'support_admin',
-                                            'user_admin',
-                                            'user',
-                                            'student'
-                                        ]))
+                                            $typeLabel = $typeSlug === 'teacher'
+                                                ? 'শিক্ষক/স্টাফ'
+                                                : $type->display_name;
+                                        @endphp
 
-                                            <option value="{{ $role->slug }}"
-                                                {{ $selectedUserType === $role->slug ? 'selected' : '' }}>
-                                                {{ $role->role_name ?? ucfirst(str_replace('_', ' ', $role->slug)) }}
-                                            </option>
+                                        <option value="{{ $type->id }}"
+                                                data-slug="{{ $type->slug }}"
+                                                data-label="{{ $typeLabel }}"
+                                            {{ (string) $currentUserTypeId === (string) $type->id ? 'selected' : '' }}>
 
-                                        @endif
+                                            {{ $typeLabel }}
 
+                                        </option>
                                     @endforeach
 
                                 </select>
 
-                                @error('user_type')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                @error('user_type_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
 
+                                <small class="text-muted">
+                                    ব্যক্তি কোন ধরনের ব্যবহারকারী তা নির্বাচন করুন।
+                                </small>
                             </div>
 
 
-                            {{-- Current Code --}}
+                            {{-- CURRENT CODE --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    বর্তমান User Code
-                                </label>
+                                <label class="form-label">বর্তমান User Code</label>
 
                                 <input type="text"
                                        id="current_code_display"
                                        class="form-control bg-light"
                                        value="{{ $currentCode ?: 'নেই' }}"
                                        readonly>
-
                             </div>
 
 
-                            {{-- Code Generation Type --}}
+                            {{-- CODE GENERATION --}}
                             <div class="col-12">
-
                                 <label class="form-label">
                                     User Code Generation
                                 </label>
 
                                 <div class="row g-3">
 
-
-                                    {{-- Auto --}}
+                                    {{-- AUTO --}}
                                     <div class="col-md-6">
-
                                         <div class="border rounded p-3 h-100 code-mode-option"
                                              id="autoModeBox">
 
                                             <div class="form-check">
-
                                                 <input class="form-check-input"
                                                        type="radio"
                                                        name="code_mode_radio"
                                                        id="code_auto"
                                                        value="auto"
-                                                       {{ $currentGenerationType === 'auto' ? 'checked' : '' }}>
+                                                    {{ $currentGenerationType === 'auto' ? 'checked' : '' }}>
 
                                                 <label class="form-check-label fw-semibold"
                                                        for="code_auto">
-
                                                     <i class="bi bi-magic me-1"></i>
                                                     Auto Generate
-
                                                 </label>
-
                                             </div>
 
                                             <small class="text-muted d-block mt-2">
-
-                                                Role অনুযায়ী Code automatically তৈরি হবে।
+                                                User Type অনুযায়ী Code automatically তৈরি হবে।
 
                                                 <br>
 
                                                 <span id="autoCodeExample">
-                                                    Student: 101, 102, 103...
+                                                    Code automatically generated.
                                                 </span>
-
                                             </small>
-
                                         </div>
-
                                     </div>
 
 
-                                    {{-- Manual --}}
+                                    {{-- MANUAL --}}
                                     <div class="col-md-6">
-
                                         <div class="border rounded p-3 h-100 code-mode-option"
                                              id="manualModeBox">
 
                                             <div class="form-check">
-
                                                 <input class="form-check-input"
                                                        type="radio"
                                                        name="code_mode_radio"
                                                        id="code_manual"
                                                        value="manual"
-                                                       {{ $currentGenerationType === 'manual' ? 'checked' : '' }}>
+                                                    {{ $currentGenerationType === 'manual' ? 'checked' : '' }}>
 
                                                 <label class="form-check-label fw-semibold"
                                                        for="code_manual">
-
                                                     <i class="bi bi-pencil-square me-1"></i>
                                                     Manual Code
-
                                                 </label>
-
                                             </div>
 
                                             <small class="text-muted d-block mt-2">
-
-                                                Code নিজে দিতে পারবেন।
-
-                                                <br>
-
-                                                খালি রাখলে 1001 থেকে পরবর্তী available code তৈরি হবে।
-
+                                                Code নিজে নির্ধারণ করতে পারবেন।
                                             </small>
-
                                         </div>
-
                                     </div>
 
                                 </div>
-
                             </div>
 
 
-                            {{-- Manual Code --}}
+                            {{-- CUSTOM ID --}}
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Manual User Code
-                                </label>
+                                <label class="form-label">Manual User Code</label>
 
                                 <input type="text"
                                        name="custom_id"
                                        id="custom_id"
                                        class="form-control @error('custom_id') is-invalid @enderror"
                                        value="{{ $currentCode }}"
-                                       placeholder="যেমন: 1001"
+                                       placeholder="যেমন: 500"
                                        autocomplete="off">
 
-                                <small id="manualHelp"
-                                       class="text-muted">
-                                    Manual mode নির্বাচন করলে এখানে Code দিতে পারবেন।
-                                    খালি রাখলে 1001 থেকে system নিজে Code তৈরি করবে।
+                                <small id="manualHelp" class="text-muted">
+                                    Manual mode নির্বাচন করলে Code পরিবর্তন করতে পারবেন।
+                                    Auto mode-এ এই ফিল্ড পরিবর্তন করা যাবে না।
                                 </small>
 
                                 @error('custom_id')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-
                             </div>
 
 
-                            {{-- Code Information --}}
+                            {{-- CODE INFORMATION --}}
                             <div class="col-md-6">
-
                                 <div class="alert alert-light border mb-0">
 
                                     <div class="fw-semibold mb-2">
@@ -699,55 +545,31 @@
                                     </div>
 
                                     <ul class="mb-0 ps-3 small">
-
-                                        <li>
-                                            Student → 101, 102, 103...
-                                        </li>
-
-                                        <li>
-                                            User → 201, 202, 203...
-                                        </li>
-
-                                        <li>
-                                            User Admin → 301, 302, 303...
-                                        </li>
-
-                                        <li>
-                                            Support Admin → 401, 402, 403...
-                                        </li>
-
-                                        <li>
-                                            Manual → 1001, 1002, 1003...
-                                        </li>
-
+                                        <li>প্রতিটি User Type-এর Code Setting আলাদা।</li>
+                                        <li>Auto mode-এ ধারাবাহিক Code তৈরি হবে।</li>
+                                        <li>Manual mode-এ নির্দিষ্ট Code দেওয়া যাবে।</li>
+                                        <li>আগে ব্যবহৃত Code পুনরায় ব্যবহার করা যাবে না।</li>
                                     </ul>
 
                                 </div>
-
                             </div>
 
 
-                            {{-- Institution --}}
+                            {{-- INSTITUTION --}}
                             @if(Auth::user()->is_super_admin)
 
                                 <div class="col-md-6">
-
-                                    <label class="form-label">
-                                        প্রতিষ্ঠান
-                                    </label>
+                                    <label class="form-label">প্রতিষ্ঠান</label>
 
                                     <select name="institution_id"
                                             id="institution_id"
                                             class="form-select @error('institution_id') is-invalid @enderror">
 
-                                        <option value="">
-                                            প্রতিষ্ঠান নির্বাচন করুন
-                                        </option>
+                                        <option value="">প্রতিষ্ঠান নির্বাচন করুন</option>
 
                                         @foreach($institutions as $institution)
-
                                             <option value="{{ $institution->id }}"
-                                                {{ (string)$selectedInstitution === (string)$institution->id ? 'selected' : '' }}>
+                                                {{ (string) $selectedInstitution === (string) $institution->id ? 'selected' : '' }}>
 
                                                 {{ $institution->name_bn
                                                     ?? $institution->name
@@ -755,17 +577,13 @@
                                                     ?? 'Institution #' . $institution->id }}
 
                                             </option>
-
                                         @endforeach
 
                                     </select>
 
                                     @error('institution_id')
-                                        <div class="invalid-feedback">
-                                            {{ $message }}
-                                        </div>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-
                                 </div>
 
                             @else
@@ -777,9 +595,7 @@
                             @endif
 
                         </div>
-
                     </div>
-
                 </div>
 
 
@@ -789,150 +605,100 @@
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
                         <h5 class="mb-0">
                             <i class="bi bi-person-lines-fill me-2"></i>
                             অতিরিক্ত তথ্য
                         </h5>
-
                     </div>
 
                     <div class="card-body">
-
                         <div class="row g-3">
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    ফোনের মালিক
-                                </label>
+                                <label class="form-label">ফোনের মালিক</label>
 
                                 <input type="text"
                                        name="phone_relation"
                                        class="form-control"
                                        value="{{ old('phone_relation', $user->phone_owner) }}"
                                        placeholder="নিজের / বাবার / মায়ের">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    বিকল্প ফোন
-                                </label>
+                                <label class="form-label">বিকল্প ফোন</label>
 
                                 <input type="text"
                                        name="phone2"
                                        class="form-control"
                                        value="{{ old('phone2', $user->phone2) }}"
                                        placeholder="বিকল্প ফোন নম্বর">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    পিতার নাম
-                                </label>
+                                <label class="form-label">পিতার নাম</label>
 
                                 <input type="text"
                                        name="father_name"
                                        class="form-control"
                                        value="{{ old('father_name', $user->father_name) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    পিতার ফোন
-                                </label>
+                                <label class="form-label">পিতার ফোন</label>
 
                                 <input type="text"
                                        name="father_phone"
                                        class="form-control"
                                        value="{{ old('father_phone', $user->father_phone) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    মাতার নাম
-                                </label>
+                                <label class="form-label">মাতার নাম</label>
 
                                 <input type="text"
                                        name="mother_name"
                                        class="form-control"
                                        value="{{ old('mother_name', $user->mother_name) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    মাতার ফোন
-                                </label>
+                                <label class="form-label">মাতার ফোন</label>
 
                                 <input type="text"
                                        name="mother_phone"
                                        class="form-control"
                                        value="{{ old('mother_phone', $user->mother_phone) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Guardian Name
-                                </label>
+                                <label class="form-label">Guardian Name</label>
 
                                 <input type="text"
                                        name="guardian_name"
                                        class="form-control"
                                        value="{{ old('guardian_name', $user->guardian_name) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Guardian Phone
-                                </label>
+                                <label class="form-label">Guardian Phone</label>
 
                                 <input type="text"
                                        name="guardian_phone"
                                        class="form-control"
                                        value="{{ old('guardian_phone', $user->guardian_phone) }}">
-
                             </div>
 
-
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Guardian Relation
-                                </label>
+                                <label class="form-label">Guardian Relation</label>
 
                                 <input type="text"
                                        name="guardian_relation"
                                        class="form-control"
                                        value="{{ old('guardian_relation', $user->guardian_relation) }}">
-
                             </div>
 
                         </div>
-
                     </div>
-
                 </div>
 
 
@@ -942,177 +708,118 @@
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
                         <h5 class="mb-0">
                             <i class="bi bi-geo-alt me-2"></i>
                             ঠিকানা
                         </h5>
-
                     </div>
 
                     <div class="card-body">
 
-                        <h6 class="mb-3">
-                            বর্তমান ঠিকানা
-                        </h6>
+                        <h6 class="mb-3">বর্তমান ঠিকানা</h6>
 
                         <div class="row g-3">
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Division
-                                </label>
+                                <label class="form-label">Division</label>
 
                                 <select name="present_division_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         <option value="{{ $division->id }}"
-                                            {{ (string)old('present_division_id', $user->present_division_id) === (string)$division->id ? 'selected' : '' }}>
-
-                                            {{ $division->name_bn
-                                                ?? $division->name }}
-
+                                            {{ (string) old('present_division_id', $user->present_division_id) === (string) $division->id ? 'selected' : '' }}>
+                                            {{ $division->name_bn ?? $division->name }}
                                         </option>
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    District
-                                </label>
+                                <label class="form-label">District</label>
 
                                 <select name="present_district_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         @foreach($division->districts ?? [] as $district)
-
                                             <option value="{{ $district->id }}"
-                                                {{ (string)old('present_district_id', $user->present_district_id) === (string)$district->id ? 'selected' : '' }}>
-
-                                                {{ $district->name_bn
-                                                    ?? $district->name }}
-
+                                                {{ (string) old('present_district_id', $user->present_district_id) === (string) $district->id ? 'selected' : '' }}>
+                                                {{ $district->name_bn ?? $district->name }}
                                             </option>
-
                                         @endforeach
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Upazila
-                                </label>
+                                <label class="form-label">Upazila</label>
 
                                 <select name="present_upazila_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         @foreach($division->districts ?? [] as $district)
-
                                             @foreach($district->upazilas ?? [] as $upazila)
-
                                                 <option value="{{ $upazila->id }}"
-                                                    {{ (string)old('present_upazila_id', $user->present_upazila_id) === (string)$upazila->id ? 'selected' : '' }}>
-
-                                                    {{ $upazila->name_bn
-                                                        ?? $upazila->name }}
-
+                                                    {{ (string) old('present_upazila_id', $user->present_upazila_id) === (string) $upazila->id ? 'selected' : '' }}>
+                                                    {{ $upazila->name_bn ?? $upazila->name }}
                                                 </option>
-
                                             @endforeach
-
                                         @endforeach
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Union
-                                </label>
+                                <label class="form-label">Union</label>
 
                                 <input type="text"
                                        name="present_union"
                                        class="form-control"
                                        value="{{ old('present_union', $user->present_union) }}">
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Post Office
-                                </label>
+                                <label class="form-label">Post Office</label>
 
                                 <input type="text"
                                        name="present_post_office"
                                        class="form-control"
                                        value="{{ old('present_post_office', $user->present_post_office) }}">
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Postal Code
-                                </label>
+                                <label class="form-label">Postal Code</label>
 
                                 <input type="text"
                                        name="present_postal_code"
                                        class="form-control"
                                        value="{{ old('present_postal_code', $user->present_postal_code) }}">
-
                             </div>
 
 
                             <div class="col-12">
-
-                                <label class="form-label">
-                                    Village / Road
-                                </label>
+                                <label class="form-label">Village / Road</label>
 
                                 <input type="text"
                                        name="present_village_road"
                                        class="form-control"
                                        value="{{ old('present_village_road', $user->present_village_road) }}">
-
                             </div>
 
                         </div>
@@ -1120,352 +827,239 @@
 
                         <hr class="my-4">
 
-
-                        <h6 class="mb-3">
-                            স্থায়ী ঠিকানা
-                        </h6>
+                        <h6 class="mb-3">স্থায়ী ঠিকানা</h6>
 
                         <div class="row g-3">
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Division
-                                </label>
+                                <label class="form-label">Division</label>
 
                                 <select name="permanent_division_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         <option value="{{ $division->id }}"
-                                            {{ (string)old('permanent_division_id', $user->permanent_division_id) === (string)$division->id ? 'selected' : '' }}>
-
-                                            {{ $division->name_bn
-                                                ?? $division->name }}
-
+                                            {{ (string) old('permanent_division_id', $user->permanent_division_id) === (string) $division->id ? 'selected' : '' }}>
+                                            {{ $division->name_bn ?? $division->name }}
                                         </option>
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    District
-                                </label>
+                                <label class="form-label">District</label>
 
                                 <select name="permanent_district_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         @foreach($division->districts ?? [] as $district)
-
                                             <option value="{{ $district->id }}"
-                                                {{ (string)old('permanent_district_id', $user->permanent_district_id) === (string)$district->id ? 'selected' : '' }}>
-
-                                                {{ $district->name_bn
-                                                    ?? $district->name }}
-
+                                                {{ (string) old('permanent_district_id', $user->permanent_district_id) === (string) $district->id ? 'selected' : '' }}>
+                                                {{ $district->name_bn ?? $district->name }}
                                             </option>
-
                                         @endforeach
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Upazila
-                                </label>
+                                <label class="form-label">Upazila</label>
 
                                 <select name="permanent_upazila_id"
                                         class="form-select">
 
-                                    <option value="">
-                                        নির্বাচন করুন
-                                    </option>
+                                    <option value="">নির্বাচন করুন</option>
 
                                     @foreach($divisions as $division)
-
                                         @foreach($division->districts ?? [] as $district)
-
                                             @foreach($district->upazilas ?? [] as $upazila)
-
                                                 <option value="{{ $upazila->id }}"
-                                                    {{ (string)old('permanent_upazila_id', $user->permanent_upazila_id) === (string)$upazila->id ? 'selected' : '' }}>
-
-                                                    {{ $upazila->name_bn
-                                                        ?? $upazila->name }}
-
+                                                    {{ (string) old('permanent_upazila_id', $user->permanent_upazila_id) === (string) $upazila->id ? 'selected' : '' }}>
+                                                    {{ $upazila->name_bn ?? $upazila->name }}
                                                 </option>
-
                                             @endforeach
-
                                         @endforeach
-
                                     @endforeach
 
                                 </select>
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Union
-                                </label>
+                                <label class="form-label">Union</label>
 
                                 <input type="text"
                                        name="permanent_union"
                                        class="form-control"
                                        value="{{ old('permanent_union', $user->permanent_union) }}">
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Post Office
-                                </label>
+                                <label class="form-label">Post Office</label>
 
                                 <input type="text"
                                        name="permanent_post_office"
                                        class="form-control"
                                        value="{{ old('permanent_post_office', $user->permanent_post_office) }}">
-
                             </div>
 
 
                             <div class="col-md-6">
-
-                                <label class="form-label">
-                                    Postal Code
-                                </label>
+                                <label class="form-label">Postal Code</label>
 
                                 <input type="text"
                                        name="permanent_postal_code"
                                        class="form-control"
                                        value="{{ old('permanent_postal_code', $user->permanent_postal_code) }}">
-
                             </div>
 
 
                             <div class="col-12">
-
-                                <label class="form-label">
-                                    Village / Road
-                                </label>
+                                <label class="form-label">Village / Road</label>
 
                                 <input type="text"
                                        name="permanent_village_road"
                                        class="form-control"
                                        value="{{ old('permanent_village_road', $user->permanent_village_road) }}">
-
                             </div>
 
                         </div>
-
                     </div>
-
                 </div>
 
 
                 {{-- =================================================
                      STUDENT INFORMATION
                 ================================================== --}}
-                @if($selectedUserType === 'student')
+                <div class="card border-0 shadow-sm mb-4"
+                     id="studentInformationCard"
+                     style="{{ $selectedUserTypeSlug === 'student' ? '' : 'display:none;' }}">
 
-                    <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-mortarboard me-2"></i>
+                            শিক্ষার্থী তথ্য
+                        </h5>
+                    </div>
 
-                        <div class="card-header bg-white py-3">
+                    <div class="card-body">
+                        <div class="row g-3">
 
-                            <h5 class="mb-0">
-                                <i class="bi bi-mortarboard me-2"></i>
-                                শিক্ষার্থী তথ্য
-                            </h5>
+                            <div class="col-md-6">
+                                <label class="form-label">Academic Year</label>
 
-                        </div>
+                                <select name="academic_year_id"
+                                        class="form-select">
 
-                        <div class="card-body">
+                                    <option value="">নির্বাচন করুন</option>
 
-                            <div class="row g-3">
-
-                                <div class="col-md-6">
-
-                                    <label class="form-label">
-                                        Academic Year
-                                    </label>
-
-                                    <select name="academic_year_id"
-                                            class="form-select">
-
-                                        <option value="">
-                                            নির্বাচন করুন
+                                    @foreach($academicYears as $year)
+                                        <option value="{{ $year->id }}"
+                                            {{ (string) old('academic_year_id', optional($user->student)->academic_year_id) === (string) $year->id ? 'selected' : '' }}>
+                                            {{ $year->name }}
                                         </option>
+                                    @endforeach
 
-                                        @foreach($academicYears as $year)
-
-                                            <option value="{{ $year->id }}"
-                                                {{ (string)old('academic_year_id', optional($user->student)->academic_year_id) === (string)$year->id ? 'selected' : '' }}>
-
-                                                {{ $year->name }}
-
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
+                                </select>
+                            </div>
 
 
-                                <div class="col-md-6">
+                            <div class="col-md-6">
+                                <label class="form-label">Class</label>
 
-                                    <label class="form-label">
-                                        Class
-                                    </label>
+                                <select name="class_id"
+                                        class="form-select">
 
-                                    <select name="class_id"
-                                            class="form-select">
+                                    <option value="">নির্বাচন করুন</option>
 
-                                        <option value="">
-                                            নির্বাচন করুন
+                                    @foreach($classes as $class)
+                                        <option value="{{ $class->id }}"
+                                            {{ (string) old('class_id', optional($user->student)->class_id) === (string) $class->id ? 'selected' : '' }}>
+                                            {{ $class->name_bn ?? $class->name }}
                                         </option>
+                                    @endforeach
 
-                                        @foreach($classes as $class)
-
-                                            <option value="{{ $class->id }}"
-                                                {{ (string)old('class_id', optional($user->student)->class_id) === (string)$class->id ? 'selected' : '' }}>
-
-                                                {{ $class->name_bn
-                                                    ?? $class->name }}
-
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
+                                </select>
+                            </div>
 
 
-                                <div class="col-md-6">
+                            <div class="col-md-6">
+                                <label class="form-label">Section</label>
 
-                                    <label class="form-label">
-                                        Section
-                                    </label>
+                                <select name="section_id"
+                                        class="form-select">
 
-                                    <select name="section_id"
-                                            class="form-select">
+                                    <option value="">নির্বাচন করুন</option>
 
-                                        <option value="">
-                                            নির্বাচন করুন
+                                    @foreach($sections as $section)
+                                        <option value="{{ $section->id }}"
+                                            {{ (string) old('section_id', optional($user->student)->section_id) === (string) $section->id ? 'selected' : '' }}>
+                                            {{ $section->name_bn ?? $section->name }}
                                         </option>
+                                    @endforeach
 
-                                        @foreach($sections as $section)
-
-                                            <option value="{{ $section->id }}"
-                                                {{ (string)old('section_id', optional($user->student)->section_id) === (string)$section->id ? 'selected' : '' }}>
-
-                                                {{ $section->name_bn
-                                                    ?? $section->name }}
-
-                                            </option>
-
-                                        @endforeach
-
-                                    </select>
-
-                                </div>
+                                </select>
+                            </div>
 
 
-                                <div class="col-md-6">
+                            <div class="col-md-6">
+                                <label class="form-label">Guardian User ID</label>
 
-                                    <label class="form-label">
-                                        Guardian User ID
+                                <input type="number"
+                                       name="guardian_user_id"
+                                       class="form-control"
+                                       value="{{ old('guardian_user_id', optional($user->student)->guardian_user_id) }}">
+                            </div>
+
+
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+
+                                    <input type="checkbox"
+                                           name="is_hostel"
+                                           value="1"
+                                           class="form-check-input"
+                                           id="is_hostel"
+                                        {{ old('is_hostel', optional($user->student)->is_hostel) ? 'checked' : '' }}>
+
+                                    <label class="form-check-label" for="is_hostel">
+                                        Hostel
                                     </label>
 
-                                    <input type="number"
-                                           name="guardian_user_id"
-                                           class="form-control"
-                                           value="{{ old('guardian_user_id', optional($user->student)->guardian_user_id) }}">
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+
+                                    <input type="checkbox"
+                                           name="is_transport"
+                                           value="1"
+                                           class="form-check-input"
+                                           id="is_transport"
+                                        {{ old('is_transport', optional($user->student)->is_transport) ? 'checked' : '' }}>
+
+                                    <label class="form-check-label" for="is_transport">
+                                        Transport
+                                    </label>
 
                                 </div>
-
-
-                                <div class="col-md-6">
-
-                                    <div class="form-check mt-4">
-
-                                        <input type="checkbox"
-                                               name="is_hostel"
-                                               value="1"
-                                               class="form-check-input"
-                                               id="is_hostel"
-                                               {{ old('is_hostel', optional($user->student)->is_hostel) ? 'checked' : '' }}>
-
-                                        <label class="form-check-label"
-                                               for="is_hostel">
-
-                                            Hostel
-
-                                        </label>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="col-md-6">
-
-                                    <div class="form-check mt-4">
-
-                                        <input type="checkbox"
-                                               name="is_transport"
-                                               value="1"
-                                               class="form-check-input"
-                                               id="is_transport"
-                                               {{ old('is_transport', optional($user->student)->is_transport) ? 'checked' : '' }}>
-
-                                        <label class="form-check-label"
-                                               for="is_transport">
-
-                                            Transport
-
-                                        </label>
-
-                                    </div>
-
-                                </div>
-
                             </div>
 
                         </div>
-
                     </div>
-
-                @endif
+                </div>
 
             </div>
 
@@ -1476,18 +1070,14 @@
             <div class="col-lg-4">
 
 
-                {{-- =================================================
-                     PROFILE PHOTO
-                ================================================== --}}
+                {{-- PROFILE PHOTO --}}
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
                         <h5 class="mb-0">
                             <i class="bi bi-image me-2"></i>
                             Profile Photo
                         </h5>
-
                     </div>
 
                     <div class="card-body text-center">
@@ -1510,7 +1100,6 @@
 
                         @endif
 
-
                         <input type="file"
                                name="photo"
                                class="form-control"
@@ -1523,122 +1112,82 @@
                         </small>
 
                     </div>
-
                 </div>
 
 
-                {{-- =================================================
-                     STATUS
-                ================================================== --}}
+                {{-- STATUS --}}
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
                         <h5 class="mb-0">
                             <i class="bi bi-toggle-on me-2"></i>
                             Account Status
                         </h5>
-
                     </div>
 
                     <div class="card-body">
 
-                        <select name="status"
-                                class="form-select">
+                        <select name="status" class="form-select">
 
                             <option value="1"
-                                {{ (string)$selectedStatus === '1' ? 'selected' : '' }}>
+                                {{ (string) $selectedStatus === '1' ? 'selected' : '' }}>
                                 Active
                             </option>
 
                             <option value="0"
-                                {{ (string)$selectedStatus === '0' ? 'selected' : '' }}>
+                                {{ (string) $selectedStatus === '0' ? 'selected' : '' }}>
                                 Inactive
                             </option>
 
                         </select>
 
                     </div>
-
                 </div>
 
 
-                {{-- =================================================
-                     USER SUMMARY
-                ================================================== --}}
+                {{-- USER SUMMARY --}}
                 <div class="card border-0 shadow-sm mb-4">
 
                     <div class="card-header bg-white py-3">
-
                         <h5 class="mb-0">
                             <i class="bi bi-info-circle me-2"></i>
                             User Summary
                         </h5>
-
                     </div>
 
                     <div class="card-body">
 
                         <div class="mb-3">
-
-                            <small class="text-muted d-block">
-                                User ID
-                            </small>
-
-                            <strong>
-                                #{{ $user->id }}
-                            </strong>
-
+                            <small class="text-muted d-block">User ID</small>
+                            <strong>#{{ $user->id }}</strong>
                         </div>
-
 
                         <div class="mb-3">
-
-                            <small class="text-muted d-block">
-                                Username
-                            </small>
-
-                            <strong>
-                                {{ $user->username ?: 'N/A' }}
-                            </strong>
-
+                            <small class="text-muted d-block">Username</small>
+                            <strong>{{ $user->username ?: 'N/A' }}</strong>
                         </div>
-
 
                         <div class="mb-3">
+                            <small class="text-muted d-block">User Type</small>
 
-                            <small class="text-muted d-block">
-                                Current Role
-                            </small>
-
-                            <strong>
-                                {{ optional($user->role)->role_name
-                                    ?? ucfirst(str_replace('_', ' ', $currentRoleSlug)) }}
+                            <strong id="summaryUserType">
+                                {{ $selectedUserTypeLabel }}
                             </strong>
-
                         </div>
-
 
                         <div>
-
-                            <small class="text-muted d-block">
-                                User Code
-                            </small>
+                            <small class="text-muted d-block">User Code</small>
 
                             <span class="badge bg-primary fs-6">
                                 {{ $currentCode ?: 'নেই' }}
                             </span>
-
                         </div>
 
                     </div>
-
                 </div>
 
 
-                {{-- =================================================
-                     ACTIONS
-                ================================================== --}}
+                {{-- ACTIONS --}}
                 <div class="card border-0 shadow-sm">
 
                     <div class="card-body">
@@ -1651,7 +1200,6 @@
 
                         </button>
 
-
                         <a href="{{ route('dashboard.user.index') }}"
                            class="btn btn-outline-secondary w-100">
 
@@ -1661,13 +1209,11 @@
                         </a>
 
                     </div>
-
                 </div>
 
             </div>
 
         </div>
-
     </form>
 
 </div>
@@ -1677,7 +1223,6 @@
      STYLES
 ============================================================= --}}
 <style>
-
     .code-mode-option {
         cursor: pointer;
         transition: all .2s ease;
@@ -1692,7 +1237,6 @@
         border-color: #0d6efd !important;
         background-color: #f0f7ff;
     }
-
 </style>
 
 
@@ -1700,116 +1244,195 @@
      JAVASCRIPT
 ============================================================= --}}
 <script>
-
 document.addEventListener('DOMContentLoaded', function () {
+
+    'use strict';
 
     const autoRadio = document.getElementById('code_auto');
     const manualRadio = document.getElementById('code_manual');
 
-    const hiddenType =
-        document.getElementById('code_generation_type');
+    const hiddenType = document.getElementById('code_generation_type');
+    const customId = document.getElementById('custom_id');
 
-    const customId =
-        document.getElementById('custom_id');
+    const userTypeSelect = document.getElementById('user_type_id');
 
-    const userType =
-        document.getElementById('user_type');
+    const autoBox = document.getElementById('autoModeBox');
+    const manualBox = document.getElementById('manualModeBox');
 
-    const autoBox =
-        document.getElementById('autoModeBox');
+    const autoExample = document.getElementById('autoCodeExample');
+    const studentCard = document.getElementById('studentInformationCard');
 
-    const manualBox =
-        document.getElementById('manualModeBox');
+    const summaryUserType = document.getElementById('summaryUserType');
 
-    const autoExample =
-        document.getElementById('autoCodeExample');
+    const form = document.getElementById('editUserForm');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER TYPE CODE START MAP
+    |--------------------------------------------------------------------------
+    */
 
     const codeStartMap = {
         student: 101,
-        user: 201,
-        user_admin: 301,
-        support_admin: 401
+        teacher: 201,
+        donor_member: 301,
+
+        // Legacy User Types
+        staff: 401,
+        guardian: 501,
+        library_member: 601,
+        software_user: 701,
+        other: 801
     };
 
 
     /*
     |--------------------------------------------------------------------------
-    | Update Role Example
+    | GET SELECTED USER TYPE
     |--------------------------------------------------------------------------
     */
 
-    function updateRoleExample() {
+    function getSelectedUserType() {
 
-        const role =
-            userType ? userType.value : '';
-
-        if (role === 'student') {
-
-            autoExample.textContent =
-                'Student: 101, 102, 103...';
-
-        } else if (role === 'user') {
-
-            autoExample.textContent =
-                'User: 201, 202, 203...';
-
-        } else if (role === 'user_admin') {
-
-            autoExample.textContent =
-                'User Admin: 301, 302, 303...';
-
-        } else if (role === 'support_admin') {
-
-            autoExample.textContent =
-                'Support Admin: 401, 402, 403...';
-
-        } else {
-
-            autoExample.textContent =
-                'Role অনুযায়ী Code automatically তৈরি হবে।';
-
+        if (!userTypeSelect) {
+            return null;
         }
+
+        const option = userTypeSelect.options[
+            userTypeSelect.selectedIndex
+        ];
+
+        if (!option || !option.value) {
+            return null;
+        }
+
+        return {
+            id: option.value,
+            slug: option.dataset.slug || '',
+            label: option.dataset.label || option.text.trim()
+        };
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Sync Code Mode
+    | UPDATE USER TYPE UI
+    |--------------------------------------------------------------------------
+    */
+
+    function updateUserTypeUI() {
+
+        const type = getSelectedUserType();
+
+        if (!type) {
+
+            if (studentCard) {
+                studentCard.style.display = 'none';
+            }
+
+            if (summaryUserType) {
+                summaryUserType.textContent = 'নির্ধারিত নয়';
+            }
+
+            if (autoExample) {
+                autoExample.textContent =
+                    'User Type অনুযায়ী Code automatically তৈরি হবে।';
+            }
+
+            return;
+        }
+
+
+        // Student Information Visibility
+        if (studentCard) {
+
+            studentCard.style.display =
+                type.slug === 'student' ? '' : 'none';
+
+        }
+
+
+        // Update User Summary
+        if (summaryUserType) {
+
+            summaryUserType.textContent = type.label;
+
+        }
+
+
+        // Update Auto Code Example
+        const startCode = codeStartMap[type.slug];
+
+        if (startCode && autoExample) {
+
+            autoExample.textContent =
+                type.label + ': ' +
+                startCode + ', ' +
+                (startCode + 1) + ', ' +
+                (startCode + 2) + '...';
+
+        } else if (autoExample) {
+
+            autoExample.textContent =
+                type.label + ' অনুযায়ী Code automatically তৈরি হবে।';
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SYNC CODE GENERATION MODE
     |--------------------------------------------------------------------------
     */
 
     function syncCodeMode() {
 
-        if (!autoRadio || !manualRadio) {
+        if (!autoRadio || !manualRadio || !hiddenType || !customId) {
             return;
         }
 
+        const isManual = manualRadio.checked;
 
-        if (manualRadio.checked) {
+        hiddenType.value = isManual ? 'manual' : 'auto';
 
-            hiddenType.value = 'manual';
+        customId.readOnly = !isManual;
 
-            customId.readOnly = false;
+        customId.placeholder = isManual
+            ? 'যেমন: 500'
+            : 'Auto mode';
 
-            customId.placeholder =
-                'যেমন: 1001';
 
-            autoBox.classList.remove('active');
+        // Active Card
+        if (autoBox) {
 
-            manualBox.classList.add('active');
+            autoBox.classList.toggle(
+                'active',
+                !isManual
+            );
 
-        } else {
+        }
 
-            hiddenType.value = 'auto';
+        if (manualBox) {
 
-            customId.readOnly = true;
+            manualBox.classList.toggle(
+                'active',
+                isManual
+            );
 
-            customId.placeholder =
-                'Auto mode';
+        }
 
-            autoBox.classList.add('active');
 
-            manualBox.classList.remove('active');
+        // Help Text
+        const manualHelp = document.getElementById('manualHelp');
+
+        if (manualHelp) {
+
+            manualHelp.textContent = isManual
+                ? 'Manual mode-এ User Code পরিবর্তন করতে পারবেন।'
+                : 'Auto mode-এ User Code system থেকে নির্ধারিত হবে।';
 
         }
 
@@ -1818,146 +1441,145 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Radio Change
+    | RADIO EVENTS
     |--------------------------------------------------------------------------
     */
 
     if (autoRadio) {
 
-        autoRadio.addEventListener(
-            'change',
-            function () {
-
-                syncCodeMode();
-
-            }
-        );
+        autoRadio.addEventListener('change', syncCodeMode);
 
     }
-
 
     if (manualRadio) {
 
-        manualRadio.addEventListener(
-            'change',
-            function () {
+        manualRadio.addEventListener('change', syncCodeMode);
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLICK CODE MODE CARDS
+    |--------------------------------------------------------------------------
+    */
+
+    if (autoBox && autoRadio) {
+
+        autoBox.addEventListener('click', function (event) {
+
+            if (
+                event.target.tagName !== 'INPUT' &&
+                event.target.tagName !== 'LABEL'
+            ) {
+
+                autoRadio.checked = true;
 
                 syncCodeMode();
 
             }
-        );
+
+        });
+
+    }
+
+
+    if (manualBox && manualRadio) {
+
+        manualBox.addEventListener('click', function (event) {
+
+            if (
+                event.target.tagName !== 'INPUT' &&
+                event.target.tagName !== 'LABEL'
+            ) {
+
+                manualRadio.checked = true;
+
+                syncCodeMode();
+
+            }
+
+        });
 
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Click Card To Select Mode
+    | USER TYPE CHANGE
     |--------------------------------------------------------------------------
     */
 
-    if (autoBox) {
+    if (userTypeSelect) {
 
-        autoBox.addEventListener(
-            'click',
-            function (event) {
+        userTypeSelect.addEventListener('change', function () {
 
-                if (
-                    event.target.tagName !== 'INPUT'
-                    &&
-                    event.target.tagName !== 'LABEL'
-                ) {
-                    autoRadio.checked = true;
-                    syncCodeMode();
-                }
+            updateUserTypeUI();
 
-            }
-        );
-
-    }
-
-
-    if (manualBox) {
-
-        manualBox.addEventListener(
-            'click',
-            function (event) {
-
-                if (
-                    event.target.tagName !== 'INPUT'
-                    &&
-                    event.target.tagName !== 'LABEL'
-                ) {
-                    manualRadio.checked = true;
-                    syncCodeMode();
-                }
-
-            }
-        );
+        });
 
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Role Change
-    |--------------------------------------------------------------------------
-    |
-    | Important:
-    | Gender এখানে কোনোভাবেই Code generation-এ ব্যবহার করা হচ্ছে না।
-    |
-    */
-
-    if (userType) {
-
-        userType.addEventListener(
-            'change',
-            function () {
-
-                updateRoleExample();
-
-            }
-        );
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Manual Code Numeric Only
+    | MANUAL CODE NUMERIC ONLY
     |--------------------------------------------------------------------------
     */
 
     if (customId) {
 
-        customId.addEventListener(
-            'input',
-            function () {
+        customId.addEventListener('input', function () {
 
-                this.value =
-                    this.value.replace(
-                        /[^0-9]/g,
-                        ''
-                    );
+            this.value = this.value.replace(/[^0-9]/g, '');
 
-            }
-        );
+        });
 
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Initial State
+    | FORM VALIDATION
     |--------------------------------------------------------------------------
     */
 
-    updateRoleExample();
+    if (form) {
+
+        form.addEventListener('submit', function (event) {
+
+            const type = getSelectedUserType();
+
+            if (!type) {
+
+                event.preventDefault();
+
+                alert('অনুগ্রহ করে User Type নির্বাচন করুন।');
+
+                userTypeSelect.focus();
+
+                return;
+
+            }
+
+            syncCodeMode();
+
+        });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INITIAL STATE
+    |--------------------------------------------------------------------------
+    */
+
+    updateUserTypeUI();
 
     syncCodeMode();
 
 });
-
 </script>
 
 @endsection

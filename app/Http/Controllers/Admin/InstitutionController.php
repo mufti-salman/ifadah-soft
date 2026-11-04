@@ -699,7 +699,249 @@ public function info()
     return view('admin.institutions.info', compact('institution'));
 }
 
+/*
+|--------------------------------------------------------------------------
+| AUTO SAVE INSTITUTION INFORMATION
+|--------------------------------------------------------------------------
+*/
+public function autosave(Request $request, $id)
+{
+    $user = Auth::user();
 
+    if (!$user) {
+        abort(401);
+    }
+
+    $institution = Madrasa::findOrFail($id);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permission Check
+    |--------------------------------------------------------------------------
+    */
+
+    if ($user->is_super_admin) {
+
+        if (
+            (int) session('active_institution_id') !== (int) $institution->id ||
+            session('institution_mode') !== true
+        ) {
+            abort(403, 'প্রতিষ্ঠান নির্বাচন করা হয়নি।');
+        }
+
+    } elseif ($user->is_user_admin) {
+
+        if ((int) $user->institution_id !== (int) $institution->id) {
+            abort(403, 'এই প্রতিষ্ঠানের তথ্য পরিবর্তনের অনুমতি নেই।');
+        }
+
+    } else {
+        abort(403, 'আপনার অনুমতি নেই।');
+    }
+
+    $field = $request->input('field');
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE UPLOAD
+    |--------------------------------------------------------------------------
+    */
+
+    if (in_array($field, ['logo', 'banner'], true)) {
+
+        $maxSize = $field === 'logo' ? 2048 : 5120;
+
+        $request->validate([
+            'file' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:' . $maxSize,
+            ],
+        ], [
+            'file.required' => 'একটি ছবি নির্বাচন করুন।',
+            'file.image' => 'সঠিক ছবি নির্বাচন করুন।',
+            'file.mimes' => 'শুধুমাত্র JPG, JPEG, PNG অথবা WEBP ছবি গ্রহণযোগ্য।',
+            'file.max' => 'ছবির সাইজ নির্ধারিত সীমার বেশি হয়েছে।',
+        ]);
+
+        $oldImage = $institution->{$field};
+
+        $directory = $field === 'logo'
+            ? 'institutions/logos'
+            : 'institutions/banners';
+
+        /*
+         * Store new image first.
+         */
+        $newImage = $request->file('file')->store(
+            $directory,
+            'public'
+        );
+
+        if (!$newImage) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ছবি আপলোড করা যায়নি।',
+            ], 500);
+        }
+
+        try {
+
+            $institution->{$field} = $newImage;
+            $institution->updated_by = Auth::id();
+            $institution->save();
+
+        } catch (\Throwable $e) {
+
+            Storage::disk('public')->delete($newImage);
+
+            throw $e;
+        }
+
+        /*
+         * Delete old image after successful database update.
+         */
+        if (
+            $oldImage &&
+            $oldImage !== $newImage &&
+            Storage::disk('public')->exists($oldImage)
+        ) {
+            Storage::disk('public')->delete($oldImage);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Session
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (int) session('active_institution_id') ===
+            (int) $institution->id
+        ) {
+            session([
+                'institution_name' => $institution->name,
+                'institution_name_bn' => $institution->name_bn,
+                'institution_logo' => $institution->logo,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ছবি সফলভাবে আপলোড হয়েছে।',
+            'field' => $field,
+            'path' => $institution->{$field},
+            'url' => asset('storage/' . $institution->{$field}),
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEXT FIELD AUTOSAVE
+    |--------------------------------------------------------------------------
+    */
+
+    $allowedFields = [
+        'name',
+        'name_bn',
+        's_name',
+        'madrasa_code',
+        'eiin_no',
+        'registration_no',
+        'established_year',
+        'address',
+        'city',
+        'state',
+        'postal_code',
+        'country',
+        'phone',
+        'email',
+        'website',
+    ];
+
+    if (!in_array($field, $allowedFields, true)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'এই তথ্য পরিবর্তন করা যাবে না।',
+        ], 422);
+    }
+
+    $rules = [
+        'name' => 'required|string|max:255',
+        'name_bn' => 'nullable|string|max:255',
+        's_name' => 'nullable|string|max:100',
+
+        'madrasa_code' => [
+            'nullable',
+            'string',
+            'max:100',
+            \Illuminate\Validation\Rule::unique(
+                'madrasas',
+                'madrasa_code'
+            )->ignore($institution->id),
+        ],
+
+        'eiin_no' => 'nullable|string|max:100',
+        'registration_no' => 'nullable|string|max:100',
+        'established_year' => 'nullable|integer|min:1800|max:' . date('Y'),
+        'address' => 'nullable|string|max:2000',
+        'city' => 'nullable|string|max:255',
+        'state' => 'nullable|string|max:255',
+        'postal_code' => 'nullable|string|max:30',
+        'country' => 'nullable|string|max:100',
+        'phone' => 'nullable|string|max:50',
+        'email' => 'nullable|email|max:255',
+        'website' => 'nullable|string|max:255',
+    ];
+
+    $validator = \Illuminate\Support\Facades\Validator::make(
+        [
+            $field => $request->input('value'),
+        ],
+        [
+            $field => $rules[$field],
+        ]
+    );
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => $validator->errors()->first($field),
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    $value = $request->input('value');
+
+    $institution->{$field} = $value === '' ? null : $value;
+    $institution->updated_by = Auth::id();
+    $institution->save();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update Session
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        (int) session('active_institution_id') ===
+        (int) $institution->id
+    ) {
+        session([
+            'institution_name' => $institution->name,
+            'institution_name_bn' => $institution->name_bn,
+            'institution_logo' => $institution->logo,
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'তথ্য সফলভাবে সংরক্ষণ হয়েছে।',
+        'field' => $field,
+        'value' => $institution->{$field},
+    ]);
+}
     /*
     |--------------------------------------------------------------------------
     | EXIT INSTITUTION

@@ -1350,7 +1350,10 @@ Route::prefix('students')
             ->middleware('permission:institution.view')
             ->name('institution.info');
 
-
+        Route::post(
+            'institutions/{id}/autosave',
+            [InstitutionController::class, 'autosave']
+        )->name('institutions.autosave');
         /*
         |--------------------------------------------------------------------------
         | EXIT INSTITUTION MODE

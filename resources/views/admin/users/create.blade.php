@@ -21,7 +21,7 @@
     .reg-card {
         background: #fff;
         border-radius: 16px;
-        box-shadow: 0 2px 16px rgba(30, 58, 138, 0.08);
+        box-shadow: 0 2px 16px rgba(30,58,138,.08);
         overflow: hidden;
     }
 
@@ -40,7 +40,7 @@
         gap: 12px;
     }
 
-    .reg-card-header .header-icon {
+    .header-icon {
         width: 38px;
         height: 38px;
         background: #eef2fb;
@@ -49,7 +49,6 @@
         align-items: center;
         justify-content: center;
         color: #3b5bdb;
-        font-size: 1rem;
     }
 
     .reg-card-header h5 {
@@ -68,10 +67,9 @@
         color: #3730a3;
         border-radius: 10px;
         padding: 9px 16px;
-        font-size: 0.85rem;
+        font-size: .85rem;
         font-weight: 600;
         cursor: pointer;
-        transition: 0.2s;
     }
 
     .btn-code-setting:hover {
@@ -92,7 +90,7 @@
 
     .form-label {
         display: block;
-        font-size: 0.82rem;
+        font-size: .82rem;
         font-weight: 600;
         color: #374151;
         margin-bottom: 6px;
@@ -109,17 +107,15 @@
         border: 1.5px solid #e5e9f5;
         border-radius: 10px;
         padding: 10px 14px;
-        font-size: 0.88rem;
+        font-size: .88rem;
         color: #374151;
         background: #f8faff;
         outline: none;
-        transition: border-color 0.2s, background 0.2s;
-        font-family: 'Hind Siliguri', sans-serif;
+        transition: .2s;
     }
 
     .form-select {
         appearance: none;
-        -webkit-appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 12px center;
@@ -130,15 +126,11 @@
     .form-select:focus {
         border-color: #6b8cde;
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(107, 140, 222, 0.12);
+        box-shadow: 0 0 0 3px rgba(107,140,222,.12);
     }
 
     .form-control::placeholder {
         color: #b0bac9;
-    }
-
-    .field-group {
-        margin-bottom: 0;
     }
 
     .mini-grid-2 {
@@ -152,26 +144,27 @@
         align-items: center;
         gap: 18px;
         padding-top: 8px;
-        height: 42px;
+        min-height: 42px;
     }
 
     .radio-label {
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 0.88rem;
+        font-size: .88rem;
         color: #374151;
         cursor: pointer;
     }
 
-    .radio-label input[type="radio"] {
+    .radio-label input {
         accent-color: #3b5bdb;
         width: 16px;
         height: 16px;
-        cursor: pointer;
     }
 
-    .col-fields {
+    .col-fields,
+    .address-col,
+    .addr-fields {
         display: flex;
         flex-direction: column;
         gap: 14px;
@@ -192,8 +185,6 @@
     }
 
     .address-col {
-        display: flex;
-        flex-direction: column;
         gap: 16px;
     }
 
@@ -215,21 +206,16 @@
         display: flex;
         align-items: center;
         gap: 7px;
-        font-size: 0.9rem;
+        font-size: .9rem;
         font-weight: 700;
         color: #1e3a8a;
-    }
-
-    .address-card-title i {
-        color: #3b5bdb;
-        font-size: 0.9rem;
     }
 
     .same-check-label {
         display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 0.78rem;
+        font-size: .78rem;
         color: #6b7280;
         cursor: pointer;
         background: #eef2fb;
@@ -238,46 +224,7 @@
         white-space: nowrap;
     }
 
-    .same-check-label input {
-        accent-color: #3b5bdb;
-        cursor: pointer;
-    }
-
-    .addr-fields {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
     .addr-mini-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-
-    .student-fields {
-        display: none;
-        background: #f5f7ff;
-        border: 1.5px solid #dbe4ff;
-        border-radius: 12px;
-        padding: 14px;
-    }
-
-    .student-fields.show {
-        display: block;
-    }
-
-    .student-fields-title {
-        font-size: 0.84rem;
-        font-weight: 700;
-        color: #1e3a8a;
-        margin-bottom: 12px;
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-
-    .student-fields-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
@@ -292,46 +239,41 @@
         border-top: 1.5px solid #eef2fb;
         background: #fafbff;
         margin-top: 24px;
-        border-radius: 0 0 16px 16px;
+    }
+
+    .btn-cancel,
+    .btn-save {
+        border-radius: 10px;
+        padding: 10px 24px;
+        font-size: .9rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
     }
 
     .btn-cancel {
         background: transparent;
         border: 1.5px solid #e5e9f5;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-size: 0.9rem;
-        font-weight: 600;
         color: #6b7280;
-        cursor: pointer;
-        transition: background 0.15s;
-        font-family: 'Hind Siliguri', sans-serif;
-        text-decoration: none;
-    }
-
-    .btn-cancel:hover {
-        background: #f0f4ff;
-        color: #374151;
     }
 
     .btn-save {
         background: #1e3a8a;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 26px;
-        font-size: 0.9rem;
-        font-weight: 600;
+        border: 0;
         color: #fff;
-        cursor: pointer;
         display: flex;
         align-items: center;
         gap: 8px;
-        transition: background 0.15s;
-        font-family: 'Hind Siliguri', sans-serif;
     }
 
     .btn-save:hover {
         background: #1e40af;
+        color: #fff;
+    }
+
+    .btn-save:disabled {
+        opacity: .6;
+        cursor: not-allowed;
     }
 
     .alert-danger-custom {
@@ -340,58 +282,35 @@
         border-radius: 10px;
         padding: 14px 18px;
         margin-bottom: 20px;
-        font-size: 0.88rem;
+        font-size: .88rem;
         color: #b91c1c;
     }
 
-    .preview-id-box {
-        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
-        border: 2px solid #3b5bdb;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 10px;
+    .manual-code-field {
+        display: none;
+        margin-top: 10px;
     }
 
-    .preview-id-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #1e3a8a;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+    .manual-code-field.show {
+        display: block;
     }
 
-    .preview-id-value {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #1e3a8a;
-        background: white;
-        padding: 6px 16px;
-        border-radius: 30px;
-        letter-spacing: 1px;
-        font-family: monospace;
-    }
-
-    .preview-id-note {
-        font-size: 0.7rem;
-        color: #4b5563;
-        width: 100%;
+    .code-mode-hint {
+        display: block;
+        margin-top: 5px;
+        color: #6b7280;
+        font-size: .70rem;
     }
 
     .code-modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.55);
+        background: rgba(15,23,42,.55);
         display: none;
         align-items: center;
         justify-content: center;
         padding: 20px;
-        z-index: 9999;
+        z-index: 99999;
         backdrop-filter: blur(3px);
     }
 
@@ -406,20 +325,7 @@
         overflow-y: auto;
         background: #fff;
         border-radius: 18px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
-        animation: modalShow 0.2s ease;
-    }
-
-    @keyframes modalShow {
-        from {
-            opacity: 0;
-            transform: translateY(-15px) scale(0.98);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
     }
 
     .code-modal-header {
@@ -457,17 +363,11 @@
     .code-modal-close {
         width: 34px;
         height: 34px;
-        border: none;
+        border: 0;
         background: #f3f4f6;
         border-radius: 8px;
         color: #6b7280;
         cursor: pointer;
-        font-size: 16px;
-    }
-
-    .code-modal-close:hover {
-        background: #fee2e2;
-        color: #dc2626;
     }
 
     .code-modal-body {
@@ -483,7 +383,7 @@
     }
 
     .code-section-title {
-        font-size: 0.85rem;
+        font-size: .85rem;
         font-weight: 700;
         color: #374151;
         margin-bottom: 9px;
@@ -517,10 +417,9 @@
         border-radius: 10px;
         background: #f9fafb;
         color: #4b5563;
-        font-size: 0.84rem;
+        font-size: .84rem;
         font-weight: 600;
         cursor: pointer;
-        transition: 0.2s;
         text-align: center;
     }
 
@@ -530,10 +429,6 @@
         color: #3730a3;
     }
 
-    .code-radio-card label:hover {
-        border-color: #a5b4fc;
-    }
-
     .code-modal-footer {
         display: flex;
         justify-content: flex-end;
@@ -541,55 +436,44 @@
         padding: 16px 22px;
         border-top: 1px solid #eef2fb;
         background: #fafbff;
-        border-radius: 0 0 18px 18px;
+    }
+
+    .btn-modal-cancel,
+    .btn-modal-save {
+        border-radius: 9px;
+        padding: 9px 20px;
+        font-size: .85rem;
+        font-weight: 600;
+        cursor: pointer;
     }
 
     .btn-modal-cancel {
         border: 1.5px solid #e5e7eb;
         background: #fff;
         color: #6b7280;
-        border-radius: 9px;
-        padding: 9px 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
     }
 
     .btn-modal-save {
-        border: none;
+        border: 0;
         background: #3730a3;
         color: #fff;
-        border-radius: 9px;
-        padding: 9px 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 7px;
     }
 
-    .btn-modal-save:hover {
-        background: #312e81;
-    }
-
-    .manual-code-field {
-        display: none;
-        margin-top: 12px;
-    }
-
-    .manual-code-field.show {
-        display: block;
+    .entry-info,
+    .manual-preview-info {
+        border-radius: 10px;
+        padding: 11px 13px;
+        font-size: .78rem;
+        margin-top: 10px;
     }
 
     .entry-info {
         background: #f8fafc;
         border: 1px solid #e5e7eb;
-        border-radius: 10px;
-        padding: 11px 13px;
-        font-size: 0.78rem;
         color: #6b7280;
-        margin-top: 10px;
     }
 
     .manual-preview-info {
@@ -597,23 +481,19 @@
         background: #ecfdf5;
         border: 1px solid #a7f3d0;
         color: #047857;
-        border-radius: 10px;
-        padding: 11px 13px;
-        font-size: 0.78rem;
-        margin-top: 10px;
     }
 
     .manual-preview-info.show {
         display: block;
     }
 
-    @media (max-width: 992px) {
+    @media(max-width:992px) {
         .form-grid {
             grid-template-columns: 1fr 1fr;
         }
 
         .address-col {
-            grid-column: 1 / -1;
+            grid-column: 1/-1;
             flex-direction: row;
             flex-wrap: wrap;
         }
@@ -624,7 +504,7 @@
         }
     }
 
-    @media (max-width: 640px) {
+    @media(max-width:640px) {
         .reg-page {
             padding: 10px;
         }
@@ -634,32 +514,19 @@
             align-items: flex-start;
         }
 
-        .reg-card-header h5 {
-            font-size: 0.95rem;
+        .reg-card-body {
+            padding: 16px;
         }
 
-        .btn-code-setting {
-            padding: 8px 10px;
-            font-size: 0.75rem;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-
+        .form-grid,
         .mini-grid-2,
-        .addr-mini-grid,
-        .student-fields-grid {
+        .addr-mini-grid {
             grid-template-columns: 1fr;
         }
 
         .address-col {
             grid-column: auto;
             flex-direction: column;
-        }
-
-        .reg-card-body {
-            padding: 16px;
         }
 
         .reg-card-footer {
@@ -673,63 +540,39 @@
 </style>
 
 <div class="reg-page">
-
     <div class="reg-card">
 
         <div class="reg-card-header">
-
             <div class="header-left">
-
                 <div class="header-icon">
                     <i class="fas fa-user-plus"></i>
                 </div>
-
                 <h5>ইউজার রেজিস্ট্রেশন ফরম</h5>
-
             </div>
 
-            <button type="button"
-                    class="btn-code-setting"
-                    id="openCodeSetting">
-
+            <button type="button" class="btn-code-setting" id="openCodeSetting">
                 <i class="fas fa-sliders-h"></i>
-
                 কোড সেটিং
-
             </button>
-
         </div>
-
 
         <div class="reg-card-body">
 
             @if ($errors->any())
-
                 <div class="alert-danger-custom">
-
-                    <ul style="margin:0; padding-left:18px;">
-
+                    <ul style="margin:0;padding-left:18px;">
                         @foreach ($errors->all() as $error)
-
                             <li>{{ $error }}</li>
-
                         @endforeach
-
                     </ul>
-
                 </div>
-
             @endif
 
-
             @if(session('error'))
-
                 <div class="alert-danger-custom">
                     {{ session('error') }}
                 </div>
-
             @endif
-
 
             <form action="{{ route('dashboard.user.store') }}"
                   method="POST"
@@ -738,75 +581,52 @@
 
                 @csrf
 
-
                 <input type="hidden"
                        name="institution_id"
                        id="institution_id"
-                       value="{{ auth()->user()->institution_id ?? auth()->user()->madrasa_id ?? 1 }}">
-
+                       value="{{ auth()->user()->institution_id ?? auth()->user()->madrasa_id ?? '' }}">
 
                 <input type="hidden"
                        name="code_generation_type"
                        id="code_generation_type"
                        value="{{ old('code_generation_type', 'auto') }}">
 
-
                 <div class="form-grid">
 
-
+                    {{-- FIRST COLUMN --}}
                     <div class="col-fields">
 
-
                         <div class="field-group">
-
                             <label class="form-label">
-
                                 ব্যবহারকারীর ধরণ
-
                                 <span class="req">*</span>
-
                             </label>
 
+                       <select name="user_type_id" id="user_type_id" class="form-select" required>
+                        <option value="">নির্বাচন করুন</option>
 
-                            <select name="user_type"
-                                    id="user_type"
-                                    class="form-select"
-                                    required>
-
-                                <option value="">
-                                    নির্বাচন করুন
-                                </option>
-
-
-                                @foreach($userTypes as $key => $type)
-
-                                    <option value="{{ $key }}"
-                                        {{ old('user_type') == $key ? 'selected' : '' }}>
-
-                                        {{ $type }}
-
-                                    </option>
-
-                                @endforeach
-
-                            </select>
-
+                        @foreach($userTypes as $type)
+                            <option
+                                value="{{ $type->id }}"
+                                data-slug="{{ $type->slug }}"
+                                {{ (string)old('user_type_id') === (string)$type->id ? 'selected' : '' }}
+                            >
+                                {{ $type->slug === 'teacher'
+                                    ? 'শিক্ষক/স্টাফ'
+                                    : $type->name_bn }}
+                            </option>
+                        @endforeach
+                    </select>
                         </div>
 
-
                         <div class="mini-grid-2">
-
 
                             <div class="field-group">
 
                                 <label class="form-label">
-
                                     আইডি
-
                                     <span class="req">*</span>
-
                                 </label>
-
 
                                 <input type="text"
                                        name="custom_id"
@@ -815,77 +635,81 @@
                                        value="{{ old('custom_id') }}"
                                        placeholder="স্বয়ংক্রিয়ভাবে জেনারেট হবে"
                                        readonly
-                                       style="background:#eef2fb;
-                                              font-weight:600;
-                                              color:#1e3a8a;">
+                                       style="background:#eef2fb;font-weight:600;color:#1e3a8a;">
 
-
-                                <small id="codeModeHint"
-                                       style="display:block;
-                                              margin-top:5px;
-                                              color:#6b7280;
-                                              font-size:0.70rem;">
-
+                                <small id="codeModeHint" class="code-mode-hint">
                                     Auto Code
-
                                 </small>
+
+                                <div id="manualCodeField" class="manual-code-field">
+
+                                    <label for="manual_user_code" class="form-label">
+                                        ম্যানুয়াল ইউজার কোড
+                                    </label>
+
+                                    <input type="text"
+                                           id="manual_user_code"
+                                           class="form-control"
+                                           inputmode="numeric"
+                                           autocomplete="off"
+                                           placeholder="খালি রাখলে পরবর্তী Manual Code তৈরি হবে">
+
+                                    <small class="text-muted">
+                                        এখানে কোড দিলে এই ইউজারের জন্য সেটিই ব্যবহার হবে।
+                                    </small>
+
+                                </div>
+
+                                <div id="manualPreviewInfo" class="manual-preview-info"></div>
 
                             </div>
 
+                            @php
+                                $selectedGender = old(
+                                    'gender',
+                                    ($genderPreference ?? 'entry') === 'entry'
+                                        ? null
+                                        : ($genderPreference ?? null)
+                                );
+                            @endphp
 
                             <div class="field-group">
 
                                 <label class="form-label">
-
                                     লিঙ্গ
-
                                     <span class="req">*</span>
-
                                 </label>
-
 
                                 <div class="gender-row">
 
                                     <label class="radio-label">
-
                                         <input type="radio"
                                                name="gender"
                                                value="male"
-                                               {{ old('gender', 'male') == 'male' ? 'checked' : '' }}>
-
+                                               {{ $selectedGender === 'male' ? 'checked' : '' }}
+                                               required>
                                         পুরুষ
-
                                     </label>
 
-
                                     <label class="radio-label">
-
                                         <input type="radio"
                                                name="gender"
                                                value="female"
-                                               {{ old('gender') == 'female' ? 'checked' : '' }}>
-
+                                               {{ $selectedGender === 'female' ? 'checked' : '' }}
+                                               required>
                                         মহিলা
-
                                     </label>
 
                                 </div>
-
                             </div>
 
                         </div>
 
-
                         <div class="field-group">
-
                             <label class="form-label">
-
                                 নাম
-
                                 <span class="req">*</span>
-
                             </label>
-
 
                             <input type="text"
                                    name="name_bn"
@@ -893,103 +717,62 @@
                                    value="{{ old('name_bn') }}"
                                    placeholder="পুরো নাম লিখুন"
                                    required>
-
                         </div>
 
-
                         <div class="field-group">
-
-                            <label class="form-label">
-                                পিতার নাম
-                            </label>
-
+                            <label class="form-label">পিতার নাম</label>
 
                             <input type="text"
                                    name="father_name"
                                    class="form-control"
                                    value="{{ old('father_name') }}"
                                    placeholder="পিতার নাম লিখুন">
-
                         </div>
 
-
                         <div class="field-group">
-
-                            <label class="form-label">
-                                মাতার নাম
-                            </label>
-
+                            <label class="form-label">মাতার নাম</label>
 
                             <input type="text"
                                    name="mother_name"
                                    class="form-control"
                                    value="{{ old('mother_name') }}"
                                    placeholder="মাতার নাম লিখুন">
-
                         </div>
-
 
                     </div>
 
-
+                    {{-- SECOND COLUMN --}}
                     <div class="col-fields">
 
-
                         <div class="field-group">
+                            <label class="form-label">রক্তের গ্রুপ</label>
 
-                            <label class="form-label">
-                                রক্তের গ্রুপ
-                            </label>
-
-
-                            <select name="blood_group"
-                                    class="form-select">
-
-                                <option value="">
-                                    নির্বাচন করুন
-                                </option>
-
+                            <select name="blood_group" class="form-select">
+                                <option value="">নির্বাচন করুন</option>
 
                                 @foreach(['A+','A-','B+','B-','O+','O-','AB+','AB-'] as $bg)
-
                                     <option value="{{ $bg }}"
-                                        {{ old('blood_group') == $bg ? 'selected' : '' }}>
-
+                                            {{ old('blood_group') == $bg ? 'selected' : '' }}>
                                         {{ $bg }}
-
                                     </option>
-
                                 @endforeach
-
                             </select>
-
                         </div>
-
 
                         <div class="mini-grid-2">
 
                             <div class="field-group">
-
-                                <label class="form-label">
-                                    জন্ম তারিখ
-                                </label>
-
+                                <label class="form-label">জন্ম তারিখ</label>
 
                                 <input type="date"
                                        name="date_of_birth"
                                        id="date_of_birth"
                                        class="form-control"
                                        value="{{ old('date_of_birth') }}">
-
                             </div>
 
-
                             <div class="field-group">
-
-                                <label class="form-label">
-                                    বয়স
-                                </label>
-
+                                <label class="form-label">বয়স</label>
 
                                 <input type="number"
                                        name="age"
@@ -999,38 +782,25 @@
                                        readonly
                                        style="background:#eef2fb;"
                                        placeholder="Auto">
-
                             </div>
 
                         </div>
 
-
                         <div class="field-group">
-
-                            <label class="form-label">
-                                NID/জন্ম নিবন্ধন নং
-                            </label>
-
+                            <label class="form-label">NID/জন্ম নিবন্ধন নং</label>
 
                             <input type="text"
                                    name="nid"
                                    class="form-control"
                                    value="{{ old('nid') }}"
                                    placeholder="নম্বর লিখুন">
-
                         </div>
 
-
                         <div class="field-group">
-
                             <label class="form-label">
-
                                 মোবাইল 1
-
                                 <span class="req">*</span>
-
                             </label>
-
 
                             <div class="phone-group">
 
@@ -1041,47 +811,29 @@
                                        placeholder="০১XXXXXXXXX"
                                        required>
 
+                                <select name="phone_relation" class="form-select">
+                                    <option value="">সম্পর্ক</option>
 
-                                <select name="phone_relation"
-                                        class="form-select">
+                                    @foreach([
+                                        'self'=>'নিজ',
+                                        'father'=>'পিতা',
+                                        'mother'=>'মাতা',
+                                        'guardian'=>'অভিভাবক'
+                                    ] as $key=>$label)
 
-                                    <option value="">
-                                        সম্পর্ক
-                                    </option>
+                                        <option value="{{ $key }}"
+                                                {{ old('phone_relation') == $key ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
 
-                                    <option value="self"
-                                        {{ old('phone_relation') == 'self' ? 'selected' : '' }}>
-                                        নিজ
-                                    </option>
-
-                                    <option value="father"
-                                        {{ old('phone_relation') == 'father' ? 'selected' : '' }}>
-                                        পিতা
-                                    </option>
-
-                                    <option value="mother"
-                                        {{ old('phone_relation') == 'mother' ? 'selected' : '' }}>
-                                        মাতা
-                                    </option>
-
-                                    <option value="guardian"
-                                        {{ old('phone_relation') == 'guardian' ? 'selected' : '' }}>
-                                        অভিভাবক
-                                    </option>
-
+                                    @endforeach
                                 </select>
 
                             </div>
-
                         </div>
 
-
                         <div class="field-group">
-
-                            <label class="form-label">
-                                মোবাইল 2
-                            </label>
-
+                            <label class="form-label">মোবাইল 2</label>
 
                             <div class="phone-group">
 
@@ -1091,550 +843,532 @@
                                        value="{{ old('phone2') }}"
                                        placeholder="০১XXXXXXXXX">
 
+                                <select name="phone2_relation" class="form-select">
+                                    <option value="">সম্পর্ক</option>
 
-                                <select name="phone2_relation"
-                                        class="form-select">
+                                    @foreach([
+                                        'self'=>'নিজ',
+                                        'father'=>'পিতা',
+                                        'mother'=>'মাতা',
+                                        'guardian'=>'অভিভাবক'
+                                    ] as $key=>$label)
 
-                                    <option value="">
-                                        সম্পর্ক
-                                    </option>
+                                        <option value="{{ $key }}"
+                                                {{ old('phone2_relation') == $key ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
 
-                                    <option value="self"
-                                        {{ old('phone2_relation') == 'self' ? 'selected' : '' }}>
-                                        নিজ
-                                    </option>
-
-                                    <option value="father"
-                                        {{ old('phone2_relation') == 'father' ? 'selected' : '' }}>
-                                        পিতা
-                                    </option>
-
-                                    <option value="mother"
-                                        {{ old('phone2_relation') == 'mother' ? 'selected' : '' }}>
-                                        মাতা
-                                    </option>
-
-                                    <option value="guardian"
-                                        {{ old('phone2_relation') == 'guardian' ? 'selected' : '' }}>
-                                        অভিভাবক
-                                    </option>
-
+                                    @endforeach
                                 </select>
 
                             </div>
-
                         </div>
 
-
                         <div class="field-group">
-
-                            <label class="form-label">
-                                ই-মেইল
-                            </label>
-
+                            <label class="form-label">ই-মেইল</label>
 
                             <input type="email"
                                    name="email"
                                    class="form-control"
                                    value="{{ old('email') }}"
                                    placeholder="example@mail.com">
-
                         </div>
 
                     </div>
 
-
+                    {{-- ADDRESS COLUMN --}}
                     <div class="address-col">
 
-
+                        {{-- PERMANENT ADDRESS --}}
                         <div class="address-card">
 
                             <div class="address-card-header">
-
                                 <div class="address-card-title">
-
                                     <i class="fas fa-map-marker-alt"></i>
-
                                     স্থায়ী ঠিকানা
-
                                 </div>
-
                             </div>
-
 
                             <div class="addr-fields">
 
-
                                 <div class="addr-mini-grid">
 
+                                    <select name="permanent_division_id"
+                                            id="permanent_division"
+                                            class="form-select">
 
-                                    <div class="field-group">
+                                        <option value="">বিভাগ</option>
 
-                                        <select name="permanent_division_id"
-                                                id="permanent_division"
-                                                class="form-select">
-
-                                            <option value="">
-                                                বিভাগ
-                                            </option>
-
-
-                                            @foreach($divisions as $div)
-
-                                                <option value="{{ $div->id }}"
+                                        @foreach($divisions as $div)
+                                            <option value="{{ $div->id }}"
                                                     {{ old('permanent_division_id') == $div->id ? 'selected' : '' }}>
-
-                                                    {{ $div->name_bn }}
-
-                                                </option>
-
-                                            @endforeach
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="field-group">
-
-                                        <select name="permanent_district_id"
-                                                id="permanent_district"
-                                                class="form-select">
-
-                                            <option value="">
-                                                জেলা
+                                                {{ $div->name_bn }}
                                             </option>
+                                        @endforeach
 
-                                        </select>
+                                    </select>
 
-                                    </div>
+                                    <select name="permanent_district_id"
+                                            id="permanent_district"
+                                            class="form-select">
+
+                                        <option value="">জেলা</option>
+
+                                    </select>
 
                                 </div>
-
 
                                 <div class="addr-mini-grid">
 
+                                    <select name="permanent_upazila_id"
+                                            id="permanent_upazila"
+                                            class="form-select">
 
-                                    <div class="field-group">
+                                        <option value="">থানা</option>
 
-                                        <select name="permanent_upazila_id"
-                                                id="permanent_upazila"
-                                                class="form-select">
-
-                                            <option value="">
-                                                থানা
-                                            </option>
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="field-group">
-
-                                        <input type="text"
-                                               name="permanent_post_office"
-                                               class="form-control"
-                                               value="{{ old('permanent_post_office') }}"
-                                               placeholder="ডাকঘর">
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="field-group">
+                                    </select>
 
                                     <input type="text"
-                                           name="permanent_village_road"
+                                           name="permanent_post_office"
                                            class="form-control"
-                                           value="{{ old('permanent_village_road') }}"
-                                           placeholder="গ্রাম/রাস্তা/বাসা নং">
+                                           value="{{ old('permanent_post_office') }}"
+                                           placeholder="ডাকঘর">
 
                                 </div>
 
-                            </div>
+                                <input type="text"
+                                       name="permanent_village_road"
+                                       class="form-control"
+                                       value="{{ old('permanent_village_road') }}"
+                                       placeholder="গ্রাম/রাস্তা/বাসা নং">
 
+                            </div>
                         </div>
 
-
+                        {{-- PRESENT ADDRESS --}}
                         <div class="address-card">
 
                             <div class="address-card-header">
 
                                 <div class="address-card-title">
-
                                     <i class="fas fa-map-marker-alt"></i>
-
                                     অস্থায়ী ঠিকানা
-
                                 </div>
 
-
                                 <label class="same-check-label">
-
-                                    <input type="checkbox"
-                                           id="same_as_permanent">
-
+                                    <input type="checkbox" id="same_as_permanent">
                                     স্থায়ী ঠিকানার মতই
-
                                 </label>
 
                             </div>
 
-
                             <div class="addr-fields">
 
                                 <div class="addr-mini-grid">
 
+                                    <select name="present_division_id"
+                                            id="present_division"
+                                            class="form-select">
 
-                                    <div class="field-group">
+                                        <option value="">বিভাগ</option>
 
-                                        <select name="present_division_id"
-                                                id="present_division"
-                                                class="form-select">
-
-                                            <option value="">
-                                                বিভাগ
-                                            </option>
-
-
-                                            @foreach($divisions as $div)
-
-                                                <option value="{{ $div->id }}"
+                                        @foreach($divisions as $div)
+                                            <option value="{{ $div->id }}"
                                                     {{ old('present_division_id') == $div->id ? 'selected' : '' }}>
-
-                                                    {{ $div->name_bn }}
-
-                                                </option>
-
-                                            @endforeach
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="field-group">
-
-                                        <select name="present_district_id"
-                                                id="present_district"
-                                                class="form-select">
-
-                                            <option value="">
-                                                জেলা
+                                                {{ $div->name_bn }}
                                             </option>
+                                        @endforeach
 
-                                        </select>
+                                    </select>
 
-                                    </div>
+                                    <select name="present_district_id"
+                                            id="present_district"
+                                            class="form-select">
+
+                                        <option value="">জেলা</option>
+
+                                    </select>
 
                                 </div>
-
 
                                 <div class="addr-mini-grid">
 
+                                    <select name="present_upazila_id"
+                                            id="present_upazila"
+                                            class="form-select">
 
-                                    <div class="field-group">
+                                        <option value="">থানা</option>
 
-                                        <select name="present_upazila_id"
-                                                id="present_upazila"
-                                                class="form-select">
-
-                                            <option value="">
-                                                থানা
-                                            </option>
-
-                                        </select>
-
-                                    </div>
-
-
-                                    <div class="field-group">
-
-                                        <input type="text"
-                                               name="present_post_office"
-                                               class="form-control"
-                                               value="{{ old('present_post_office') }}"
-                                               placeholder="ডাকঘর">
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="field-group">
+                                    </select>
 
                                     <input type="text"
-                                           name="present_village_road"
+                                           name="present_post_office"
                                            class="form-control"
-                                           value="{{ old('present_village_road') }}"
-                                           placeholder="গ্রাম/রাস্তা/বাসা নং">
+                                           value="{{ old('present_post_office') }}"
+                                           placeholder="ডাকঘর">
 
                                 </div>
 
-                            </div>
+                                <input type="text"
+                                       name="present_village_road"
+                                       class="form-control"
+                                       value="{{ old('present_village_road') }}"
+                                       placeholder="গ্রাম/রাস্তা/বাসা নং">
 
+                            </div>
                         </div>
 
                     </div>
 
                 </div>
 
-
+                {{-- FOOTER --}}
                 <div class="reg-card-footer">
 
                     <a href="{{ route('dashboard.user.index') }}"
                        class="btn-cancel">
-
                         বাতিল করুন
-
                     </a>
 
-
-                    <button type="submit"
-                            class="btn-save">
-
+                    <button type="submit" class="btn-save" id="submitUserBtn">
                         <i class="fas fa-save"></i>
-
                         সেভ করুন
-
                     </button>
 
                 </div>
 
-
             </form>
 
         </div>
-
     </div>
-
 </div>
 
-
-<div class="code-modal-overlay"
-     id="codeSettingModal">
+{{-- USER CODE SETTING MODAL --}}
+<div class="code-modal-overlay" id="codeSettingModal">
 
     <div class="code-modal">
-
 
         <div class="code-modal-header">
 
             <div class="code-modal-title">
 
                 <div class="code-modal-title-icon">
-
                     <i class="fas fa-cog"></i>
-
                 </div>
 
-                <h5>
-                    User Code Setting
-                </h5>
+                <h5>User Code Setting</h5>
 
             </div>
-
 
             <button type="button"
                     class="code-modal-close"
                     id="closeCodeSetting">
-
                 <i class="fas fa-times"></i>
-
             </button>
 
         </div>
 
+        <div class="code-modal-body">
 
-        
-<div class="code-modal-body">
+            {{-- USER TYPE --}}
+            <div class="code-form-section" id="codeUserTypeSection">
 
-    <!-- Step 1: User Type -->
-    <div class="code-form-section" id="codeUserTypeSection">
-        <div class="code-section-title">ব্যবহারকারীর ধরণ:</div>
+                <div class="code-section-title">
+                    ব্যবহারকারীর ধরণ:
+                </div>
 
-        <select id="code_setting_user_type" class="form-select">
-            <option value="">নির্বাচন করুন</option>
-            <option value="student">শিক্ষার্থী</option>
-            <option value="user">ইউজার</option>
-        </select>
-    </div>
+                <select id="code_setting_user_type" class="form-select">
 
-    <!-- Step 2: Generation Type -->
-    <div class="code-form-section" id="codeGenerationTypeSection" style="display:none;">
-        <div class="code-section-title">ধরন:</div>
+                    <option value="">নির্বাচন করুন</option>
 
-        <div class="code-radio-group">
-            <div class="code-radio-card">
-                <input type="radio"
-                       name="code_generation_type"
-                       id="code_auto"
-                       value="auto">
+                    @foreach($userTypes as $type)
+                        <option
+                            value="{{ $type->id }}"
+                            data-slug="{{ $type->slug }}"
+                            {{ (string)old('user_type_id') === (string)$type->id ? 'selected' : '' }}
+                        >
+                            {{ $type->slug === 'teacher'
+                                ? 'শিক্ষক/স্টাফ'
+                                : $type->name_bn }}
+                        </option>
+                    @endforeach
 
-                <label for="code_auto">
-                    <i class="fas fa-magic"></i> নির্দিষ্ট কোড হতে অটো
+                </select>
+
+            </div>
+
+            {{-- GENERATION TYPE --}}
+            <div class="code-form-section"
+                 id="codeGenerationTypeSection"
+                 style="display:none;">
+
+                <div class="code-section-title">
+                    ধরন:
+                </div>
+
+                <div class="code-radio-group">
+
+                    <div class="code-radio-card">
+
+                        <input type="radio"
+                               name="modal_code_generation_type"
+                               id="code_auto"
+                               value="auto">
+
+                        <label for="code_auto">
+                            <i class="fas fa-magic"></i>
+                            নির্দিষ্ট কোড হতে অটো
+                        </label>
+
+                    </div>
+
+                    <div class="code-radio-card">
+
+                        <input type="radio"
+                               name="modal_code_generation_type"
+                               id="code_manual"
+                               value="manual">
+
+                        <label for="code_manual">
+                            <i class="fas fa-keyboard"></i>
+                            ম্যানুয়াল
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {{-- CODE INPUT --}}
+            <div class="code-form-section"
+                 id="codeInputSection"
+                 style="display:none;">
+
+                <label for="setting_user_code" class="form-label">
+                    ইউজার কোড:
                 </label>
+
+                <input type="text"
+                       id="setting_user_code"
+                       class="form-control"
+                       inputmode="numeric"
+                       autocomplete="off"
+                       placeholder="প্রাথমিক ইউজার কোড লিখুন">
+
+                <small id="setting_user_code_help" class="text-muted">
+                    ইউজার কোড লিখুন।
+                </small>
+
+                <div id="modalManualPreviewInfo"
+                     class="manual-preview-info"></div>
+
             </div>
 
-            <div class="code-radio-card">
-                <input type="radio"
-                       name="code_generation_type"
-                       id="code_manual"
-                       value="manual">
+            {{-- GENDER --}}
+            <div class="code-form-section">
 
-                <label for="code_manual">
-                    <i class="fas fa-keyboard"></i> ম্যানুয়াল
-                </label>
+                <div class="code-section-title">
+                    লিঙ্গ:
+                </div>
+
+                <div class="code-radio-group">
+
+                    <div class="code-radio-card">
+                        <input type="radio"
+                               name="code_setting_gender"
+                               id="code_gender_male"
+                               value="male">
+
+                        <label for="code_gender_male">পুরুষ</label>
+                    </div>
+
+                    <div class="code-radio-card">
+                        <input type="radio"
+                               name="code_setting_gender"
+                               id="code_gender_female"
+                               value="female">
+
+                        <label for="code_gender_female">মহিলা</label>
+                    </div>
+
+                    <div class="code-radio-card">
+                        <input type="radio"
+                               name="code_setting_gender"
+                               id="code_gender_entry"
+                               value="entry">
+
+                        <label for="code_gender_entry">এন্ট্রির মাধ্যমে</label>
+                    </div>
+
+                </div>
+
             </div>
+
         </div>
-    </div>
 
-    <!-- Step 3: User Code -->
-    <div class="code-form-section" id="codeInputSection" style="display:none;">
-        <label for="setting_user_code" class="form-label">
-            ইউজার কোড:
-        </label>
+        <div class="code-modal-footer">
 
-        <input type="text"
-               id="setting_user_code"
-               class="form-control"
-               inputmode="numeric"
-               autocomplete="off"
-               placeholder="প্রাথমিক ইউজার কোড লিখুন">
+            <button type="button"
+                    class="btn-modal-cancel"
+                    id="cancelCodeSetting">
+                বাতিল
+            </button>
 
-        <small id="setting_user_code_help" class="text-muted">
-            ইউজার কোড লিখুন।
-        </small>
-    </div>
+            <button type="button"
+                    class="btn-modal-save"
+                    id="saveCodeSetting">
+                <i class="fas fa-save"></i>
+                সংরক্ষণ করুন
+            </button>
 
-    <!-- Gender -->
-    <div class="code-form-section">
-        <div class="code-section-title">লিঙ্গ:</div>
-
-        <div class="code-radio-group">
-            <div class="code-radio-card">
-                <input type="radio" name="code_setting_gender"
-                       id="code_gender_male" value="male">
-                <label for="code_gender_male">পুরুষ</label>
-            </div>
-
-            <div class="code-radio-card">
-                <input type="radio" name="code_setting_gender"
-                       id="code_gender_female" value="female">
-                <label for="code_gender_female">মহিলা</label>
-            </div>
-
-            <div class="code-radio-card">
-                <input type="radio" name="code_setting_gender"
-                       id="code_gender_entry" value="entry">
-                <label for="code_gender_entry">এন্ট্রির মাধ্যমে</label>
-            </div>
         </div>
+
     </div>
-
-    <div class="code-modal-footer">
-        <button type="button" class="btn-modal-cancel" id="cancelCodeSetting">
-            বাতিল
-        </button>
-
-        <button type="button" class="btn-modal-save" id="saveCodeSetting">
-            <i class="fas fa-save"></i> সংরক্ষণ করুন
-        </button>
-    </div>
-
-</div>
-
-</div>
-
-
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
-$(document).ready(function () {
+$(function () {
     'use strict';
 
     /* ============================================================
        CONFIGURATION
-       ============================================================ */
+    ============================================================ */
 
-    const codeStartMap = {
+    const codeSettingsGetUrl = @json(route('dashboard.user.code-settings.get'));
+    const codeSettingsSaveUrl = @json(route('dashboard.user.code-settings.save'));
+    const previewIdUrl = @json(route('dashboard.user.preview-id'));
+
+    const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+    const defaultStartCodes = {
         student: 101,
-        user: 201,
-        user_admin: 301,
-        support_admin: 401
+        teacher_staff: 201,
+        donor_member: 301
     };
-
-    const codeSettingsGetUrl =
-        @json(route('dashboard.user.code-settings.get'));
-
-    const codeSettingsSaveUrl =
-        @json(route('dashboard.user.code-settings.save'));
-
-    const previewIdUrl =
-        @json(route('dashboard.user.preview-id'));
-
-    const csrfToken =
-        $('meta[name="csrf-token"]').attr('content');
 
     let savedCodeSettings = {};
 
     let currentMainManualCode = '';
-
     let currentMainManualCodeExplicit = false;
 
     let mainManualPreviewOnly = false;
-
-    let modalOriginalSetting = null;
-
     let modalManualCodeTouched = false;
 
     let codeSettingRequestNumber = 0;
 
+    /* ============================================================
+       BASIC HELPERS
+    ============================================================ */
+
+    function currentTypeId() {
+        return String($('#user_type_id').val() || '');
+    }
+
+    function modalTypeId() {
+        return String($('#code_setting_user_type').val() || '');
+    }
+
+    function currentTypeSlug() {
+        return $('#user_type_id option:selected').data('slug') || '';
+    }
+
+    function institutionId() {
+        return $('#institution_id').val() || '';
+    }
+
+    function modalGenerationType() {
+        return $('input[name="modal_code_generation_type"]:checked').val() || '';
+    }
+
+    function settingFor(typeId) {
+        return savedCodeSettings[String(typeId)] || {};
+    }
+
+    function defaultStartForType(typeId) {
+        const slug = $('#user_type_id option[value="' + typeId + '"]').data('slug');
+
+        return defaultStartCodes[slug] || 101;
+    }
+
+    function defaultModalStartForType(typeId) {
+        const slug = $('#code_setting_user_type option[value="' + typeId + '"]').data('slug');
+
+        return defaultStartCodes[slug] || 101;
+    }
+
+    function updateCodeMode(type) {
+        $('#code_generation_type').val(type || 'auto');
+    }
+
+    function getSessionSetting() {
+        try {
+            const data = JSON.parse(
+                sessionStorage.getItem('user_code_setting') || 'null'
+            );
+
+            return data &&
+                String(data.user_type_id || '') === currentTypeId()
+                ? data
+                : null;
+
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function getSessionManual() {
+        try {
+            const data = JSON.parse(
+                sessionStorage.getItem('user_manual_code_setting') || 'null'
+            );
+
+            if (
+                data &&
+                String(data.user_type_id || '') === currentTypeId() &&
+                String(data.institution_id || '') === String(institutionId()) &&
+                data.manual_code
+            ) {
+                return String(data.manual_code);
+            }
+
+        } catch (e) {}
+
+        return '';
+    }
 
     /* ============================================================
-       AGE CALCULATE
-       ============================================================ */
+       AGE CALCULATION
+    ============================================================ */
 
     function calculateAge() {
-        const birthDate = $('#date_of_birth').val();
+        const value = $('#date_of_birth').val();
 
-        if (!birthDate) {
+        if (!value) {
             $('#age').val('');
             return;
         }
 
+        const birth = new Date(value + 'T00:00:00');
         const today = new Date();
-        const birth = new Date(birthDate);
 
         if (birth > today) {
-            $('#age').val('');
-
             alert('জন্ম তারিখ ভবিষ্যতের হতে পারে না!');
 
-            $('#date_of_birth').val('');
+            $('#date_of_birth, #age').val('');
 
             return;
         }
 
-        let age =
-            today.getFullYear() -
-            birth.getFullYear();
+        let age = today.getFullYear() - birth.getFullYear();
 
-        const monthDifference =
-            today.getMonth() -
-            birth.getMonth();
+        const monthDiff = today.getMonth() - birth.getMonth();
 
         if (
-            monthDifference < 0 ||
-            (
-                monthDifference === 0 &&
-                today.getDate() < birth.getDate()
-            )
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birth.getDate())
         ) {
             age--;
         }
@@ -1650,199 +1384,28 @@ $(document).ready(function () {
         calculateAge();
     }
 
-
     /* ============================================================
-       INSTITUTION ID
-       ============================================================ */
-
-    function getInstitutionId() {
-        return $('#institution_id').val() || '';
-    }
-
-
-    /* ============================================================
-       USER TYPE
-       ============================================================ */
-
-    function getCurrentUserType() {
-        return $('#user_type').val() || '';
-    }
-
-    function getModalUserType() {
-        return $('#code_setting_user_type').val() || '';
-    }
-
-    function getSelectedGenerationType() {
-    return $('input[name="code_generation_type"]:checked').val() || '';
-}
-
-    function getRoleStart(userType) {
-        const saved = savedCodeSettings[userType];
-
-        if (
-            saved &&
-            Number.isInteger(Number(saved.start_code)) &&
-            Number(saved.start_code) > 0
-        ) {
-            return Number(saved.start_code);
-        }
-
-        return codeStartMap[userType] || 101;
-    }
-
-
-    /* ============================================================
-       SESSION STORAGE
-       ============================================================ */
-
-    function getSavedCodeSetting() {
-        try {
-            const value =
-                sessionStorage.getItem('user_code_setting');
-
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('Code setting parse error:', error);
-            return null;
-        }
-    }
-
-    function saveCodeSettingToSession(setting) {
-        try {
-            sessionStorage.setItem(
-                'user_code_setting',
-                JSON.stringify(setting)
-            );
-        } catch (error) {
-            console.error('Code setting session error:', error);
-        }
-    }
-
-    function getSavedManualCode() {
-        try {
-            const value =
-                sessionStorage.getItem('user_manual_code_setting');
-
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('Manual code restore error:', error);
-            return null;
-        }
-    }
-
-    function saveManualCode(userType, institutionId, manualCode) {
-        const data = {
-            user_type: userType,
-            institution_id: String(institutionId || ''),
-            manual_code: String(manualCode || '')
-        };
-
-        sessionStorage.setItem(
-            'user_manual_code_setting',
-            JSON.stringify(data)
-        );
-    }
-
-    function clearSavedManualCode() {
-        sessionStorage.removeItem('user_manual_code_setting');
-    }
-
-    function restoreSavedManualCode(userType, institutionId) {
-        const saved = getSavedManualCode();
-
-        if (!saved) {
-            return false;
-        }
-
-        if (
-            saved.user_type !== userType ||
-            saved.institution_id !== String(institutionId || '') ||
-            !saved.manual_code
-        ) {
-            return false;
-        }
-
-        currentMainManualCode = String(saved.manual_code);
-        currentMainManualCodeExplicit = true;
-        mainManualPreviewOnly = false;
-
-        $('#custom_id').val(currentMainManualCode);
-
-        $('#manual_user_code').val(currentMainManualCode);
-
-        return true;
-    }
-
-
-    /* ============================================================
-       MAIN FORM CODE TYPE
-       ============================================================ */
-
-    function updateHiddenCodeType(type) {
-        $('#code_generation_type').val(type || 'auto');
-    }
-
-    function getCurrentMainCodeSetting() {
-        return {
-            user_type: getCurrentUserType(),
-            generation_type:
-                $('#code_generation_type').val() || 'auto',
-            manual_code: currentMainManualCode || ''
-        };
-    }
-
-
-    /* ============================================================
-       AUTO MODE UI
-       ============================================================ */
-
-    function setAutoModeUI() {
-        $('#manualCodeField').removeClass('show');
-        $('#manualPreviewInfo').removeClass('show');
-        $('#autoCodeInfo').show();
-
-        $('#codeModeHint')
-            .text('Auto Code')
-            .css('color', '#6b7280');
-    }
-
-
-    /* ============================================================
-       MANUAL MODE UI
-       ============================================================ */
-
-    function setManualModeUI() {
-        const userType = getCurrentUserType();
-
-        $('#manualCodeField').addClass('show');
-        $('#manualPreviewInfo').addClass('show');
-        $('#autoCodeInfo').hide();
-
-        $('#manual_user_code').attr(
-            'placeholder',
-            'খালি রাখলে পরবর্তী Manual Code তৈরি হবে'
-        );
-
-        $('#codeModeHint')
-            .text('Manual Code')
-            .css('color', '#047857');
-    }
-
-
-    /* ============================================================
-       LOAD SETTINGS FROM DATABASE
-       ============================================================ */
+       LOAD USER CODE SETTINGS
+    ============================================================ */
 
     function loadUserCodeSettings() {
+
         return $.ajax({
             url: codeSettingsGetUrl,
             type: 'GET',
             dataType: 'json',
+
+            data: {
+                institution_id: institutionId()
+            },
+
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
+
         }).then(function (response) {
+
             if (!response || !response.success) {
                 throw new Error(
                     response && response.message
@@ -1857,479 +1420,396 @@ $(document).ready(function () {
         });
     }
 
-    function loadSettingForRole(userType) {
-        const requestNumber = ++codeSettingRequestNumber;
+    /* ============================================================
+       CODE PREVIEW REQUEST
+    ============================================================ */
 
-        if (!userType) {
-            $('#setting_user_code').val('');
-            return;
-        }
+    function previewCode(typeId, generationType) {
 
-        $('#setting_user_code').val('');
+        return $.ajax({
+            url: previewIdUrl,
+            type: 'GET',
+            dataType: 'json',
 
-        loadUserCodeSettings()
-            .done(function (settings) {
-                if (requestNumber !== codeSettingRequestNumber) {
-                    return;
-                }
+            data: {
+                user_type_id: typeId,
+                institution_id: institutionId(),
+                generation_type: generationType
+            },
 
-                const setting = settings[userType];
-
-                $('#setting_user_code').val(
-                    setting
-                        ? setting.start_code
-                        : (codeStartMap[userType] || 101)
-                );
-            })
-            .fail(function (xhr) {
-                if (requestNumber !== codeSettingRequestNumber) {
-                    return;
-                }
-
-                console.error(
-                    'Load User Code Setting Error:',
-                    xhr.responseJSON || xhr.responseText
-                );
-
-                $('#setting_user_code').val(
-                    codeStartMap[userType] || 101
-                );
-            });
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
     }
 
+    /* ============================================================
+       CODE UI
+    ============================================================ */
+
+    function setAutoUI() {
+
+        $('#manualCodeField').removeClass('show');
+
+        $('#manualPreviewInfo')
+            .removeClass('show')
+            .text('');
+
+        $('#autoCodeInfo').show();
+
+        $('#codeModeHint')
+            .text('Auto Code')
+            .css('color', '#6b7280');
+    }
+
+    function setManualUI() {
+
+        $('#manualCodeField').addClass('show');
+
+        $('#autoCodeInfo').hide();
+
+        $('#codeModeHint')
+            .text('Manual Code')
+            .css('color', '#047857');
+    }
 
     /* ============================================================
-       AUTO ID PREVIEW
-       ============================================================ */
+       AUTO CODE PREVIEW
+    ============================================================ */
 
-    function autoFillId(userType, institutionId) {
-        if (!userType) {
+    function autoFillId(typeId) {
+
+        if (!typeId) {
             $('#custom_id')
                 .val('')
-                .attr('placeholder', 'প্রথমে ইউজার ধরণ নির্বাচন করুন');
+                .attr('placeholder', 'প্রথমে ব্যবহারকারীর ধরণ নির্বাচন করুন');
 
             return;
         }
+
+        const requestNumber = ++codeSettingRequestNumber;
 
         $('#custom_id')
             .val('লোড হচ্ছে...')
             .attr('placeholder', 'অটো কোড লোড হচ্ছে...');
 
-        $.ajax({
-            url: previewIdUrl,
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                user_type: userType,
-                institution_id: institutionId,
-                generation_type: 'auto'
-            },
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .done(function (response) {
-            console.log('Auto User Code Preview:', response);
+        previewCode(typeId, 'auto')
 
-            if (
-                response &&
-                response.success &&
-                response.preview_id !== undefined &&
-                response.preview_id !== null
-            ) {
-                $('#custom_id')
-                    .val(response.preview_id)
-                    .attr('placeholder', 'Auto Code Preview');
+            .done(function (response) {
 
-                return;
-            }
+                if (requestNumber !== codeSettingRequestNumber) {
+                    return;
+                }
 
-            $('#custom_id')
-                .val('')
-                .attr('placeholder', 'Auto Code পাওয়া যায়নি');
-        })
-        .fail(function (xhr) {
-            console.error(
-                'Auto User Code Preview Error:',
-                xhr.responseJSON || xhr.responseText
-            );
+                if (
+                    response &&
+                    response.success &&
+                    response.preview_id != null
+                ) {
+                    $('#custom_id')
+                        .val(response.preview_id)
+                        .attr('placeholder', 'Auto Code Preview');
 
-            $('#custom_id')
-                .val('')
-                .attr('placeholder', 'Auto Code লোড করা যায়নি');
-        });
-    }
+                } else {
+                    $('#custom_id')
+                        .val('')
+                        .attr('placeholder', 'Auto Code পাওয়া যায়নি');
+                }
+            })
 
+            .fail(function (xhr) {
 
-    /* ============================================================
-       MANUAL ID PREVIEW - MAIN FORM
-       ============================================================ */
+                if (requestNumber !== codeSettingRequestNumber) {
+                    return;
+                }
 
-    function manualFillId(userType, institutionId) {
-        if (!userType) {
-            $('#custom_id')
-                .val('')
-                .attr('placeholder', 'প্রথমে ইউজার ধরণ নির্বাচন করুন');
-
-            return;
-        }
-
-        $('#custom_id')
-            .val('লোড হচ্ছে...')
-            .attr('placeholder', 'পরবর্তী Manual Code লোড হচ্ছে...');
-
-        $.ajax({
-            url: previewIdUrl,
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                user_type: userType,
-                institution_id: institutionId,
-                generation_type: 'manual'
-            },
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .done(function (response) {
-            console.log('Manual User Code Preview:', response);
-
-            if (
-                response &&
-                response.success &&
-                response.preview_id !== undefined &&
-                response.preview_id !== null
-            ) {
-                $('#custom_id')
-                    .val(response.preview_id)
-                    .attr('placeholder', 'পরবর্তী Manual Code');
-
-                mainManualPreviewOnly = true;
-
-                return;
-            }
-
-            $('#custom_id')
-                .val('')
-                .attr('placeholder', 'Manual Code পাওয়া যায়নি');
-        })
-        .fail(function (xhr) {
-            console.error(
-                'Manual User Code Preview Error:',
-                xhr.responseJSON || xhr.responseText
-            );
-
-            $('#custom_id')
-                .val('')
-                .attr(
-                    'placeholder',
-                    'পরবর্তী Manual Code লোড করা যায়নি'
-                );
-        });
-    }
-
-
-    /* ============================================================
-       MANUAL ID PREVIEW - MODAL
-       ============================================================ */
-
-    function previewManualCodeInModal(userType, institutionId) {
-        if (!userType) {
-            $('#manualPreviewInfo').text('');
-            return;
-        }
-
-        $('#manualPreviewInfo')
-            .text('পরবর্তী Manual Code লোড হচ্ছে...');
-
-        $.ajax({
-            url: previewIdUrl,
-            type: 'GET',
-            dataType: 'json',
-            data: {
-                user_type: userType,
-                institution_id: institutionId,
-                generation_type: 'manual'
-            },
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .done(function (response) {
-            console.log('Manual Modal Preview:', response);
-
-            if (
-                response &&
-                response.success &&
-                response.preview_id !== undefined &&
-                response.preview_id !== null
-            ) {
-                $('#manualPreviewInfo').text(
-                    'পরবর্তী Manual Code: ' + response.preview_id
+                console.error(
+                    'Auto User Code Preview Error:',
+                    xhr.responseJSON || xhr.responseText
                 );
 
-                return;
-            }
-
-            $('#manualPreviewInfo').text(
-                'পরবর্তী Manual Code পাওয়া যায়নি।'
-            );
-        })
-        .fail(function (xhr) {
-            console.error(
-                'Manual Modal Preview Error:',
-                xhr.responseJSON || xhr.responseText
-            );
-
-$('#setting_user_code_help').text(
-    'পরবর্তী Manual Code: ' + response.preview_id
-);
-        });
+                $('#custom_id')
+                    .val('')
+                    .attr('placeholder', 'Auto Code লোড করা যায়নি');
+            });
     }
 
-
     /* ============================================================
-       PREPARE MANUAL MAIN FORM
-       ============================================================ */
+       MANUAL CODE PREVIEW
+    ============================================================ */
 
-    function prepareManualMainId() {
-        const userType = getCurrentUserType();
-        const institutionId = getInstitutionId();
+    function manualPreview(typeId, target) {
 
-        if (!userType) {
+        if (!typeId) return;
+
+        previewCode(typeId, 'manual')
+
+            .done(function (response) {
+
+                if (
+                    !response ||
+                    !response.success ||
+                    response.preview_id == null
+                ) {
+                    target.text('পরবর্তী Manual Code পাওয়া যায়নি।');
+                    return;
+                }
+
+                const code = String(response.preview_id);
+
+                target.text('পরবর্তী Manual Code: ' + code);
+
+                if (
+                    target.attr('id') === 'modalManualPreviewInfo' &&
+                    !modalManualCodeTouched &&
+                    !$('#setting_user_code').val()
+                ) {
+                    $('#setting_user_code').val(code);
+
+                    $('#setting_user_code_help').text(
+                        'পরবর্তী Manual Starting Code: ' + code
+                    );
+                }
+
+                if (
+                    target.attr('id') === 'manualPreviewInfo' &&
+                    !currentMainManualCodeExplicit
+                ) {
+                    $('#custom_id').val(code);
+
+                    mainManualPreviewOnly = true;
+                }
+            })
+
+            .fail(function (xhr) {
+
+                console.error(
+                    'Manual Code Preview Error:',
+                    xhr.responseJSON || xhr.responseText
+                );
+
+                target.text('Manual Code Preview লোড করা যায়নি।');
+            });
+    }
+
+    function prepareManualMainCode() {
+
+        const typeId = currentTypeId();
+
+        if (!typeId) {
             $('#custom_id').val('');
             return;
         }
 
-        if (
-            currentMainManualCodeExplicit &&
-            currentMainManualCode
-        ) {
+        if (currentMainManualCodeExplicit && currentMainManualCode) {
+
             $('#custom_id').val(currentMainManualCode);
+
             return;
         }
 
-        if (restoreSavedManualCode(userType, institutionId)) {
-            $('#custom_id').val(currentMainManualCode);
-            return;
-        }
+        setManualUI();
 
-        currentMainManualCode = '';
-        currentMainManualCodeExplicit = false;
-        mainManualPreviewOnly = true;
+        $('#manualPreviewInfo')
+            .addClass('show')
+            .text('পরবর্তী Manual Code লোড হচ্ছে...');
 
-        manualFillId(userType, institutionId);
+        manualPreview(typeId, $('#manualPreviewInfo'));
     }
 
-
     /* ============================================================
-       USER TYPE CHANGE - MAIN FORM
-       ============================================================ */
+       USER TYPE CHANGE
+    ============================================================ */
 
-    $('#user_type')
-        .off('change.userCode')
-        .on('change.userCode', function () {
-            const userType = $(this).val();
-            const institutionId = getInstitutionId();
+    $('#user_type_id')
+        .off('change.userType')
+        .on('change.userType', function () {
+
+            const typeId = currentTypeId();
 
             currentMainManualCode = '';
             currentMainManualCodeExplicit = false;
             mainManualPreviewOnly = false;
 
-            if (userType === 'student') {
-                $('#studentFields').addClass('show');
-            } else {
-                $('#studentFields').removeClass('show');
-            }
+            if (!typeId) {
 
-            if (!userType) {
+                updateCodeMode('auto');
+
+                setAutoUI();
+
                 $('#custom_id').val('');
-                updateHiddenCodeType('auto');
-                setAutoModeUI();
+
                 return;
             }
 
-            const setting = getSavedCodeSetting();
+            const sessionSetting = getSessionSetting();
 
-            if (
-                setting &&
-                setting.user_type === userType &&
-                setting.generation_type === 'manual'
-            ) {
-                updateHiddenCodeType('manual');
-                setManualModeUI();
-                prepareManualMainId();
-                return;
-            }
+            const generationType = sessionSetting
+                ? sessionSetting.generation_type
+                : 'auto';
 
-            updateHiddenCodeType('auto');
-            setAutoModeUI();
-            autoFillId(userType, institutionId);
-        });
+            updateCodeMode(generationType);
 
+            if (generationType === 'manual') {
 
-    /* ============================================================
-       GENERATION TYPE CHANGE - MAIN FORM
-       ============================================================ */
+                const savedManual = getSessionManual();
 
-    $('#code_generation_type')
-        .off('change.userCode')
-        .on('change.userCode', function () {
-            const type = $(this).val();
+                if (savedManual) {
 
-            if (type === 'manual') {
-                setManualModeUI();
-                prepareManualMainId();
+                    currentMainManualCode = savedManual;
+
+                    currentMainManualCodeExplicit = true;
+
+                    $('#manual_user_code').val(savedManual);
+
+                    $('#custom_id').val(savedManual);
+
+                } else {
+
+                    $('#manual_user_code').val('');
+
+                    prepareManualMainCode();
+                }
+
+                setManualUI();
+
             } else {
-                currentMainManualCode = '';
-                currentMainManualCodeExplicit = false;
-                mainManualPreviewOnly = false;
 
-                setAutoModeUI();
+                $('#manual_user_code').val('');
 
-                autoFillId(
-                    getCurrentUserType(),
-                    getInstitutionId()
-                );
+                setAutoUI();
+
+                autoFillId(typeId);
             }
         });
 
-
     /* ============================================================
-       AGE AND GENDER
-       ============================================================ */
+       MANUAL MAIN CODE INPUT
+    ============================================================ */
 
-    $('input[name="gender"]')
-        .off('change.userGender')
-        .on('change.userGender', function () {
-            // Gender selection does not affect code generation.
+    $('#manual_user_code')
+        .off('input.manualMain')
+        .on('input.manualMain', function () {
+
+            const value = String($(this).val() || '').replace(/\D/g, '');
+
+            $(this).val(value);
+
+            currentMainManualCode = value;
+
+            currentMainManualCodeExplicit = value.length > 0;
+
+            mainManualPreviewOnly = false;
+
+            $('#custom_id').val(value);
         });
 
-
     /* ============================================================
-       CLASS -> SECTION AJAX
-       ============================================================ */
-
-    $('#class_id')
-        .off('change.userSection')
-        .on('change.userSection', function () {
-            const classId = $(this).val();
-
-            const sectionSelect = $('#section_id');
-
-            sectionSelect.html(
-                '<option value="">শাখা নির্বাচন করুন</option>'
-            );
-
-            if (!classId) {
-                return;
-            }
-
-            $.getJSON(
-                '{{ url('/dashboard/user/sections') }}/' + classId
-            )
-            .done(function (data) {
-                $.each(data, function (index, section) {
-                    sectionSelect.append(
-                        $('<option>', {
-                            value: section.id,
-                            text: section.section_name
-                        })
-                    );
-                });
-            })
-            .fail(function (xhr) {
-                console.error(
-                    'Section Load Error:',
-                    xhr.responseText
-                );
-            });
-        });
-
-
-    /* ============================================================
-       ADDRESS AJAX HELPERS
-       ============================================================ */
+       DISTRICT / UPAZILA AJAX
+    ============================================================ */
 
     function loadDistricts(
         divisionId,
-        districtSelect,
-        upazilaSelect
+        districtSelector,
+        upazilaSelector,
+        selectedDistrict,
+        selectedUpazila
     ) {
-        $(districtSelect).html(
-            '<option value="">জেলা নির্বাচন করুন</option>'
-        );
 
-        $(upazilaSelect).html(
-            '<option value="">থানা নির্বাচন করুন</option>'
-        );
+        const district = $(districtSelector);
 
-        if (!divisionId) {
-            return;
-        }
+        const upazila = $(upazilaSelector);
 
-        $.getJSON(
-            '{{ url('/get-districts') }}/' + divisionId
-        )
-        .done(function (data) {
-            $.each(data, function (key, value) {
-                $(districtSelect).append(
-                    $('<option>', {
-                        value: value.id,
-                        text: value.name_bn
-                    })
+        district.html('<option value="">জেলা নির্বাচন করুন</option>');
+
+        upazila.html('<option value="">থানা নির্বাচন করুন</option>');
+
+        if (!divisionId) return;
+
+        $.getJSON('{{ url('/get-districts') }}/' + divisionId)
+
+            .done(function (data) {
+
+                $.each(data, function (_, item) {
+
+                    district.append(
+                        $('<option>', {
+                            value: item.id,
+                            text: item.name_bn
+                        })
+                    );
+                });
+
+                if (selectedDistrict) {
+
+                    district.val(String(selectedDistrict));
+
+                    loadUpazilas(
+                        selectedDistrict,
+                        upazilaSelector,
+                        selectedUpazila
+                    );
+                }
+            })
+
+            .fail(function (xhr) {
+
+                console.error(
+                    'District Load Error:',
+                    xhr.responseText
                 );
             });
-        })
-        .fail(function (xhr) {
-            console.error(
-                'District Load Error:',
-                xhr.responseText
-            );
-        });
     }
 
-    function loadUpazilas(districtId, upazilaSelect) {
-        $(upazilaSelect).html(
-            '<option value="">থানা নির্বাচন করুন</option>'
-        );
+    function loadUpazilas(
+        districtId,
+        upazilaSelector,
+        selectedUpazila
+    ) {
 
-        if (!districtId) {
-            return;
-        }
+        const upazila = $(upazilaSelector);
 
-        $.getJSON(
-            '{{ url('/get-upazilas') }}/' + districtId
-        )
-        .done(function (data) {
-            $.each(data, function (key, value) {
-                $(upazilaSelect).append(
-                    $('<option>', {
-                        value: value.id,
-                        text: value.name_bn
-                    })
+        upazila.html('<option value="">থানা নির্বাচন করুন</option>');
+
+        if (!districtId) return;
+
+        $.getJSON('{{ url('/get-upazilas') }}/' + districtId)
+
+            .done(function (data) {
+
+                $.each(data, function (_, item) {
+
+                    upazila.append(
+                        $('<option>', {
+                            value: item.id,
+                            text: item.name_bn
+                        })
+                    );
+                });
+
+                if (selectedUpazila) {
+                    upazila.val(String(selectedUpazila));
+                }
+            })
+
+            .fail(function (xhr) {
+
+                console.error(
+                    'Upazila Load Error:',
+                    xhr.responseText
                 );
             });
-        })
-        .fail(function (xhr) {
-            console.error(
-                'Upazila Load Error:',
-                xhr.responseText
-            );
-        });
     }
-
 
     /* ============================================================
-       PERMANENT ADDRESS
-       ============================================================ */
+       ADDRESS EVENTS
+    ============================================================ */
 
     $('#permanent_division')
         .off('change.userAddress')
         .on('change.userAddress', function () {
+
             loadDistricts(
                 $(this).val(),
                 '#permanent_district',
@@ -2340,20 +1820,17 @@ $('#setting_user_code_help').text(
     $('#permanent_district')
         .off('change.userAddress')
         .on('change.userAddress', function () {
+
             loadUpazilas(
                 $(this).val(),
                 '#permanent_upazila'
             );
         });
 
-
-    /* ============================================================
-       PRESENT ADDRESS
-       ============================================================ */
-
     $('#present_division')
         .off('change.userAddress')
         .on('change.userAddress', function () {
+
             loadDistricts(
                 $(this).val(),
                 '#present_district',
@@ -2364,59 +1841,38 @@ $('#setting_user_code_help').text(
     $('#present_district')
         .off('change.userAddress')
         .on('change.userAddress', function () {
+
             loadUpazilas(
                 $(this).val(),
                 '#present_upazila'
             );
         });
 
-
     /* ============================================================
        SAME ADDRESS
-       ============================================================ */
+    ============================================================ */
 
     $('#same_as_permanent')
-        .off('change.userAddress')
-        .on('change.userAddress', function () {
-            if (!$(this).is(':checked')) {
-                return;
-            }
+        .off('change.sameAddress')
+        .on('change.sameAddress', function () {
 
-            const permanentDivision =
-                $('#permanent_division').val();
+            if (!this.checked) return;
 
-            const permanentDistrict =
-                $('#permanent_district').val();
+            const division = $('#permanent_division').val();
 
-            const permanentUpazila =
-                $('#permanent_upazila').val();
+            const district = $('#permanent_district').val();
 
-            $('#present_division').val(permanentDivision);
+            const upazila = $('#permanent_upazila').val();
 
-            if (permanentDivision) {
-                loadDistricts(
-                    permanentDivision,
-                    '#present_district',
-                    '#present_upazila'
-                );
+            $('#present_division').val(division);
 
-                setTimeout(function () {
-                    $('#present_district').val(permanentDistrict);
-
-                    if (permanentDistrict) {
-                        loadUpazilas(
-                            permanentDistrict,
-                            '#present_upazila'
-                        );
-
-                        setTimeout(function () {
-                            $('#present_upazila').val(
-                                permanentUpazila
-                            );
-                        }, 300);
-                    }
-                }, 300);
-            }
+            loadDistricts(
+                division,
+                '#present_district',
+                '#present_upazila',
+                district,
+                upazila
+            );
 
             $('input[name="present_post_office"]').val(
                 $('input[name="permanent_post_office"]').val()
@@ -2427,498 +1883,476 @@ $('#setting_user_code_help').text(
             );
         });
 
-
     /* ============================================================
-       RESTORE OLD ADDRESS VALUES
-       ============================================================ */
+       INITIAL ADDRESS LOAD
+    ============================================================ */
 
-    const oldPermanentDistrict =
-        @json(old('permanent_district_id'));
-
-    const oldPermanentUpazila =
-        @json(old('permanent_upazila_id'));
-
-    if ($('#permanent_division').val()) {
-        loadDistricts(
-            $('#permanent_division').val(),
-            '#permanent_district',
-            '#permanent_upazila'
-        );
-
-        setTimeout(function () {
-            if (oldPermanentDistrict) {
-                $('#permanent_district').val(
-                    oldPermanentDistrict
-                );
-
-                loadUpazilas(
-                    oldPermanentDistrict,
-                    '#permanent_upazila'
-                );
-
-                setTimeout(function () {
-                    $('#permanent_upazila').val(
-                        oldPermanentUpazila
-                    );
-                }, 300);
-            }
-        }, 300);
-    }
-
-    const oldPresentDistrict =
-        @json(old('present_district_id'));
-
-    const oldPresentUpazila =
-        @json(old('present_upazila_id'));
-
-    if ($('#present_division').val()) {
-        loadDistricts(
-            $('#present_division').val(),
-            '#present_district',
-            '#present_upazila'
-        );
-
-        setTimeout(function () {
-            if (oldPresentDistrict) {
-                $('#present_district').val(
-                    oldPresentDistrict
-                );
-
-                loadUpazilas(
-                    oldPresentDistrict,
-                    '#present_upazila'
-                );
-
-                setTimeout(function () {
-                    $('#present_upazila').val(
-                        oldPresentUpazila
-                    );
-                }, 300);
-            }
-        }, 300);
-    }
-
-/* ============================================================
-   CODE SETTING MODAL OPEN / CLOSE
-   ============================================================ */
-
-function resetCodeSettingModal() {
-
-    $('#code_setting_user_type').val('');
-
-    $('input[name="code_generation_type"]')
-        .prop('checked', false);
-
-    $('#setting_user_code').val('');
-
-    $('#setting_user_code_help').text(
-        'প্রথমে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
+    loadDistricts(
+        $('#permanent_division').val(),
+        '#permanent_district',
+        '#permanent_upazila',
+        @json(old('permanent_district_id')),
+        @json(old('permanent_upazila_id'))
     );
 
-    $('#codeGenerationTypeSection').hide();
+    loadDistricts(
+        $('#present_division').val(),
+        '#present_district',
+        '#present_upazila',
+        @json(old('present_district_id')),
+        @json(old('present_upazila_id'))
+    );
 
-    $('#codeInputSection').hide();
+    /* ============================================================
+       MODAL RESET
+    ============================================================ */
 
-    modalManualCodeTouched = false;
-}
+    function resetCodeSettingModal() {
 
+        $('#code_setting_user_type').val('');
 
-function openCodeSettingModal() {
+        $('input[name="modal_code_generation_type"]')
+            .prop('checked', false);
 
-    modalOriginalSetting = getCurrentMainCodeSetting();
+        $('input[name="code_setting_gender"]')
+            .prop('checked', false);
 
-    modalManualCodeTouched = false;
+        $('#setting_user_code').val('');
 
-    resetCodeSettingModal();
+        $('#setting_user_code_help').text(
+            'প্রথমে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
+        );
 
-    const userType =
-        modalOriginalSetting.user_type || getCurrentUserType();
+        $('#codeGenerationTypeSection, #codeInputSection').hide();
 
-    if (userType) {
+        $('#modalManualPreviewInfo')
+            .removeClass('show')
+            .text('');
 
-        $('#code_setting_user_type').val(userType);
-
-        $('#codeGenerationTypeSection').show();
-
-        const generationType =
-            modalOriginalSetting.generation_type || 'auto';
-
-        $(
-            'input[name="code_generation_type"][value="' +
-            generationType +
-            '"]'
-        ).prop('checked', true);
-
-        $('#codeInputSection').show();
-
-        if (generationType === 'auto') {
-
-            loadSettingForRole(userType);
-
-            $('#setting_user_code_help').text(
-                'অটো জেনারেশনের প্রাথমিক কোড। প্রয়োজনে পরিবর্তন করতে পারবেন।'
-            );
-
-        } else {
-
-            const manualCode =
-                modalOriginalSetting.manual_code || '';
-
-            $('#setting_user_code').val(manualCode);
-
-            $('#setting_user_code').attr(
-                'placeholder',
-                'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন'
-            );
-
-            $('#setting_user_code_help').text(
-                'নিজের পছন্দমতো Manual Code লিখুন।'
-            );
-
-            if (!manualCode) {
-
-                previewManualCodeInModal(
-                    userType,
-                    getInstitutionId()
-                );
-            }
-        }
+        modalManualCodeTouched = false;
     }
 
-    $('#codeSettingModal').addClass('show');
+    /* ============================================================
+       OPEN MODAL
+    ============================================================ */
 
-    $('body').css('overflow', 'hidden');
+    function openCodeSettingModal() {
 
-    console.log('Code Setting Modal Opened');
-}
+        resetCodeSettingModal();
 
+        const selectedTypeId = currentTypeId();
 
-function closeCodeSettingModal() {
+        if (selectedTypeId) {
 
-    $('#codeSettingModal').removeClass('show');
+            $('#code_setting_user_type').val(selectedTypeId);
+        }
 
-    $('body').css('overflow', '');
+        const typeId = modalTypeId();
 
-    modalManualCodeTouched = false;
-}
+        if (typeId) {
 
+            $('#codeGenerationTypeSection').show();
 
-// OPEN BUTTON
-$(document)
-    .off('click.userCodeModal', '#openCodeSetting')
-    .on('click.userCodeModal', '#openCodeSetting', function (event) {
+            const currentMode = $('#code_generation_type').val() || 'auto';
 
-        event.preventDefault();
-        event.stopPropagation();
+            $('input[name="modal_code_generation_type"][value="' + currentMode + '"]')
+                .prop('checked', true);
 
-        openCodeSettingModal();
-    });
+            $('#codeInputSection').show();
 
+            loadUserCodeSettings()
 
-// CLOSE AND CANCEL BUTTON
-$(document)
-    .off(
-        'click.userCodeModal',
-        '#closeCodeSetting, #cancelCodeSetting'
-    )
-    .on(
-        'click.userCodeModal',
-        '#closeCodeSetting, #cancelCodeSetting',
-        function (event) {
+                .done(function () {
+
+                    const setting = settingFor(typeId);
+
+                    const mode = modalGenerationType();
+
+                    const gender = setting.gender_preference || 'entry';
+
+                    $('input[name="code_setting_gender"][value="' + gender + '"]')
+                        .prop('checked', true);
+
+                    if (mode === 'auto') {
+
+                        const start = Number(setting.start_code) > 0
+                            ? setting.start_code
+                            : defaultModalStartForType(typeId);
+
+                        $('#setting_user_code').val(start);
+
+                        $('#setting_user_code_help').text(
+                            'অটো জেনারেশনের প্রাথমিক কোড। প্রয়োজনে পরিবর্তন করতে পারবেন।'
+                        );
+
+                    } else {
+
+                        const manual = Number(setting.manual_start_code) > 0
+                            ? setting.manual_start_code
+                            : '';
+
+                        $('#setting_user_code').val(manual);
+
+                        if (manual) {
+
+                            $('#setting_user_code_help').text(
+                                'সর্বশেষ সংরক্ষিত Manual Starting Code: ' + manual
+                            );
+
+                        } else {
+
+                            $('#modalManualPreviewInfo')
+                                .addClass('show');
+
+                            manualPreview(
+                                typeId,
+                                $('#modalManualPreviewInfo')
+                            );
+                        }
+                    }
+                })
+
+                .fail(function (xhr) {
+
+                    console.error(
+                        'Modal Setting Load Error:',
+                        xhr.responseJSON || xhr.responseText
+                    );
+
+                    $('#setting_user_code').val('');
+                });
+        }
+
+        $('#codeSettingModal').addClass('show');
+
+        $('body').css('overflow', 'hidden');
+    }
+
+    /* ============================================================
+       CLOSE MODAL
+    ============================================================ */
+
+    function closeCodeSettingModal() {
+
+        $('#codeSettingModal').removeClass('show');
+
+        $('body').css('overflow', '');
+    }
+
+    /* ============================================================
+       MODAL OPEN EVENT
+    ============================================================ */
+
+    $(document)
+        .off('click.userCodeModal', '#openCodeSetting')
+        .on('click.userCodeModal', '#openCodeSetting', function (event) {
 
             event.preventDefault();
 
-            closeCodeSettingModal();
-        }
-    );
+            event.stopPropagation();
 
+            openCodeSettingModal();
+        });
 
-// OUTSIDE CLICK
-$(document)
-    .off('click.userCodeModal', '#codeSettingModal')
-    .on('click.userCodeModal', '#codeSettingModal', function (event) {
+    /* ============================================================
+       MODAL CLOSE EVENTS
+    ============================================================ */
 
-        if (event.target === this) {
-            closeCodeSettingModal();
-        }
-    });
+    $(document)
+        .off('click.userCodeModal', '#closeCodeSetting, #cancelCodeSetting')
+        .on(
+            'click.userCodeModal',
+            '#closeCodeSetting, #cancelCodeSetting',
+            function (event) {
 
+                event.preventDefault();
 
-// ESCAPE KEY
-$(document)
-    .off('keydown.userCodeModal')
-    .on('keydown.userCodeModal', function (event) {
+                closeCodeSettingModal();
+            }
+        );
 
-        if (
-            event.key === 'Escape' &&
-            $('#codeSettingModal').hasClass('show')
-        ) {
-            closeCodeSettingModal();
-        }
-    });
+    $(document)
+        .off('click.userCodeModal', '#codeSettingModal')
+        .on('click.userCodeModal', '#codeSettingModal', function (event) {
 
+            if (event.target === this) {
+                closeCodeSettingModal();
+            }
+        });
 
-/* ============================================================
-   MODAL USER TYPE CHANGE
-   ============================================================ */
+    $(document)
+        .off('keydown.userCodeModal')
+        .on('keydown.userCodeModal', function (event) {
 
-$(document)
-    .off('change.userCodeModal', '#code_setting_user_type')
-    .on(
-        'change.userCodeModal',
-        '#code_setting_user_type',
-        function () {
+            if (
+                event.key === 'Escape' &&
+                $('#codeSettingModal').hasClass('show')
+            ) {
+                closeCodeSettingModal();
+            }
+        });
 
-            const userType = $(this).val();
+    /* ============================================================
+       MODAL USER TYPE CHANGE
+    ============================================================ */
 
-            // আগের কোড পরিষ্কার
+    $('#code_setting_user_type')
+        .off('change.userCodeModal')
+        .on('change.userCodeModal', function () {
+
+            const typeId = modalTypeId();
+
             $('#setting_user_code').val('');
 
-            $('input[name="code_generation_type"]')
+            $('input[name="modal_code_generation_type"]')
                 .prop('checked', false);
 
+            $('#modalManualPreviewInfo')
+                .removeClass('show')
+                .text('');
+
             modalManualCodeTouched = false;
 
-            // User Type না থাকলে পরবর্তী Section Hide
-            if (!userType) {
+            if (!typeId) {
 
-                $('#codeGenerationTypeSection').hide();
-
-                $('#codeInputSection').hide();
+                $('#codeGenerationTypeSection, #codeInputSection').hide();
 
                 return;
             }
 
-            // Generation Type দেখাও
-            $('#codeGenerationTypeSection').slideDown(200);
+            $('#codeGenerationTypeSection').slideDown(150);
 
-            // Auto/Manual নির্বাচন না করা পর্যন্ত Input Hide
             $('#codeInputSection').hide();
 
-            $('#setting_user_code_help').text(
-                'এখন Auto অথবা Manual নির্বাচন করুন।'
-            );
-        }
-    );
+            loadUserCodeSettings();
+        });
 
+    /* ============================================================
+       MODAL GENERATION TYPE CHANGE
+    ============================================================ */
 
-/* ============================================================
-   MODAL GENERATION TYPE CHANGE
-   ============================================================ */
+    $('input[name="modal_code_generation_type"]')
+        .off('change.userCodeModal')
+        .on('change.userCodeModal', function () {
 
-$(document)
-    .off(
-        'change.userCodeModal',
-        'input[name="code_generation_type"]'
-    )
-    .on(
-        'change.userCodeModal',
-        'input[name="code_generation_type"]',
-        function () {
+            const typeId = modalTypeId();
 
-            const type = getSelectedGenerationType();
+            const mode = modalGenerationType();
 
-            const userType = getModalUserType();
-
-            const institutionId = getInstitutionId();
-
-            if (!userType || !type) {
-                return;
-            }
-
-            // Input সঙ্গে সঙ্গে দেখাও
-            $('#codeInputSection').slideDown(200);
+            if (!typeId || !mode) return;
 
             modalManualCodeTouched = false;
 
-            // AUTO MODE
-            if (type === 'auto') {
+            $('#codeInputSection').slideDown(150);
 
-                $('#setting_user_code')
-                    .val('')
-                    .attr(
-                        'placeholder',
-                        'প্রাথমিক ইউজার কোড'
+            $('#setting_user_code').val('');
+
+            loadUserCodeSettings()
+
+                .done(function () {
+
+                    const setting = settingFor(typeId);
+
+                    if (mode === 'auto') {
+
+                        const start = Number(setting.start_code) > 0
+                            ? setting.start_code
+                            : defaultModalStartForType(typeId);
+
+                        $('#setting_user_code').val(start);
+
+                        $('#setting_user_code_help').text(
+                            'অটো জেনারেশনের প্রাথমিক কোড।'
+                        );
+
+                    } else {
+
+                        const manual = Number(setting.manual_start_code) > 0
+                            ? setting.manual_start_code
+                            : '';
+
+                        $('#setting_user_code').val(manual);
+
+                        if (manual) {
+
+                            $('#setting_user_code_help').text(
+                                'Manual Starting Code: ' + manual
+                            );
+
+                        } else {
+
+                            $('#modalManualPreviewInfo')
+                                .addClass('show')
+                                .text('পরবর্তী Manual Code লোড হচ্ছে...');
+
+                            manualPreview(
+                                typeId,
+                                $('#modalManualPreviewInfo')
+                            );
+                        }
+                    }
+                })
+
+                .fail(function (xhr) {
+
+                    console.error(
+                        'Load User Code Setting Error:',
+                        xhr.responseJSON || xhr.responseText
                     );
 
-                $('#setting_user_code_help').text(
-                    'অটো কোড লোড হচ্ছে...'
-                );
-
-                // Database থেকে Start Code Load
-                loadSettingForRole(userType);
-
-                return;
-            }
-
-
-            // MANUAL MODE
-            if (type === 'manual') {
-
-                $('#setting_user_code')
-                    .val('')
-                    .attr(
-                        'placeholder',
-                        'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন'
+                    $('#setting_user_code_help').text(
+                        'কোড সেটিং লোড করা যায়নি।'
                     );
+                });
+        });
 
-                $('#setting_user_code_help').text(
-                    'আপনার পছন্দমতো Manual Code লিখুন।'
-                );
+    /* ============================================================
+       MODAL CODE INPUT
+    ============================================================ */
 
-                // পরবর্তী Manual Code Preview
-                previewManualCodeInModal(
-                    userType,
-                    institutionId
-                );
+    $('#setting_user_code')
+        .off('input.userCodeModal')
+        .on('input.userCodeModal', function () {
 
-                return;
-            }
-        }
-    );
+            const value = String($(this).val() || '').replace(/\D/g, '');
 
-
-/* ============================================================
-   MODAL CODE INPUT
-   ============================================================ */
-
-$(document)
-    .off('input.userCodeModal', '#setting_user_code')
-    .on(
-        'input.userCodeModal',
-        '#setting_user_code',
-        function () {
-
-            const value = $(this).val();
+            $(this).val(value);
 
             modalManualCodeTouched = true;
 
-            // শুধু Numeric Code
-            const numericValue = value.replace(/[^0-9]/g, '');
+            const mode = modalGenerationType();
 
-            if (value !== numericValue) {
-                $(this).val(numericValue);
-            }
-
-            const generationType =
-                getSelectedGenerationType();
-
-            if (generationType === 'manual') {
-
-                if (numericValue) {
-
-                    $('#setting_user_code_help').text(
-                        'Manual Code: ' + numericValue
-                    );
-
-                } else {
-
-                    $('#setting_user_code_help').text(
-                        'ম্যানুয়াল কোড লিখুন অথবা ফাঁকা রাখুন।'
-                    );
-                }
-            }
-
-            if (generationType === 'auto') {
-
-                $('#setting_user_code_help').text(
-                    'প্রাথমিক কোড: ' + numericValue
-                );
-            }
-        }
-    );
+            $('#setting_user_code_help').text(
+                (mode === 'manual' ? 'Manual' : 'Auto') +
+                ' Starting Code: ' +
+                value
+            );
+        });
 
     /* ============================================================
        SAVE CODE SETTING
-       ============================================================ */
+    ============================================================ */
 
     $('#saveCodeSetting')
         .off('click.userCodeModal')
         .on('click.userCodeModal', function (event) {
+
             event.preventDefault();
 
-            const userType = getModalUserType();
+            const typeId = modalTypeId();
 
-            const generationType =
-                getSelectedGenerationType();
+            const mode = modalGenerationType();
 
-            const enteredCode =
-                $.trim($('#setting_user_code').val());
+            const enteredCode = $.trim(
+                $('#setting_user_code').val()
+            );
 
-            if (!['student', 'user'].includes(userType)) {
-                alert(
-                    'শুধুমাত্র Student অথবা User নির্বাচন করুন।'
-                );
+            const genderPreference = $(
+                'input[name="code_setting_gender"]:checked'
+            ).val();
+
+            if (!typeId) {
+
+                alert('ব্যবহারকারীর ধরণ নির্বাচন করুন।');
 
                 return;
             }
 
-            let startCode;
+            if (!['auto', 'manual'].includes(mode)) {
 
-            /*
-             * Auto mode: input must be the starting code.
-             * Manual mode: preserve the configured start code;
-             * entered code is the optional manual ID.
-             */
-            if (generationType === 'auto') {
-                if (
-                    !/^\d+$/.test(enteredCode) ||
-                    Number(enteredCode) < 1 ||
-                    Number(enteredCode) > 999999999
-                ) {
-                    alert(
-                        'সঠিক প্রাথমিক ইউজার কোড লিখুন।'
-                    );
+                alert('Auto অথবা Manual নির্বাচন করুন।');
 
-                    $('#setting_user_code').focus();
-
-                    return;
-                }
-
-                startCode = Number(enteredCode);
-            } else {
-                const existingSetting =
-                    savedCodeSettings[userType];
-
-                startCode = existingSetting
-                    ? Number(existingSetting.start_code)
-                    : (codeStartMap[userType] || 101);
-
-                if (enteredCode && !/^\d+$/.test(enteredCode)) {
-                    alert(
-                        'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
-                    );
-
-                    $('#setting_user_code').focus();
-
-                    return;
-                }
+                return;
             }
 
-            const $button = $('#saveCodeSetting');
+            if (!['male', 'female', 'entry'].includes(genderPreference)) {
+
+                alert('Gender Preference নির্বাচন করুন।');
+
+                return;
+            }
+
+            if (
+                !/^\d+$/.test(enteredCode) ||
+                Number(enteredCode) < 1 ||
+                Number(enteredCode) > 999999999
+            ) {
+
+                alert(
+                    mode === 'auto'
+                        ? 'সঠিক Auto Starting Code লিখুন।'
+                        : 'সঠিক Manual Starting Code লিখুন।'
+                );
+
+                $('#setting_user_code').trigger('focus');
+
+                return;
+            }
+
+            const existing = settingFor(typeId);
+
+            const defaultStart = defaultModalStartForType(typeId);
+
+            const startCode = mode === 'auto'
+                ? Number(enteredCode)
+                : (
+                    Number(existing.start_code) > 0
+                        ? Number(existing.start_code)
+                        : defaultStart
+                );
+
+            const manualStartCode = mode === 'manual'
+                ? Number(enteredCode)
+                : (
+                    existing.manual_start_code !== undefined
+                        ? existing.manual_start_code
+                        : null
+                );
+
+            const $button = $(this);
 
             $button.prop('disabled', true);
 
-            /*
-             * Save starting code in database.
-             */
             $.ajax({
+
                 url: codeSettingsSaveUrl,
+
                 type: 'POST',
+
                 data: JSON.stringify({
-                    user_type: userType,
-                    start_code: startCode
+
+                    user_type_id: Number(typeId),
+
+                    generation_type: mode,
+
+                    start_code: startCode,
+
+                    manual_start_code: manualStartCode,
+
+                    gender_preference: genderPreference,
+
+                    institution_id: institutionId()
                 }),
+
                 contentType: 'application/json; charset=UTF-8',
+
                 dataType: 'json',
+
                 headers: {
+
                     'X-CSRF-TOKEN': csrfToken,
+
                     'Accept': 'application/json',
+
                     'X-Requested-With': 'XMLHttpRequest'
                 }
+
             })
+
             .done(function (response) {
+
                 if (!response || !response.success) {
+
                     alert(
                         response && response.message
                             ? response.message
@@ -2928,77 +2362,85 @@ $(document)
                     return;
                 }
 
-                savedCodeSettings[userType] = {
-                    start_code: startCode
+                const responseSettings = response.settings || {};
+
+                const updated = responseSettings[typeId] || {};
+
+                savedCodeSettings[typeId] = {
+
+                    start_code:
+                        updated.start_code !== undefined
+                            ? Number(updated.start_code)
+                            : startCode,
+
+                    manual_start_code:
+                        updated.manual_start_code !== undefined
+                            ? updated.manual_start_code
+                            : manualStartCode,
+
+                    gender_preference:
+                        updated.gender_preference || genderPreference
                 };
 
-                /*
-                 * Save the selected UI mode in sessionStorage.
-                 * The numeric starting code is saved in database.
-                 */
-                saveCodeSettingToSession({
-                    user_type: userType,
-                    generation_type: generationType
-                });
+                sessionStorage.setItem(
+                    'user_code_setting',
+                    JSON.stringify({
 
-                /*
-                 * Apply the selected type and mode to main form.
-                 */
-                $('#user_type').val(userType);
+                        user_type_id: typeId,
 
-                updateHiddenCodeType(generationType);
+                        generation_type: mode
+                    })
+                );
 
-                if (generationType === 'auto') {
+                $('#user_type_id').val(typeId).trigger('change');
+
+                updateCodeMode(mode);
+
+                $('input[name="gender"]').prop('checked', false);
+
+                if (
+                    genderPreference === 'male' ||
+                    genderPreference === 'female'
+                ) {
+
+                    $('input[name="gender"][value="' + genderPreference + '"]')
+                        .prop('checked', true);
+                }
+
+                if (mode === 'manual') {
+
                     currentMainManualCode = '';
-                    currentMainManualCodeExplicit = false;
-                    mainManualPreviewOnly = false;
 
-                    clearSavedManualCode();
+                    currentMainManualCodeExplicit = false;
+
+                    mainManualPreviewOnly = true;
 
                     $('#manual_user_code').val('');
 
-                    setAutoModeUI();
+                    setManualUI();
 
-                    /*
-                     * Preview is only a preview.
-                     * Form submit clears custom_id for auto mode.
-                     */
-                    autoFillId(
-                        userType,
-                        getInstitutionId()
+                    $('#manualPreviewInfo')
+                        .addClass('show')
+                        .text('পরবর্তী Manual Code লোড হচ্ছে...');
+
+                    manualPreview(
+                        typeId,
+                        $('#manualPreviewInfo')
                     );
+
                 } else {
-                    const manualCode = enteredCode;
 
-                    setManualModeUI();
+                    currentMainManualCode = '';
 
-                    if (manualCode) {
-                        currentMainManualCode = manualCode;
-                        currentMainManualCodeExplicit = true;
-                        mainManualPreviewOnly = false;
+                    currentMainManualCodeExplicit = false;
 
-                        saveManualCode(
-                            userType,
-                            getInstitutionId(),
-                            manualCode
-                        );
+                    mainManualPreviewOnly = false;
 
-                        $('#manual_user_code').val(manualCode);
-                        $('#custom_id').val(manualCode);
-                    } else {
-                        currentMainManualCode = '';
-                        currentMainManualCodeExplicit = false;
-                        mainManualPreviewOnly = true;
+                    $('#manual_user_code').val('');
 
-                        clearSavedManualCode();
+                    setAutoUI();
 
-                        $('#manual_user_code').val('');
-
-                        manualFillId(
-                            userType,
-                            getInstitutionId()
-                        );
-                    }
+                    autoFillId(typeId);
                 }
 
                 closeCodeSettingModal();
@@ -3008,108 +2450,65 @@ $(document)
                     'User Code Setting সফলভাবে সংরক্ষণ করা হয়েছে।'
                 );
             })
+
             .fail(function (xhr) {
+
                 console.error(
                     'Save User Code Setting Error:',
                     xhr.responseJSON || xhr.responseText
                 );
 
-                const response = xhr.responseJSON || {};
-
                 alert(
-                    response.message ||
+                    (xhr.responseJSON && xhr.responseJSON.message) ||
                     'User Code Setting সংরক্ষণ করা যায়নি।'
                 );
             })
+
             .always(function () {
+
                 $button.prop('disabled', false);
             });
         });
 
-
     /* ============================================================
-       INITIAL CODE SETTING
-       ============================================================ */
-
-    const initialSetting = getSavedCodeSetting();
-
-    if (initialSetting) {
-        if (
-            initialSetting.generation_type === 'manual'
-        ) {
-            updateHiddenCodeType('manual');
-        } else {
-            updateHiddenCodeType('auto');
-        }
-    }
-
-    if (getCurrentUserType()) {
-        if (
-            $('#code_generation_type').val() === 'manual'
-        ) {
-            setManualModeUI();
-            prepareManualMainId();
-        } else {
-            setAutoModeUI();
-
-            autoFillId(
-                getCurrentUserType(),
-                getInstitutionId()
-            );
-        }
-    } else {
-        setAutoModeUI();
-    }
-
-
-    /* ============================================================
-       BEFORE FORM SUBMIT
-       ============================================================ */
+       FORM SUBMIT
+    ============================================================ */
 
     $('#userCreateForm')
         .off('submit.userCode')
         .on('submit.userCode', function (event) {
-            const userType = getCurrentUserType();
 
-            const generationType =
-                $('#code_generation_type').val() || 'auto';
+            const typeId = currentTypeId();
 
-            if (!userType) {
+            const mode = $('#code_generation_type').val() || 'auto';
+
+            if (!typeId) {
+
                 event.preventDefault();
 
-                alert(
-                    'অনুগ্রহ করে ব্যবহারকারীর ধরণ নির্বাচন করুন।'
-                );
+                alert('অনুগ্রহ করে ব্যবহারকারীর ধরণ নির্বাচন করুন।');
 
                 return false;
             }
 
-            /*
-             * AUTO:
-             * Backend generates the final code.
-             */
-            if (generationType === 'auto') {
+            if (mode === 'auto') {
+
                 $('#custom_id').val('');
+
                 return true;
             }
 
-            /*
-             * MANUAL with explicit code:
-             * Submit the exact code entered by the user.
-             */
-            if (
-                currentMainManualCodeExplicit &&
-                currentMainManualCode
-            ) {
-                const manualCode =
-                    String(currentMainManualCode).trim();
+            const manualCode = String(
+                $('#manual_user_code').val() || ''
+            ).trim();
+
+            if (manualCode) {
 
                 if (!/^\d+$/.test(manualCode)) {
+
                     event.preventDefault();
 
-                    alert(
-                        'ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।'
-                    );
+                    alert('ম্যানুয়াল কোড শুধুমাত্র সংখ্যা হতে হবে।');
 
                     return false;
                 }
@@ -3119,19 +2518,45 @@ $(document)
                 return true;
             }
 
-            /*
-             * MANUAL with blank code:
-             * Backend must generate the next manual code.
-             * Preview must not be submitted as an explicit ID.
-             */
+            // Empty manual input means backend allocates next available code.
             $('#custom_id').val('');
 
             return true;
         });
 
+    /* ============================================================
+       INITIAL PAGE STATE
+    ============================================================ */
+
+    loadUserCodeSettings().always(function () {
+
+        const typeId = currentTypeId();
+
+        if (!typeId) return;
+
+        const sessionSetting = getSessionSetting();
+
+        const mode = sessionSetting
+            ? sessionSetting.generation_type
+            : ($('#code_generation_type').val() || 'auto');
+
+        updateCodeMode(mode);
+
+        if (mode === 'manual') {
+
+            setManualUI();
+
+            prepareManualMainCode();
+
+        } else {
+
+            setAutoUI();
+
+            autoFillId(typeId);
+        }
+    });
+
 });
-
 </script>
-
 
 @endsection

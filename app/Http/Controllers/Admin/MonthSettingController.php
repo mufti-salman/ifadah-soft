@@ -13,104 +13,136 @@ use Illuminate\Validation\Rule;
 
 class MonthSettingController extends Controller
 {
-    protected array $monthMap = [
-        '1'  => 'জানুয়ারি',
-        '2'  => 'ফেব্রুয়ারি',
-        '3'  => 'মার্চ',
-        '4'  => 'এপ্রিল',
-        '5'  => 'মে',
-        '6'  => 'জুন',
-        '7'  => 'জুলাই',
-        '8'  => 'আগস্ট',
-        '9'  => 'সেপ্টেম্বর',
-        '10' => 'অক্টোবর',
-        '11' => 'নভেম্বর',
-        '12' => 'ডিসেম্বর',
+    /**
+     * Calendar month names.
+     */
+    protected array $calendarMonths = [
+
+        'bangla' => [
+            1  => 'বৈশাখ',
+            2  => 'জ্যৈষ্ঠ',
+            3  => 'আষাঢ়',
+            4  => 'শ্রাবণ',
+            5  => 'ভাদ্র',
+            6  => 'আশ্বিন',
+            7  => 'কার্তিক',
+            8  => 'অগ্রহায়ণ',
+            9  => 'পৌষ',
+            10 => 'মাঘ',
+            11 => 'ফাল্গুন',
+            12 => 'চৈত্র',
+        ],
+
+        'english' => [
+            1  => 'January',
+            2  => 'February',
+            3  => 'March',
+            4  => 'April',
+            5  => 'May',
+            6  => 'June',
+            7  => 'July',
+            8  => 'August',
+            9  => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ],
+
+        'arabic' => [
+            1  => 'محرم',
+            2  => 'صفر',
+            3  => 'ربيع الأول',
+            4  => 'ربيع الآخر',
+            5  => 'جمادى الأولى',
+            6  => 'جمادى الآخرة',
+            7  => 'رجب',
+            8  => 'شعبان',
+            9  => 'رمضان',
+            10 => 'شوال',
+            11 => 'ذو القعدة',
+            12 => 'ذو الحجة',
+        ],
     ];
 
     /**
-     * Get the institution authorized for the current request.
+     * Get authorized institution ID.
      */
     private function institutionId(): int
     {
         $user = auth()->user();
 
-        // The User model should resolve this according to
-        // the existing institution-switching rules.
         $institutionId = $user?->active_institution_id;
 
-        // Middleware fallback, if available.
         if (!$institutionId && app()->bound('institution_id')) {
             $institutionId = app('institution_id');
         }
 
-        abort_unless($user && $institutionId, 403, 'প্রতিষ্ঠান নির্ধারণ করা যায়নি।');
+        abort_unless(
+            $user && $institutionId,
+            403,
+            'প্রতিষ্ঠান নির্ধারণ করা যায়নি।'
+        );
 
         return (int) $institutionId;
     }
 
     /**
-     * Retrieve a MonthSetting only from the authorized institution.
+     * Scope MonthSetting by institution.
      */
-    private function scopedMonthSetting(MonthSetting $monthSetting): MonthSetting
-    {
+    private function scopedMonthSetting(
+        MonthSetting $monthSetting
+    ): MonthSetting {
+
         return MonthSetting::query()
             ->where('institution_id', $this->institutionId())
             ->findOrFail($monthSetting->id);
     }
 
     /**
-     * List Month Settings for the current institution.
+     * Month Setting Index.
      */
-  /**
- * List Month Settings for the current institution.
- */
-public function index()
-{
-    $institutionId = $this->institutionId();
+    public function index()
+    {
+        $institutionId = $this->institutionId();
 
-    // প্রতিষ্ঠানের মাস সেটিং তালিকা
-    $monthSettings = MonthSetting::query()
-        ->where('institution_id', $institutionId)
-        ->with([
-            'studentClass' => function ($query) use ($institutionId) {
-                $query->where('institution_id', $institutionId);
-            },
-        ])
-        ->orderByDesc('academic_year')
-        ->paginate(15);
+        $monthSettings = MonthSetting::query()
+            ->where('institution_id', $institutionId)
+            ->with([
+                'studentClass' => function ($query) use ($institutionId) {
+                    $query->where('institution_id', $institutionId);
+                },
+            ])
+            ->orderByDesc('academic_year')
+            ->paginate(15);
 
-    // প্রতিষ্ঠানের ক্লাসগুলো লোড করা
-    $classes = Classes::query()
-        ->where('institution_id', $institutionId)
-        ->orderBy('id')
-        ->get();
+        $classes = Classes::query()
+            ->where('institution_id', $institutionId)
+            ->orderBy('id')
+            ->get();
 
-    // Academic Years পেজ থেকে তৈরি শিক্ষাবর্ষগুলো লোড করা
-    $years = AcademicYear::query()
-        ->where('institution_id', $institutionId)
-        ->where('status', 'active')
-        ->orderByDesc('start_date')
-        ->orderByDesc('id')
-        ->get();
+        $years = AcademicYear::query()
+            ->where('institution_id', $institutionId)
+            ->where('status', 'active')
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get();
 
-    // বর্তমান শিক্ষাবর্ষ নির্ধারণ
-    $currentAcademicYear = $years->firstWhere('is_current', true);
+        $currentAcademicYear = $years->firstWhere('is_current', true);
 
-    $currentYear = $currentAcademicYear
-        ? $currentAcademicYear->id
-        : ($years->first()?->id);
+        $currentYear = $currentAcademicYear
+            ? $currentAcademicYear->id
+            : $years->first()?->id;
 
-    return view('admin.month-settings.index', compact(
-        'monthSettings',
-        'classes',
-        'years',
-        'currentYear'
-    ));
-}
+        return view('admin.month-settings.index', compact(
+            'monthSettings',
+            'classes',
+            'years',
+            'currentYear'
+        ));
+    }
 
     /**
-     * Store a MonthSetting for the current institution.
+     * Store Month Setting.
      */
     public function store(Request $request): JsonResponse
     {
@@ -145,10 +177,10 @@ public function index()
             ], 409);
         }
 
-        // Never trust institution_id sent by the browser.
         $data['institution_id'] = $institutionId;
 
         $monthSetting = MonthSetting::create($data);
+
         $monthSetting->load('studentClass');
 
         return response()->json([
@@ -159,7 +191,7 @@ public function index()
     }
 
     /**
-     * Edit only a MonthSetting belonging to the current institution.
+     * Edit Month Setting.
      */
     public function edit(MonthSetting $monthSetting): JsonResponse
     {
@@ -174,15 +206,15 @@ public function index()
     }
 
     /**
-     * Update only a MonthSetting belonging to the current institution.
+     * Update Month Setting.
      */
     public function update(
         Request $request,
         MonthSetting $monthSetting
     ): JsonResponse {
+
         $institutionId = $this->institutionId();
 
-        // Re-fetch within the authorized institution.
         $monthSetting = $this->scopedMonthSetting($monthSetting);
 
         $validator = Validator::make(
@@ -198,6 +230,7 @@ public function index()
         }
 
         $data = $validator->validated();
+
         $data = $this->resolveAllMonths($data);
 
         $exists = MonthSetting::query()
@@ -214,7 +247,6 @@ public function index()
             ], 409);
         }
 
-        // Prevent institution reassignment through request parameters.
         unset($data['institution_id']);
 
         $monthSetting->update($data);
@@ -229,7 +261,7 @@ public function index()
     }
 
     /**
-     * Delete only a MonthSetting belonging to the current institution.
+     * Delete Month Setting.
      */
     public function destroy(MonthSetting $monthSetting): JsonResponse
     {
@@ -244,79 +276,44 @@ public function index()
     }
 
     /**
-     * Suggest month names.
-     * This endpoint returns static month names, not institution data.
+     * Return calendar month suggestions.
      */
     public function suggest(Request $request): JsonResponse
     {
-        $query = trim((string) $request->get('q', ''));
+        $validator = Validator::make($request->all(), [
+            'calendar_type' => [
+                'required',
+                Rule::in(['bangla', 'english', 'arabic']),
+            ],
+            'q' => ['nullable', 'string', 'max:50'],
+        ]);
 
-        $banglaDigits = [
-            '০' => '0',
-            '১' => '1',
-            '২' => '2',
-            '৩' => '3',
-            '৪' => '4',
-            '৫' => '5',
-            '৬' => '6',
-            '৭' => '7',
-            '৮' => '8',
-            '৯' => '9',
-        ];
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        $normalizedQuery = strtr($query, $banglaDigits);
+        $calendarType = $request->input('calendar_type');
+        $query = trim((string) $request->input('q', ''));
+
+        $months = $this->calendarMonths[$calendarType];
+
         $suggestions = [];
 
-        $englishMonthMap = [
-            '1' => 'January',
-            '2' => 'February',
-            '3' => 'March',
-            '4' => 'April',
-            '5' => 'May',
-            '6' => 'June',
-            '7' => 'July',
-            '8' => 'August',
-            '9' => 'September',
-            '10' => 'October',
-            '11' => 'November',
-            '12' => 'December',
-        ];
+        foreach ($months as $number => $name) {
 
-        if (ctype_digit($normalizedQuery)) {
-            if (isset($this->monthMap[$normalizedQuery])) {
+            if (
+                $query === ''
+                || mb_stripos($name, $query) !== false
+                || (string) $number === $query
+            ) {
                 $suggestions[] = [
-                    'value' => $this->monthMap[$normalizedQuery],
-                    'label' => "{$query} → {$this->monthMap[$normalizedQuery]}",
-                    'type' => 'bangla',
+                    'value' => $name,
+                    'label' => $number . ' → ' . $name,
+                    'type' => $calendarType,
                 ];
-            }
-
-            if (isset($englishMonthMap[$normalizedQuery])) {
-                $suggestions[] = [
-                    'value' => $englishMonthMap[$normalizedQuery],
-                    'label' => "{$query} → {$englishMonthMap[$normalizedQuery]}",
-                    'type' => 'english',
-                ];
-            }
-        } else {
-            foreach ($this->monthMap as $name) {
-                if (mb_stripos($name, $query) !== false) {
-                    $suggestions[] = [
-                        'value' => $name,
-                        'label' => $name,
-                        'type' => 'bangla',
-                    ];
-                }
-            }
-
-            foreach ($englishMonthMap as $name) {
-                if (stripos($name, $query) !== false) {
-                    $suggestions[] = [
-                        'value' => $name,
-                        'label' => $name,
-                        'type' => 'english',
-                    ];
-                }
             }
         }
 
@@ -324,14 +321,16 @@ public function index()
     }
 
     /**
-     * Validate the submitted class against the current institution.
+     * Validation rules.
      */
     private function rules(int $institutionId): array
     {
         $rules = [
+
             'academic_year' => [
                 'required',
-                'digits:4',
+                'string',
+                'max:255',
             ],
 
             'class_id' => [
@@ -340,9 +339,15 @@ public function index()
                 Rule::exists('classes', 'id')
                     ->where('institution_id', $institutionId),
             ],
+
+            'calendar_type' => [
+                'required',
+                Rule::in(['bangla', 'english', 'arabic']),
+            ],
         ];
 
         for ($i = 1; $i <= 12; $i++) {
+
             $rules["month_$i"] = [
                 'nullable',
                 'string',
@@ -353,56 +358,44 @@ public function index()
         return $rules;
     }
 
+    /**
+     * Resolve all month names according to calendar type.
+     */
     private function resolveAllMonths(array $data): array
     {
+        $calendarType = $data['calendar_type'];
+
+        $months = $this->calendarMonths[$calendarType];
+
         for ($i = 1; $i <= 12; $i++) {
+
             $key = "month_$i";
 
-            if (!empty($data[$key])) {
-                $data[$key] = $this->resolveMonthName($data[$key]);
+            if (
+                !isset($data[$key])
+                || trim((string) $data[$key]) === ''
+            ) {
+                $data[$key] = $months[$i];
             }
         }
 
         return $data;
     }
 
+    /**
+     * Format response.
+     */
     private function formatData(MonthSetting $ms): array
     {
         $data = $ms->toArray();
 
         $data['student_class'] = $ms->studentClass
-            ? ['name' => $ms->studentClass->name]
+            ? [
+                'name' => $ms->studentClass->name,
+                'name_bn' => $ms->studentClass->name_bn,
+            ]
             : null;
 
         return $data;
-    }
-
-    protected function resolveMonthName(string $value): string
-    {
-        $value = trim($value);
-
-        $banglaDigits = [
-            '০' => '0',
-            '১' => '1',
-            '২' => '2',
-            '৩' => '3',
-            '৪' => '4',
-            '৫' => '5',
-            '৬' => '6',
-            '৭' => '7',
-            '৮' => '8',
-            '৯' => '9',
-        ];
-
-        $normalizedValue = strtr($value, $banglaDigits);
-
-        if (
-            ctype_digit($normalizedValue)
-            && isset($this->monthMap[$normalizedValue])
-        ) {
-            return $this->monthMap[$normalizedValue];
-        }
-
-        return $value;
     }
 }

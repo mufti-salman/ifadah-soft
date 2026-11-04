@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserCodeSetting;
+use App\Models\UserType;
 use App\Models\Student;
 use App\Models\Role;
 use App\Models\Madrasa;
@@ -25,38 +26,78 @@ use Carbon\Carbon;
 
 class UserController extends Controller
 {
-    private const CODE_STARTS = [
-        'student'       => 101,
-        'user'          => 201,
-        'user_admin'    => 301,
-        'support_admin' => 401,
-    ];
+    /*
+    |--------------------------------------------------------------------------
+    | USER TYPE CONFIGURATION
+    |--------------------------------------------------------------------------
+    */
 
-    private const CODE_ROLES = [
-        'student',
-        'user',
-        'user_admin',
-        'support_admin',
-    ];
+private const DEFAULT_USER_TYPE_CODE_STARTS = [
+    'student'      => 101,
+    'teacher'      => 201,
+    'donor_member' => 301,
+];
 
-    private const INSTITUTION_CODE_ROLES = [
-        'student',
-        'user',
-        'user_admin',
-    ];
+private const ALLOWED_USER_TYPE_SLUGS = [
+    'student',
+    'teacher',
+    'donor_member',
+];
 
-    /**
-     * Check whether Super Admin is currently inside a Madrasa panel.
-     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER TYPE HELPERS
+    |--------------------------------------------------------------------------
+    */
+
+private function getAllowedUserTypes()
+{
+    return UserType::where('is_active', 1)
+        ->whereIn('slug', [
+            'student',
+            'teacher',
+            'donor_member',
+        ])
+        ->orderByRaw("
+            CASE slug
+                WHEN 'student' THEN 1
+                WHEN 'teacher' THEN 2
+                WHEN 'donor_member' THEN 3
+                ELSE 4
+            END
+        ")
+        ->get();
+}
+
+
+    private function getDefaultUserTypeCodeStart(UserType $userType): int
+    {
+        return self::DEFAULT_USER_TYPE_CODE_STARTS[$userType->slug] ?? 101;
+    }
+
+
+    private function getUserTypeOrFail(int $userTypeId): UserType
+    {
+        return UserType::active()
+            ->whereIn('slug', self::ALLOWED_USER_TYPE_SLUGS)
+            ->findOrFail($userTypeId);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTION CONTEXT
+    |--------------------------------------------------------------------------
+    */
+
     private function isSwitchedInstitutionMode(): bool
     {
         return auth()->user()->is_super_admin
             && session()->has('active_institution_id');
     }
 
-    /**
-     * Get active institution ID according to current context.
-     */
+
     private function getActiveInstitutionId()
     {
         $authUser = auth()->user();
@@ -68,49 +109,516 @@ class UserController extends Controller
         return $authUser->institution_id;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | ROLE HELPERS
+    |--------------------------------------------------------------------------
+    */
+
+    private function allowedRoleSlugs(): array
+    {
+        $authUser = auth()->user();
+
+        if ($authUser->is_super_admin) {
+            return session()->has('active_institution_id')
+                ? ['user']
+                : ['user_admin', 'support_admin'];
+        }
+
+        if ($authUser->is_support_admin) {
+            return ['user_admin'];
+        }
+
+        if ($authUser->is_user_admin) {
+            return ['user'];
+        }
+
+        return [];
+    }
+
+
+    private function allowedRolesQuery()
+    {
+        return Role::whereIn('slug', $this->allowedRoleSlugs())
+            ->orderBy('level', 'desc');
+    }
+
+
+    /**
+     * New normal user gets Role "user".
+     *
+     * System Super Admin / Support Admin:
+     * user_admin is created by this form.
+     *
+     * Existing Role architecture remains unchanged.
+     */
+    private function getDefaultRoleForNewUser(): Role
+    {
+        $authUser = auth()->user();
+
+        if (
+            ($authUser->is_super_admin && !session()->has('active_institution_id'))
+            || $authUser->is_support_admin
+        ) {
+            return Role::where('slug', 'user_admin')->firstOrFail();
+        }
+
+        return Role::where('slug', 'user')->firstOrFail();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INSTITUTION RESOLUTION
+    |--------------------------------------------------------------------------
+    */
+
+    private function resolveInstitutionIdForRole(
+        Request $request,
+        string $roleSlug
+    ) {
+        $authUser = auth()->user();
+
+        if ($roleSlug === 'support_admin') {
+            return null;
+        }
+
+        if ($authUser->is_super_admin) {
+
+            return session()->has('active_institution_id')
+                ? (int) session('active_institution_id')
+                : (
+                    $request->filled('institution_id')
+                        ? (int) $request->institution_id
+                        : null
+                );
+        }
+
+        if ($authUser->is_support_admin) {
+
+            return $request->filled('institution_id')
+                ? (int) $request->institution_id
+                : null;
+        }
+
+        return $authUser->institution_id
+            ? (int) $authUser->institution_id
+            : null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER CODE SETTINGS
+    |--------------------------------------------------------------------------
+    */
+
+    private function codeSettingLegacyKey(int $userTypeId): string
+    {
+        return 'user_type_' . $userTypeId;
+    }
+
+
+    private function findUserTypeSetting(
+        $institutionId,
+        UserType $userType
+    ): ?UserCodeSetting {
+
+        $query = UserCodeSetting::query()
+            ->where('user_type_id', $userType->id);
+
+        if ($institutionId) {
+            $query->where('institution_id', $institutionId);
+        } else {
+            $query->whereNull('institution_id');
+        }
+
+        $setting = $query->first();
+
+        /*
+         * Preserve existing Student setting.
+         */
+        if (!$setting && $userType->slug === 'student') {
+
+            $legacyQuery = UserCodeSetting::query()
+                ->where('role_slug', 'student');
+
+            if ($institutionId) {
+                $legacyQuery->where('institution_id', $institutionId);
+            } else {
+                $legacyQuery->whereNull('institution_id');
+            }
+
+            $setting = $legacyQuery->first();
+
+            if ($setting) {
+                $setting->user_type_id = $userType->id;
+                $setting->save();
+            }
+        }
+
+        return $setting;
+    }
+
+
+    private function saveOrFindUserTypeSetting(
+        $institutionId,
+        UserType $userType
+    ): UserCodeSetting {
+
+        $setting = $this->findUserTypeSetting(
+            $institutionId,
+            $userType
+        );
+
+        if ($setting) {
+            return $setting;
+        }
+
+        $legacyKey = $this->codeSettingLegacyKey(
+            (int) $userType->id
+        );
+
+        $query = UserCodeSetting::query()
+            ->where('role_slug', $legacyKey);
+
+        if ($institutionId) {
+            $query->where('institution_id', $institutionId);
+        } else {
+            $query->whereNull('institution_id');
+        }
+
+        $setting = $query->first();
+
+        if (!$setting) {
+
+            $setting = new UserCodeSetting();
+
+            $setting->institution_id = $institutionId;
+            $setting->role_slug = $legacyKey;
+            $setting->user_type_id = $userType->id;
+
+            $setting->start_code = $this->getDefaultUserTypeCodeStart(
+                $userType
+            );
+
+            $setting->gender_preference = 'male';
+
+            $setting->save();
+
+        } else {
+
+            $setting->user_type_id = $userType->id;
+            $setting->save();
+        }
+
+        return $setting;
+    }
+
+
+    private function getConfiguredCodeStart(
+        $institutionId,
+        int $userTypeId
+    ): int {
+
+        $userType = UserType::find($userTypeId);
+
+        if (!$userType) {
+            return 101;
+        }
+
+        $setting = $this->findUserTypeSetting(
+            $institutionId,
+            $userType
+        );
+
+        if ($setting && $setting->start_code !== null) {
+            return max(1, (int) $setting->start_code);
+        }
+
+        return $this->getDefaultUserTypeCodeStart($userType);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GLOBAL USER CODE SCOPE
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | User Type is NOT included in this query.
+    |
+    | All User Types share the same code namespace
+    | inside one institution.
+    |
+    */
+
+public function show($username)
+{
+    $user = User::with([
+        'userType',
+        'institution',
+    ])
+    ->where('username', $username)
+    ->firstOrFail();
+
+    return view('admin.users.show', compact('user'));
+}
+
+    private function userTypeCodeScopeQuery(
+        $institutionId,
+        ?int $userTypeId = null
+    ) {
+
+        $query = User::query()
+            ->whereNotNull('institution_user_id');
+
+        if ($institutionId) {
+            $query->where('institution_id', $institutionId);
+        } else {
+            $query->whereNull('institution_id');
+        }
+
+        return $query;
+    }
+
+
+    /**
+     * Check whether a numeric code already exists globally.
+     *
+     * Numeric comparison also treats "00500" and "500"
+     * as the same numeric User Code.
+     */
+    private function userCodeExists(
+        $institutionId,
+        string $code,
+        ?int $excludeUserId = null
+    ): bool {
+
+        $query = $this->userTypeCodeScopeQuery($institutionId)
+            ->whereRaw(
+                "institution_user_id REGEXP '^[0-9]+$'"
+            )
+            ->whereRaw(
+                'CAST(institution_user_id AS UNSIGNED) = ?',
+                [(int) $code]
+            );
+
+        if ($excludeUserId) {
+            $query->where('id', '!=', $excludeUserId);
+        }
+
+        return $query->exists();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO USER CODE GENERATOR
+    |--------------------------------------------------------------------------
+    */
+
+    private function generateUserTypeCode(
+        $institutionId,
+        int $userTypeId,
+        ?int $excludeUserId = null
+    ): string {
+
+        $nextCode = $this->getConfiguredCodeStart(
+            $institutionId,
+            $userTypeId
+        );
+
+        $query = $this->userTypeCodeScopeQuery(
+            $institutionId
+        );
+
+        if ($excludeUserId) {
+            $query->where('id', '!=', $excludeUserId);
+        }
+
+        $existingCodes = $query
+            ->whereRaw(
+                "institution_user_id REGEXP '^[0-9]+$'"
+            )
+            ->pluck('institution_user_id')
+            ->map(fn ($code) => (int) $code)
+            ->unique()
+            ->sort()
+            ->values();
+
+        foreach ($existingCodes as $existingCode) {
+
+            if ($existingCode < $nextCode) {
+                continue;
+            }
+
+            if ($existingCode === $nextCode) {
+                $nextCode++;
+                continue;
+            }
+
+            break;
+        }
+
+        return (string) $nextCode;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MANUAL USER CODE GENERATOR
+    |--------------------------------------------------------------------------
+    */
+
+    private function generateManualUserTypeCode(
+        $institutionId,
+        int $userTypeId,
+        ?int $excludeUserId = null
+    ): string {
+
+        $userType = UserType::findOrFail($userTypeId);
+
+        $setting = $this->findUserTypeSetting(
+            $institutionId,
+            $userType
+        );
+
+        $nextCode = (
+            $setting
+            && $setting->manual_start_code !== null
+        )
+            ? (int) $setting->manual_start_code
+            : $this->getConfiguredCodeStart(
+                $institutionId,
+                $userTypeId
+            );
+
+        $query = $this->userTypeCodeScopeQuery(
+            $institutionId
+        );
+
+        if ($excludeUserId) {
+            $query->where('id', '!=', $excludeUserId);
+        }
+
+        $usedCodes = $query
+            ->whereRaw(
+                "institution_user_id REGEXP '^[0-9]+$'"
+            )
+            ->pluck('institution_user_id')
+            ->map(fn ($code) => (int) $code)
+            ->flip();
+
+        while ($usedCodes->has($nextCode)) {
+            $nextCode++;
+        }
+
+        return (string) $nextCode;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER AUTHORIZATION
+    |--------------------------------------------------------------------------
+    */
+
+    private function authorizeManagedUser(User $user): void
+    {
+        $authUser = auth()->user();
+
+        $targetRole = optional($user->role)->slug;
+
+        if ($targetRole === 'super_admin') {
+            abort(403, 'Super Admin account পরিবর্তন করা যাবে না।');
+        }
+
+        if ($authUser->is_super_admin) {
+
+            if (session()->has('active_institution_id')) {
+
+                abort_unless(
+                    (int) $user->institution_id ===
+                    (int) session('active_institution_id')
+                    &&
+                    !in_array(
+                        $targetRole,
+                        ['support_admin', 'user_admin'],
+                        true
+                    ),
+                    403,
+                    'এই User পরিচালনা করার অনুমতি আপনার নেই।'
+                );
+            }
+
+            return;
+        }
+
+        if ($authUser->is_support_admin) {
+
+            abort_unless(
+                $targetRole === 'user_admin',
+                403,
+                'এই User পরিচালনা করার অনুমতি আপনার নেই।'
+            );
+
+            return;
+        }
+
+        abort_unless(
+            (int) $user->institution_id ===
+            (int) $authUser->institution_id
+            &&
+            !in_array(
+                $targetRole,
+                ['super_admin', 'support_admin', 'user_admin'],
+                true
+            ),
+            403,
+            'এই User পরিচালনা করার অনুমতি আপনার নেই।'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER INDEX
+    |--------------------------------------------------------------------------
+    */
+
     public function index(Request $request)
     {
         $authUser = auth()->user();
 
         $query = User::with([
             'role',
+            'userType',
             'institution',
-            'student',
+            'student'
         ]);
 
         if ($authUser->is_super_admin) {
 
-            /*
-             * Super Admin system mode:
-             * Show everything except students.
-             *
-             * Super Admin switched Madrasa mode:
-             * Show only student + user of selected institution.
-             */
             if (session()->has('active_institution_id')) {
 
                 $query->where(
                     'institution_id',
                     session('active_institution_id')
-                );
+                )->whereHas('role', function ($q) {
 
-                $query->whereHas('role', function ($q) {
-                    $q->whereIn('slug', [
-                        'student',
-                        'user',
-                    ]);
+                    $q->whereNotIn(
+                        'slug',
+                        ['super_admin', 'support_admin']
+                    );
+
                 });
 
             } else {
 
-                /*
-                 * Super Admin system mode:
-                 * Students must never be shown.
-                 */
                 $query->whereHas('role', function ($q) {
-                    $q->whereNotIn('slug', [
-                        'student',
-                    ]);
+                    $q->whereNotIn('slug', ['super_admin']);
                 });
             }
 
@@ -122,29 +630,25 @@ class UserController extends Controller
 
         } else {
 
-            /*
-             * Madrasa/User Admin:
-             * Only own institution.
-             *
-             * Only student + user.
-             */
             $query->where(
                 'institution_id',
                 $authUser->institution_id
-            );
+            )->whereHas('role', function ($q) {
 
-            $query->whereHas('role', function ($q) {
-                $q->whereIn('slug', [
-                    'student',
-                    'user',
-                ]);
+                $q->whereNotIn(
+                    'slug',
+                    ['super_admin', 'support_admin', 'user_admin']
+                );
+
             });
         }
 
         if ($request->filled('search')) {
+
             $search = trim($request->search);
 
             $query->where(function ($q) use ($search) {
+
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('name_bn', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
@@ -158,69 +662,58 @@ class UserController extends Controller
             });
         }
 
-        if ($request->filled('user_type')) {
-            $userType = $request->user_type;
+        if ($request->filled('user_type_id')) {
 
-            $query->whereHas('role', function ($q) use ($userType) {
-                $q->where('slug', $userType);
+            $query->where(
+                'user_type_id',
+                $request->integer('user_type_id')
+            );
+
+        } elseif ($request->filled('user_type')) {
+
+            $query->whereHas('userType', function ($q) use ($request) {
+                $q->where('slug', $request->user_type);
             });
         }
 
-        $users = $query->latest('id')->paginate(10);
+        if ($request->filled('role_id')) {
+            $query->where(
+                'role_id',
+                $request->integer('role_id')
+            );
+        }
+
+        $users = $query
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
 
         $divisions = Division::all();
 
+        $userTypes = $this->getAllowedUserTypes();
+
         return view(
             'admin.users.index',
-            compact('users', 'divisions')
+            compact(
+                'users',
+                'divisions',
+                'userTypes'
+            )
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE USER FORM
+    |--------------------------------------------------------------------------
+    */
 
     public function create()
     {
         $authUser = auth()->user();
 
-        $userTypes = [];
-
-        /*
-         * Super Admin:
-         *
-         * System mode:
-         * user_admin + support_admin
-         *
-         * Switched Madrasa mode:
-         * student + user
-         */
-        if ($authUser->is_super_admin) {
-
-            if (session()->has('active_institution_id')) {
-
-                $userTypes = [
-                    'student' => 'শিক্ষার্থী',
-                    'user'    => 'ইউজার',
-                ];
-
-            } else {
-
-                $userTypes = [
-                    'user_admin'    => 'ইউজার অ্যাডমিন',
-                    'support_admin' => 'সাপোর্ট অ্যাডমিন',
-                ];
-            }
-
-        } elseif ($authUser->is_support_admin) {
-
-            $userTypes = [
-                'user_admin' => 'ইউজার অ্যাডমিন',
-            ];
-
-        } elseif ($authUser->is_user_admin) {
-
-            $userTypes = [
-                'student' => 'শিক্ষার্থী',
-                'user'    => 'ইউজার',
-            ];
-        }
+        $userTypes = $this->getAllowedUserTypes();
 
         if (
             $authUser->is_super_admin
@@ -242,893 +735,568 @@ class UserController extends Controller
             $institutions = Madrasa::where(
                 'id',
                 session('active_institution_id')
-            )
-                ->where('status', 1)
-                ->get();
+            )->where('status', 1)->get();
 
         } else {
 
             $institutions = Madrasa::where(
                 'id',
                 $authUser->institution_id
-            )
-                ->where('status', 1)
-                ->get();
+            )->where('status', 1)->get();
         }
+
 
         if ($authUser->is_super_admin) {
 
-            $institutionId =
-                session('active_institution_id');
+            $institutionId = session()->has('active_institution_id')
+                ? (int) session('active_institution_id')
+                : null;
 
         } elseif ($authUser->is_support_admin) {
 
-            $institutionId =
-                request()->input('institution_id');
+            $institutionId = null;
 
         } else {
 
-            $institutionId =
-                $authUser->institution_id;
+            $institutionId = $authUser->institution_id;
         }
 
-        $roles = Role::orderBy(
-            'level',
-            'desc'
-        )->get();
 
         $previewIds = [];
 
-        foreach ($userTypes as $type => $label) {
+        foreach ($userTypes as $type) {
 
-            if (in_array(
-                $type,
-                self::CODE_ROLES,
-                true
-            )) {
-
-                if (
-                    in_array(
-                        $type,
-                        self::INSTITUTION_CODE_ROLES,
-                        true
-                    )
-                    && !$institutionId
-                ) {
-
-                    $previewIds[$type] = null;
-
-                } else {
-
-                    $previewIds[$type] =
-                        $this->previewRoleCode(
-                            $institutionId,
-                            $type
-                        );
-                }
-            }
+            $previewIds[$type->id] = $institutionId
+                ? $this->generateUserTypeCode(
+                    $institutionId,
+                    (int) $type->id
+                )
+                : null;
         }
+
 
         $divisions = Division::with([
             'districts.upazilas'
         ])->get();
 
-        $academicYears = AcademicYear::where(
-            'status',
-            1
-        )
+        $academicYears = AcademicYear::where('status', 1)
             ->orderBy('name', 'desc')
             ->get();
 
-        $classes = Classes::where(
-            'status',
-            1
-        )->get();
+        $classes = Classes::where('status', 1)->get();
+
+        $selectedUserTypeId = old('user_type_id');
+
+        $genderPreference = 'male';
+
+        if ($institutionId && $selectedUserTypeId) {
+
+            $selectedType = $userTypes->firstWhere(
+                'id',
+                (int) $selectedUserTypeId
+            );
+
+            if ($selectedType) {
+
+                $setting = $this->findUserTypeSetting(
+                    $institutionId,
+                    $selectedType
+                );
+
+                $genderPreference = $setting->gender_preference ?? 'male';
+            }
+        }
+
 
         return view(
             'admin.users.create',
             compact(
                 'userTypes',
-                'roles',
                 'institutions',
                 'divisions',
                 'previewIds',
                 'academicYears',
-                'classes'
+                'classes',
+                'genderPreference'
             )
         );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE USER
+    |--------------------------------------------------------------------------
+    */
+
     public function store(Request $request)
     {
-       
-        DB::beginTransaction();
+        $validated = $request->validate([
+
+            'user_type_id' => [
+                'required',
+                'integer',
+                'exists:user_types,id'
+            ],
+
+            'name_bn' => [
+                'required',
+                'string',
+                'max:255'
+            ],
+
+            'name' => [
+                'nullable',
+                'string',
+                'max:255'
+            ],
+
+            'phone' => [
+                'required',
+                'string',
+                'max:30',
+                'unique:users,phone'
+            ],
+
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                'unique:users,email'
+            ],
+
+            'password' => [
+                'nullable',
+                'string',
+                'min:6'
+            ],
+
+            'gender' => [
+                'required',
+                'in:male,female'
+            ],
+
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png',
+                'max:2048'
+            ],
+
+            'date_of_birth' => ['nullable', 'date'],
+
+            'blood_group' => ['nullable', 'string', 'max:10'],
+
+            'religion' => ['nullable', 'string', 'max:50'],
+
+            'nid' => ['nullable', 'string', 'max:100'],
+
+            'birth_certificate' => ['nullable', 'string', 'max:100'],
+
+            'phone2' => ['nullable', 'string', 'max:30'],
+
+            'phone_relation' => ['nullable', 'string', 'max:50'],
+
+            'phone2_relation' => ['nullable', 'string', 'max:50'],
+
+            'father_name' => ['nullable', 'string', 'max:255'],
+
+            'father_phone' => ['nullable', 'string', 'max:30'],
+
+            'mother_name' => ['nullable', 'string', 'max:255'],
+
+            'mother_phone' => ['nullable', 'string', 'max:30'],
+
+            'guardian_name' => ['nullable', 'string', 'max:255'],
+
+            'guardian_phone' => ['nullable', 'string', 'max:30'],
+
+            'guardian_relation' => ['nullable', 'string', 'max:50'],
+
+            'code_generation_type' => [
+                'nullable',
+                'in:auto,manual'
+            ],
+
+            'custom_id' => [
+                'nullable',
+                'string',
+                'max:100'
+            ],
+
+            'institution_id' => [
+                'nullable',
+                'exists:madrasas,id'
+            ],
+
+            'present_division_id' => ['nullable', 'exists:divisions,id'],
+
+            'present_district_id' => ['nullable', 'exists:districts,id'],
+
+            'present_upazila_id' => ['nullable', 'exists:upazilas,id'],
+
+            'present_union' => ['nullable', 'string', 'max:255'],
+
+            'present_post_office' => ['nullable', 'string', 'max:255'],
+
+            'present_village_road' => ['nullable', 'string', 'max:255'],
+
+            'present_postal_code' => ['nullable', 'string', 'max:20'],
+
+            'permanent_division_id' => ['nullable', 'exists:divisions,id'],
+
+            'permanent_district_id' => ['nullable', 'exists:districts,id'],
+
+            'permanent_upazila_id' => ['nullable', 'exists:upazilas,id'],
+
+            'permanent_union' => ['nullable', 'string', 'max:255'],
+
+            'permanent_post_office' => ['nullable', 'string', 'max:255'],
+
+            'permanent_village_road' => ['nullable', 'string', 'max:255'],
+
+            'permanent_postal_code' => ['nullable', 'string', 'max:20'],
+
+            'academic_year_id' => ['nullable', 'exists:academic_years,id'],
+
+            'class_id' => ['nullable', 'exists:classes,id'],
+
+            'section_id' => ['nullable', 'exists:sections,id'],
+
+            'guardian_user_id' => ['nullable', 'exists:users,id'],
+
+        ]);
+
+
+        $userType = $this->getUserTypeOrFail(
+            (int) $validated['user_type_id']
+        );
+
+
+        /*
+         * Role is assigned automatically.
+         * No role_id is required from the browser.
+         */
+        $role = $this->getDefaultRoleForNewUser();
+
+        $roleSlug = $role->slug;
+
+
+        $institutionId = $this->resolveInstitutionIdForRole(
+            $request,
+            $roleSlug
+        );
+
+
+        if ($roleSlug !== 'support_admin' && !$institutionId) {
+
+            throw ValidationException::withMessages([
+                'institution_id' => 'প্রতিষ্ঠান নির্বাচন করা আবশ্যক।',
+            ]);
+        }
+
+
+        if (
+            $institutionId
+            && !Madrasa::where('id', $institutionId)->exists()
+        ) {
+
+            throw ValidationException::withMessages([
+                'institution_id' => 'নির্বাচিত প্রতিষ্ঠান পাওয়া যায়নি।',
+            ]);
+        }
+
+
+        /*
+         * Prevent Support Admin from assigning users
+         * outside selected institutions.
+         */
+        $authUser = auth()->user();
+
+        if (
+            $authUser->is_support_admin
+            && !$request->filled('institution_id')
+        ) {
+
+            throw ValidationException::withMessages([
+                'institution_id' => 'প্রতিষ্ঠান নির্বাচন করুন।',
+            ]);
+        }
+
+
+        $isStudent = $userType->slug === 'student';
+
+        $generationType = $validated['code_generation_type'] ?? 'auto';
+
+        $customId = trim(
+            (string) ($validated['custom_id'] ?? '')
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MANUAL CODE
+        |--------------------------------------------------------------------------
+        */
+
+        if ($generationType === 'manual') {
+
+            if ($customId === '') {
+
+                $customId = $this->generateManualUserTypeCode(
+                    $institutionId,
+                    (int) $userType->id
+                );
+            }
+
+
+            if (!preg_match('/^[0-9]+$/', $customId)) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'User Code শুধুমাত্র সংখ্যা হতে হবে।',
+                ]);
+            }
+
+
+            $setting = $this->findUserTypeSetting(
+                $institutionId,
+                $userType
+            );
+
+            $minimumCode = (
+                $setting
+                && $setting->manual_start_code !== null
+            )
+                ? (int) $setting->manual_start_code
+                : $this->getConfiguredCodeStart(
+                    $institutionId,
+                    (int) $userType->id
+                );
+
+
+            if ((int) $customId < $minimumCode) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'এই User Type-এর Manual Code '
+                        . $minimumCode
+                        . ' থেকে শুরু হতে হবে।',
+                ]);
+            }
+
+
+            if ($this->userCodeExists($institutionId, $customId)) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'এই User Code ইতোমধ্যে অন্য একজন ব্যবহার করছেন। অন্য Code দিন।',
+                ]);
+            }
+
+        } else {
+
+            $customId = $this->generateUserTypeCode(
+                $institutionId,
+                (int) $userType->id
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE USER
+        |--------------------------------------------------------------------------
+        */
 
         $photoPath = null;
 
+        DB::beginTransaction();
+
         try {
 
-            $authUser = auth()->user();
+            /*
+             * Lock same-institution user rows while generating/saving
+             * the code to reduce concurrent duplicate generation.
+             */
+            $this->userTypeCodeScopeQuery($institutionId)
+                ->lockForUpdate()
+                ->get(['id']);
 
-            $role = Role::where(
-                'slug',
-                $request->user_type
-            )->firstOrFail();
-
-            $roleSlug = strtolower(
-                trim($role->slug)
-            );
-
-            $allowedRoles = [];
 
             /*
-             * Super Admin:
-             *
-             * System mode:
-             * user_admin + support_admin
-             *
-             * Switched Madrasa mode:
-             * student + user
+             * Recheck after acquiring the lock.
              */
-            if ($authUser->is_super_admin) {
+            if ($this->userCodeExists($institutionId, $customId)) {
 
-                if (session()->has('active_institution_id')) {
+                if ($generationType === 'manual') {
 
-                    $allowedRoles = [
-                        'student',
-                        'user',
-                    ];
-
-                } else {
-
-                    $allowedRoles = [
-                        'user_admin',
-                        'support_admin',
-                    ];
+                    throw ValidationException::withMessages([
+                        'custom_id' => 'এই User Code ইতোমধ্যে ব্যবহার করা হয়েছে।',
+                    ]);
                 }
 
-            } elseif ($authUser->is_support_admin) {
-
-                $allowedRoles = [
-                    'user_admin',
-                ];
-
-            } elseif ($authUser->is_user_admin) {
-
-                $allowedRoles = [
-                    'student',
-                    'user',
-                ];
-            }
-
-            if (!in_array(
-                $roleSlug,
-                $allowedRoles,
-                true
-            )) {
-                abort(
-                    403,
-                    'এই Role তৈরি করার অনুমতি আপনার নেই।'
+                $customId = $this->generateUserTypeCode(
+                    $institutionId,
+                    (int) $userType->id
                 );
             }
 
-            if (!in_array(
-                $roleSlug,
-                self::CODE_ROLES,
-                true
-            )) {
-                abort(
-                    403,
-                    'এই Role-এর জন্য User Code তৈরি করা যাবে না।'
-                );
-            }
-
-            $isStudent =
-                $roleSlug === 'student';
-
-            $institutionRequired =
-                in_array(
-                    $roleSlug,
-                    self::INSTITUTION_CODE_ROLES,
-                    true
-                );
-
-            /*
-             * Institution selection.
-             *
-             * Super Admin switched mode:
-             * always use active institution from session.
-             */
-            if ($roleSlug === 'support_admin') {
-
-                $institutionId = null;
-
-            } elseif ($authUser->is_super_admin) {
-
-                if (
-                    session()->has(
-                        'active_institution_id'
-                    )
-                ) {
-
-                    $institutionId =
-                        session(
-                            'active_institution_id'
-                        );
-
-                } else {
-
-                    $institutionId =
-                        $request->institution_id;
-                }
-
-            } elseif ($authUser->is_support_admin) {
-
-                $institutionId =
-                    $request->institution_id;
-
-            } else {
-
-                $institutionId =
-                    $authUser->institution_id;
-            }
-
-            if (
-                $institutionRequired
-                && !$institutionId
-            ) {
-
-                throw ValidationException::withMessages([
-                    'institution_id' =>
-                        'প্রতিষ্ঠান নির্বাচন করা আবশ্যক।',
-                ]);
-            }
-
-            $rules = [
-
-                'user_type' => [
-                    'required',
-                    'exists:roles,slug'
-                ],
-
-                'name_bn' => [
-                    'required',
-                    'string',
-                    'max:255'
-                ],
-
-                'name' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'phone' => [
-                    'required',
-                    'string',
-                    'max:30',
-                    'unique:users,phone'
-                ],
-
-                'email' => [
-                    'nullable',
-                    'email',
-                    'max:255',
-                    'unique:users,email'
-                ],
-
-                'password' => [
-                    'nullable',
-                    'string',
-                    'min:6'
-                ],
-
-                'gender' => [
-                    'required',
-                    'in:male,female'
-                ],
-
-                'photo' => [
-                    'nullable',
-                    'image',
-                    'mimes:jpg,jpeg,png',
-                    'max:2048'
-                ],
-
-                'date_of_birth' => [
-                    'nullable',
-                    'date'
-                ],
-
-                'blood_group' => [
-                    'nullable',
-                    'string',
-                    'max:10'
-                ],
-
-                'religion' => [
-                    'nullable',
-                    'string',
-                    'max:50'
-                ],
-
-                'nid' => [
-                    'nullable',
-                    'string',
-                    'max:100'
-                ],
-
-                'birth_certificate' => [
-                    'nullable',
-                    'string',
-                    'max:100'
-                ],
-
-                'phone2' => [
-                    'nullable',
-                    'string',
-                    'max:30'
-                ],
-
-                'phone_relation' => [
-                    'nullable',
-                    'string',
-                    'max:50'
-                ],
-
-                'phone2_relation' => [
-                    'nullable',
-                    'string',
-                    'max:50'
-                ],
-
-                'father_name' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'father_phone' => [
-                    'nullable',
-                    'string',
-                    'max:30'
-                ],
-
-                'mother_name' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'mother_phone' => [
-                    'nullable',
-                    'string',
-                    'max:30'
-                ],
-
-                'guardian_name' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'guardian_phone' => [
-                    'nullable',
-                    'string',
-                    'max:30'
-                ],
-
-                'guardian_relation' => [
-                    'nullable',
-                    'string',
-                    'max:50'
-                ],
-
-                'code_generation_type' => [
-                    'nullable',
-                    'in:auto,manual'
-                ],
-
-                'custom_id' => [
-                    'nullable',
-                    'string',
-                    'max:100'
-                ],
-
-                'present_division_id' => [
-                    'nullable',
-                    'exists:divisions,id'
-                ],
-
-                'present_district_id' => [
-                    'nullable',
-                    'exists:districts,id'
-                ],
-
-                'present_upazila_id' => [
-                    'nullable',
-                    'exists:upazilas,id'
-                ],
-
-                'present_union' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'present_post_office' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'present_village_road' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'present_postal_code' => [
-                    'nullable',
-                    'string',
-                    'max:20'
-                ],
-
-                'permanent_division_id' => [
-                    'nullable',
-                    'exists:divisions,id'
-                ],
-
-                'permanent_district_id' => [
-                    'nullable',
-                    'exists:districts,id'
-                ],
-
-                'permanent_upazila_id' => [
-                    'nullable',
-                    'exists:upazilas,id'
-                ],
-
-                'permanent_union' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'permanent_post_office' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'permanent_village_road' => [
-                    'nullable',
-                    'string',
-                    'max:255'
-                ],
-
-                'permanent_postal_code' => [
-                    'nullable',
-                    'string',
-                    'max:20'
-                ],
-            ];
-
-            /*
-             * Institution is required from request only when:
-             * - Super Admin is in system mode
-             * - Support Admin
-             *
-             * In switched Super Admin mode,
-             * institution comes from session.
-             */
-            if (
-                (
-                    (
-                        $authUser->is_super_admin
-                        && !session()->has(
-                            'active_institution_id'
-                        )
-                    )
-                    || $authUser->is_support_admin
-                )
-                && $institutionRequired
-            ) {
-
-                $rules['institution_id'] = [
-                    'required',
-                    'exists:madrasas,id',
-                ];
-            }
-
-            if ($isStudent) {
-
-                $rules['academic_year_id'] = [
-                    'nullable',
-                    'exists:academic_years,id'
-                ];
-
-                $rules['class_id'] = [
-                    'nullable',
-                    'exists:classes,id'
-                ];
-
-                $rules['section_id'] = [
-                    'nullable',
-                    'exists:sections,id'
-                ];
-
-                $rules['guardian_user_id'] = [
-                    'nullable',
-                    'exists:users,id'
-                ];
-            }
-
-            $validated =
-                $request->validate($rules);
-
-            $generationType =
-                $validated['code_generation_type']
-                ?? 'auto';
-
-            $gender =
-                $validated['gender'];
-
-            $customId = trim(
-                (string)(
-                    $validated['custom_id']
-                    ?? ''
-                )
-            );
-            /*
-             * MANUAL CODE
-             *
-             * Manual sequence is independent
-             * from Auto sequence.
-             */
-if ($generationType === 'manual') {
-
-    /*
-     * If user entered a Manual Code,
-     * use exactly that code.
-     */
-    if ($customId !== '') {
-
-        if (!preg_match(
-            '/^[0-9]+$/',
-            $customId
-        )) {
-
-            throw ValidationException::withMessages([
-                'custom_id' =>
-                    'User Code শুধুমাত্র সংখ্যা হতে হবে।',
-            ]);
-        }
-
-$minimumCode = $this->getConfiguredCodeStart(
-    $institutionId,
-    $roleSlug
-);
-
-        if (
-            (int) $customId < $minimumCode
-        ) {
-
-            throw ValidationException::withMessages([
-                'custom_id' =>
-                    'এই Role-এর User Code '
-                    . $minimumCode
-                    . ' থেকে শুরু হতে হবে।',
-            ]);
-        }
-
-        /*
-         * Check duplicate Manual Code
-         */
-        $codeQuery = User::query()
-            ->where(
-                'institution_user_id',
-                $customId
-            )
-            ->where(
-                'role_id',
-                $role->id
-            )
-            ->where(
-                'code_generation_type',
-                'manual'
-            );
-
-        if (
-            in_array(
-                $roleSlug,
-                self::INSTITUTION_CODE_ROLES,
-                true
-            )
-        ) {
-
-            $codeQuery->where(
-                'institution_id',
-                $institutionId
-            );
-
-        } elseif (
-            $roleSlug === 'support_admin'
-        ) {
-
-            $codeQuery->whereNull(
-                'institution_id'
-            );
-        }
-
-        if ($codeQuery->exists()) {
-
-            throw ValidationException::withMessages([
-                'custom_id' =>
-                    'এই Manual User Code ইতোমধ্যে ব্যবহার করা হয়েছে।',
-            ]);
-        }
-
-    } else {
-
-        /*
-         * Manual selected but no code entered.
-         *
-         * Generate:
-         * last saved Manual code + 1
-         */
-        $customId =
-            $this->generateManualCode(
-                $institutionId,
-                $roleSlug
-            );
-    }
-}
-            /*
-             * AUTO CODE
-             *
-             * Auto sequence is independent
-             * from Manual sequence.
-             */
-            if ($generationType === 'auto') {
-                $customId = '';
-            }
-
-            $username =
-                $this->generateUsername(
-                    $request->name,
-                    $request->name_bn
-                );
 
             if ($request->hasFile('photo')) {
 
-                $photoPath =
-                    $request->file('photo')
-                        ->store(
-                            'users/photos',
-                            'public'
-                        );
+                $photoPath = $request->file('photo')
+                    ->store('users/photos', 'public');
             }
 
-            if ($generationType === 'manual') {
-
-                $institutionUserId =
-                    $customId;
-
-            } else {
-
-                $institutionUserId =
-                    $this->generateRoleCode(
-                        $institutionId,
-                        $roleSlug
-                    );
-            }
 
             $user = User::create([
 
-                'institution_user_id' =>
-                    $institutionUserId,
+                'institution_user_id' => $customId,
 
-                'code_generation_type' =>
-                    $generationType,
+                'code_generation_type' => $generationType,
 
-                'institution_id' =>
-                    $institutionId,
+                'institution_id' => $institutionId,
 
-                'role_id' =>
-                    $role->id,
+                'user_type_id' => $userType->id,
 
-                'username' =>
-                    $username,
+                'role_id' => $role->id,
 
-                'email' =>
-                    $request->email,
-
-                'password' =>
-                    Hash::make(
-                        $request->password
-                        ?? 'password123'
-                    ),
-
-                'name' =>
+                'username' => $this->generateUsername(
                     $request->name,
+                    $request->name_bn
+                ),
 
-                'name_bn' =>
-                    $request->name_bn,
+                'email' => $request->email,
 
-                'photo' =>
-                    $photoPath,
+                'password' => Hash::make(
+                    $request->password ?: 'password123'
+                ),
 
-                'phone' =>
-                    $request->phone,
+                'name' => $request->name,
 
-                'phone2' =>
-                    $request->phone2,
+                'name_bn' => $request->name_bn,
 
-                'phone_owner' =>
-                    $request->phone_relation,
+                'photo' => $photoPath,
 
-                'gender' =>
-                    $gender,
+                'phone' => $request->phone,
 
-                'date_of_birth' =>
-                    $request->date_of_birth,
+                'phone2' => $request->phone2,
 
-                'age' =>
-                    $request->date_of_birth
-                        ? Carbon::parse(
-                            $request->date_of_birth
-                        )->age
-                        : null,
+                'phone_owner' => $request->phone_relation,
 
-                'blood_group' =>
-                    $request->blood_group,
+                'gender' => $request->gender,
 
-                'religion' =>
-                    $request->religion,
+                'date_of_birth' => $request->date_of_birth,
 
-                'nid' =>
-                    $request->nid,
+                'age' => $request->date_of_birth
+                    ? Carbon::parse($request->date_of_birth)->age
+                    : null,
 
-                'birth_certificate' =>
-                    $request->birth_certificate,
+                'blood_group' => $request->blood_group,
 
-                'father_name' =>
-                    $request->father_name,
+                'religion' => $request->religion,
 
-                'father_phone' =>
-                    $request->father_phone,
+                'nid' => $request->nid,
 
-                'mother_name' =>
-                    $request->mother_name,
+                'birth_certificate' => $request->birth_certificate,
 
-                'mother_phone' =>
-                    $request->mother_phone,
+                'father_name' => $request->father_name,
 
-                'guardian_name' =>
-                    $request->guardian_name,
+                'father_phone' => $request->father_phone,
 
-                'guardian_phone' =>
-                    $request->guardian_phone,
+                'mother_name' => $request->mother_name,
 
-                'guardian_relation' =>
-                    $request->guardian_relation,
+                'mother_phone' => $request->mother_phone,
 
-                'present_division_id' =>
-                    $request->present_division_id,
+                'guardian_name' => $request->guardian_name,
 
-                'present_district_id' =>
-                    $request->present_district_id,
+                'guardian_phone' => $request->guardian_phone,
 
-                'present_upazila_id' =>
-                    $request->present_upazila_id,
+                'guardian_relation' => $request->guardian_relation,
 
-                'present_union' =>
-                    $request->present_union,
+                'present_division_id' => $request->present_division_id,
 
-                'present_post_office' =>
-                    $request->present_post_office,
+                'present_district_id' => $request->present_district_id,
 
-                'present_village_road' =>
-                    $request->present_village_road,
+                'present_upazila_id' => $request->present_upazila_id,
 
-                'present_postal_code' =>
-                    $request->present_postal_code,
+                'present_union' => $request->present_union,
 
-                'present_address_full' =>
-                    $this->generateAddressString(
-                        $request,
-                        'present'
-                    ),
+                'present_post_office' => $request->present_post_office,
 
-                'permanent_division_id' =>
-                    $request->permanent_division_id,
+                'present_village_road' => $request->present_village_road,
 
-                'permanent_district_id' =>
-                    $request->permanent_district_id,
+                'present_postal_code' => $request->present_postal_code,
 
-                'permanent_upazila_id' =>
-                    $request->permanent_upazila_id,
+                'present_address_full' => $this->generateAddressString(
+                    $request,
+                    'present'
+                ),
 
-                'permanent_union' =>
-                    $request->permanent_union,
+                'permanent_division_id' => $request->permanent_division_id,
 
-                'permanent_post_office' =>
-                    $request->permanent_post_office,
+                'permanent_district_id' => $request->permanent_district_id,
 
-                'permanent_village_road' =>
-                    $request->permanent_village_road,
+                'permanent_upazila_id' => $request->permanent_upazila_id,
 
-                'permanent_postal_code' =>
-                    $request->permanent_postal_code,
+                'permanent_union' => $request->permanent_union,
 
-                'permanent_address_full' =>
-                    $this->generateAddressString(
-                        $request,
-                        'permanent'
-                    ),
+                'permanent_post_office' => $request->permanent_post_office,
+
+                'permanent_village_road' => $request->permanent_village_road,
+
+                'permanent_postal_code' => $request->permanent_postal_code,
+
+                'permanent_address_full' => $this->generateAddressString(
+                    $request,
+                    'permanent'
+                ),
 
                 'status' => 1,
 
-                'created_by' =>
-                    auth()->id(),
+                'created_by' => auth()->id(),
+
             ]);
+
 
             if ($isStudent) {
 
-                $academicYearId =
-                    $request->academic_year_id;
+                $studentId = $this->generateStudentId(
+                    $institutionId,
+                    $request->academic_year_id
+                );
 
-                $studentId =
-                    $this->generateStudentId(
-                        $institutionId,
-                        $academicYearId
-                    );
 
                 Student::create([
 
-                    'user_id' =>
-                        $user->id,
+                    'user_id' => $user->id,
 
-                    'institution_id' =>
-                        $institutionId,
+                    'institution_id' => $institutionId,
 
-                    'academic_year_id' =>
-                        $academicYearId,
+                    'academic_year_id' => $request->academic_year_id,
 
-                    'class_id' =>
-                        $request->class_id,
+                    'class_id' => $request->class_id,
 
-                    'section_id' =>
-                        $request->section_id,
+                    'section_id' => $request->section_id,
 
-                    'guardian_user_id' =>
-                        $request->guardian_user_id,
+                    'guardian_user_id' => $request->guardian_user_id,
 
-                    'student_id' =>
-                        $studentId,
+                    'student_id' => $studentId,
 
-                    'is_hostel' =>
-                        $request->boolean(
-                            'is_hostel'
-                        ),
+                    'is_hostel' => $request->boolean('is_hostel'),
 
-                    'is_transport' =>
-                        $request->boolean(
-                            'is_transport'
-                        ),
+                    'is_transport' => $request->boolean('is_transport'),
 
                     'status' => 1,
 
-                    'created_by' =>
-                        auth()->id(),
+                    'created_by' => auth()->id(),
 
-                    'updated_by' =>
-                        auth()->id(),
+                    'updated_by' => auth()->id(),
+
                 ]);
             }
 
+
             DB::commit();
+
 
             return redirect()
                 ->route('dashboard.user.index')
@@ -1137,176 +1305,38 @@ $minimumCode = $this->getConfiguredCodeStart(
                     'ইউজার সফলভাবে তৈরি হয়েছে।'
                 );
 
-        } catch (ValidationException $e) {
-
-            DB::rollBack();
-
-            throw $e;
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 
             DB::rollBack();
 
             if (
                 $photoPath
-                && Storage::disk('public')
-                    ->exists($photoPath)
+                && Storage::disk('public')->exists($photoPath)
             ) {
-
-                Storage::disk('public')
-                    ->delete($photoPath);
+                Storage::disk('public')->delete($photoPath);
             }
+
+
+            if ($e instanceof ValidationException) {
+                throw $e;
+            }
+
 
             return back()
                 ->with(
                     'error',
-                    'ইউজার তৈরি করতে সমস্যা হয়েছে: '
-                    . $e->getMessage()
+                    'ইউজার তৈরি করতে সমস্যা হয়েছে: ' . $e->getMessage()
                 )
                 ->withInput();
         }
     }
 
-private function generateRoleCode(
-    $institutionId,
-    string $roleSlug,
-    ?int $excludeUserId = null
-): string {
-    if (!array_key_exists($roleSlug, self::CODE_STARTS)) {
-        throw ValidationException::withMessages([
-            'user_type' => 'এই Role-এর জন্য User Code তৈরি করা যাবে না।',
-        ]);
-    }
 
-    $role = Role::where('slug', $roleSlug)->firstOrFail();
-
-    // Database setting অনুযায়ী Auto Code শুরু হবে।
-    $nextCode = $this->getConfiguredCodeStart(
-        $institutionId,
-        $roleSlug
-    );
-
-    $query = User::query()
-        ->where('role_id', $role->id)
-        ->whereNotNull('institution_user_id')
-        ->where('code_generation_type', 'auto');
-
-    if (in_array($roleSlug, self::INSTITUTION_CODE_ROLES, true)) {
-        if (!$institutionId) {
-            return (string) $nextCode;
-        }
-
-        $query->where('institution_id', $institutionId);
-    } elseif ($roleSlug === 'support_admin') {
-        $query->whereNull('institution_id');
-    }
-
-    if ($excludeUserId) {
-        $query->where('id', '!=', $excludeUserId);
-    }
-
-    $existingCodes = $query
-        ->whereRaw("institution_user_id REGEXP '^[0-9]+$'")
-        ->pluck('institution_user_id')
-        ->map(fn ($code) => (int) $code)
-        ->filter(fn ($code) => $code >= $nextCode)
-        ->unique()
-        ->sort()
-        ->values();
-
-    foreach ($existingCodes as $existingCode) {
-        if ($existingCode === $nextCode) {
-            $nextCode++;
-            continue;
-        }
-
-        if ($existingCode > $nextCode) {
-            break;
-        }
-    }
-
-    return (string) $nextCode;
-}
-    /**
-     * Generate MANUAL sequence code.
-     *
-     * Manual sequence is independent from Auto.
-     *
-     * Example:
-     *
-     * Student manual starts:
-     * 501
-     *
-     * Next manual:
-     * 502
-     *
-     * Next manual:
-     * 503
-     *
-     * Auto remains:
-     * 101, 102, 103...
-     */
-private function generateManualCode(
-    $institutionId,
-    string $roleSlug,
-    ?int $excludeUserId = null
-): string {
-    if (!array_key_exists($roleSlug, self::CODE_STARTS)) {
-        throw ValidationException::withMessages([
-            'custom_id' => 'এই User Type-এর জন্য Code Generation চালু নেই।',
-        ]);
-    }
-
-    $role = Role::where('slug', $roleSlug)->firstOrFail();
-
-    // Database setting অনুযায়ী Manual Code শুরু হবে।
-    $nextCode = $this->getConfiguredCodeStart(
-        $institutionId,
-        $roleSlug
-    );
-
-    $query = User::query()
-        ->where('role_id', $role->id)
-        ->where('code_generation_type', 'manual')
-        ->whereNotNull('institution_user_id');
-
-    if (in_array($roleSlug, self::INSTITUTION_CODE_ROLES, true)) {
-        if (!$institutionId) {
-            return (string) $nextCode;
-        }
-
-        $query->where('institution_id', $institutionId);
-    } elseif ($roleSlug === 'support_admin') {
-        $query->whereNull('institution_id');
-    }
-
-    if ($excludeUserId) {
-        $query->where('id', '!=', $excludeUserId);
-    }
-
-    $existingCodes = $query
-        ->whereRaw("institution_user_id REGEXP '^[0-9]+$'")
-        ->pluck('institution_user_id')
-        ->map(fn ($code) => (int) $code)
-        ->filter(fn ($code) => $code >= $nextCode)
-        ->unique()
-        ->sort()
-        ->values();
-
-    // Manual Code-এর মধ্যে প্রথম খালি সংখ্যা খুঁজে বের করবে।
-    foreach ($existingCodes as $existingCode) {
-        if ($existingCode === $nextCode) {
-            $nextCode++;
-            continue;
-        }
-
-        if ($existingCode > $nextCode) {
-            break;
-        }
-    }
-
-    return (string) $nextCode;
-}
+    /*
+    |--------------------------------------------------------------------------
+    | STUDENT ID GENERATOR
+    |--------------------------------------------------------------------------
+    */
 
     private function generateStudentId(
         $institutionId,
@@ -1327,128 +1357,80 @@ private function generateManualCode(
 
         } else {
 
-            $query->whereNull(
-                'academic_year_id'
-            );
+            $query->whereNull('academic_year_id');
         }
 
-        $lastStudent =
-            $query->latest('id')->first();
+
+        $lastStudent = $query->latest('id')->first();
 
         $newNumber = 1;
 
-        if (
-            $lastStudent
-            && $lastStudent->student_id
-        ) {
 
-            $studentIdString =
-                $lastStudent->student_id;
+        if ($lastStudent && $lastStudent->student_id) {
+
+            $studentIdString = $lastStudent->student_id;
 
             if ($academicYearId) {
 
-                $pattern =
-                    '/^STU-'
-                    . preg_quote(
-                        $institutionId,
-                        '/'
-                    )
+                $pattern = '/^STU-'
+                    . preg_quote($institutionId, '/')
                     . '-'
-                    . preg_quote(
-                        $academicYearId,
-                        '/'
-                    )
+                    . preg_quote($academicYearId, '/')
                     . '-(\d+)$/';
 
             } else {
 
-                $pattern =
-                    '/^STU-'
-                    . preg_quote(
-                        $institutionId,
-                        '/'
-                    )
+                $pattern = '/^STU-'
+                    . preg_quote($institutionId, '/')
                     . '-(\d+)$/';
             }
 
-            if (
-                preg_match(
-                    $pattern,
-                    $studentIdString,
-                    $matches
-                )
-            ) {
 
-                $newNumber =
-                    ((int)$matches[1]) + 1;
+            if (preg_match($pattern, $studentIdString, $matches)) {
+                $newNumber = ((int) $matches[1]) + 1;
             }
         }
 
+
         if ($academicYearId) {
 
-            $studentId =
-                'STU-'
+            $studentId = 'STU-'
                 . $institutionId
                 . '-'
                 . $academicYearId
                 . '-'
-                . str_pad(
-                    $newNumber,
-                    4,
-                    '0',
-                    STR_PAD_LEFT
-                );
+                . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
 
         } else {
 
-            $studentId =
-                'STU-'
+            $studentId = 'STU-'
                 . $institutionId
                 . '-'
-                . str_pad(
-                    $newNumber,
-                    4,
-                    '0',
-                    STR_PAD_LEFT
-                );
+                . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
         }
 
+
         while (
-            Student::where(
-                'student_id',
-                $studentId
-            )->exists()
+            Student::where('student_id', $studentId)->exists()
         ) {
 
             $newNumber++;
 
             if ($academicYearId) {
 
-                $studentId =
-                    'STU-'
+                $studentId = 'STU-'
                     . $institutionId
                     . '-'
                     . $academicYearId
                     . '-'
-                    . str_pad(
-                        $newNumber,
-                        4,
-                        '0',
-                        STR_PAD_LEFT
-                    );
+                    . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
 
             } else {
 
-                $studentId =
-                    'STU-'
+                $studentId = 'STU-'
                     . $institutionId
                     . '-'
-                    . str_pad(
-                        $newNumber,
-                        4,
-                        '0',
-                        STR_PAD_LEFT
-                    );
+                    . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
             }
         }
 
@@ -1456,222 +1438,32 @@ private function generateManualCode(
     }
 
 
-      public function show($username)
-{
-    $authUser = auth()->user();
-
-    $user = User::with([
-        'role',
-        'institution',
-        'student',
-        'creator',
-        'updater',
-        'presentDivision',
-        'presentDistrict',
-        'presentUpazila',
-        'permanentDivision',
-        'permanentDistrict',
-        'permanentUpazila',
-    ])
-        ->where('username', $username)
-        ->firstOrFail();
-        /*
-         * Switched Super Admin can only access
-         * users from active institution.
-         */
-        if (
-            $authUser->is_super_admin
-            && session()->has(
-                'active_institution_id'
-            )
-        ) {
-
-            if (
-                (string)$user->institution_id
-                !==
-                (string)session(
-                    'active_institution_id'
-                )
-            ) {
-
-                abort(
-                    403,
-                    'এই User দেখার অনুমতি আপনার নেই।'
-                );
-            }
-
-            if (
-                !in_array(
-                    optional($user->role)->slug,
-                    [
-                        'student',
-                        'user',
-                    ],
-                    true
-                )
-            ) {
-
-                abort(
-                    403,
-                    'এই User দেখার অনুমতি আপনার নেই।'
-                );
-            }
-
-        } elseif (
-            $authUser->is_super_admin
-            && !session()->has(
-                'active_institution_id'
-            )
-        ) {
-
-            /*
-             * System Super Admin:
-             * Students cannot be accessed.
-             */
-            if (
-                optional($user->role)->slug
-                === 'student'
-            ) {
-
-                abort(
-                    403,
-                    'এই User দেখার অনুমতি আপনার নেই।'
-                );
-            }
-
-        } elseif (
-            !$authUser->is_super_admin
-            && !$authUser->is_support_admin
-            && $user->institution_id
-                !== $authUser->institution_id
-        ) {
-
-            abort(
-                403,
-                'এই User দেখার অনুমতি আপনার নেই।'
-            );
-        }
-
-        if (
-            $authUser->is_support_admin
-            && optional($user->role)->slug
-                !== 'user_admin'
-        ) {
-
-            abort(
-                403,
-                'এই User দেখার অনুমতি আপনার নেই।'
-            );
-        }
-
-        return view(
-            'admin.users.show',
-            compact('user')
-        );
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | EDIT USER
+    |--------------------------------------------------------------------------
+    */
 
     public function edit($username)
     {
+        $user = User::with([
+            'role',
+            'userType',
+            'student',
+            'institution'
+        ])
+            ->where('username', $username)
+            ->firstOrFail();
 
-    $authUser = auth()->user();
 
-    $user = User::with([
-        'role',
-        'student',
-        'institution',
-    ])->where('username', $username)->firstOrFail();
+        $this->authorizeManagedUser($user);
 
-        /*
-         * Switched Super Admin:
-         * only selected institution student/user.
-         */
-        if (
-            $authUser->is_super_admin
-            && session()->has(
-                'active_institution_id'
-            )
-        ) {
+        $authUser = auth()->user();
 
-            if (
-                (string)$user->institution_id
-                !==
-                (string)session(
-                    'active_institution_id'
-                )
-            ) {
-
-                abort(
-                    403,
-                    'এই User edit করার অনুমতি আপনার নেই।'
-                );
-            }
-
-            if (
-                !in_array(
-                    optional($user->role)->slug,
-                    ['student', 'user'],
-                    true
-                )
-            ) {
-
-                abort(
-                    403,
-                    'এই User edit করার অনুমতি আপনার নেই।'
-                );
-            }
-
-        } elseif (
-            $authUser->is_super_admin
-            && !session()->has(
-                'active_institution_id'
-            )
-        ) {
-
-            /*
-             * System Super Admin:
-             * Student cannot be edited.
-             */
-            if (
-                optional($user->role)->slug
-                === 'student'
-            ) {
-
-                abort(
-                    403,
-                    'এই User edit করার অনুমতি আপনার নেই।'
-                );
-            }
-
-        } elseif (
-            !$authUser->is_super_admin
-            && !$authUser->is_support_admin
-            && $user->institution_id
-                !== $authUser->institution_id
-        ) {
-
-            abort(
-                403,
-                'এই User edit করার অনুমতি আপনার নেই।'
-            );
-        }
-
-        if (
-            $authUser->is_support_admin
-            && optional($user->role)->slug
-                !== 'user_admin'
-        ) {
-
-            abort(
-                403,
-                'এই User edit করার অনুমতি আপনার নেই।'
-            );
-        }
 
         if (
             $authUser->is_super_admin
-            && session()->has(
-                'active_institution_id'
-            )
+            && session()->has('active_institution_id')
         ) {
 
             $institutions = Madrasa::where(
@@ -1684,10 +1476,9 @@ private function generateManualCode(
             || $authUser->is_support_admin
         ) {
 
-            $institutions = Madrasa::where(
-                'status',
-                1
-            )->get();
+            $institutions = Madrasa::where('status', 1)
+                ->orderBy('name')
+                ->get();
 
         } else {
 
@@ -1697,33 +1488,38 @@ private function generateManualCode(
             )->get();
         }
 
-        $roles = Role::orderBy(
-            'level',
-            'desc'
-        )->get();
+
+        $userTypes = $this->getAllowedUserTypes();
+
+
+        /*
+         * Keep legacy User Type visible for an existing account.
+         */
+        if (
+            $user->userType
+            && !$userTypes->contains('id', $user->user_type_id)
+        ) {
+
+            $userTypes->push($user->userType);
+        }
+
 
         $divisions = Division::with([
             'districts.upazilas'
         ])->get();
 
-        $academicYears = AcademicYear::where(
-            'status',
-            1
-        )
+
+        $academicYears = AcademicYear::where('status', 1)
             ->orderBy('name', 'desc')
             ->get();
 
-        $classes = Classes::where(
-            'status',
-            1
-        )->get();
+
+        $classes = Classes::where('status', 1)->get();
+
 
         $sections = collect();
 
-        if (
-            $user->student
-            && $user->student->class_id
-        ) {
+        if ($user->student && $user->student->class_id) {
 
             $sections = Section::where(
                 'class_id',
@@ -1733,55 +1529,11 @@ private function generateManualCode(
                 ->get();
         }
 
-        $userTypes = [];
-
-        if ($authUser->is_super_admin) {
-
-            if (
-                session()->has(
-                    'active_institution_id'
-                )
-            ) {
-
-                $userTypes = [
-                    'student' => 'শিক্ষার্থী',
-                    'user'    => 'ইউজার',
-                ];
-
-            } else {
-
-                $userTypes = [
-                    'user_admin' =>
-                        'ইউজার অ্যাডমিন',
-
-                    'support_admin' =>
-                        'সাপোর্ট অ্যাডমিন',
-                ];
-            }
-
-        } elseif ($authUser->is_support_admin) {
-
-            $userTypes = [
-                'user_admin' =>
-                    'ইউজার অ্যাডমিন',
-            ];
-
-        } elseif ($authUser->is_user_admin) {
-
-            $userTypes = [
-                'student' =>
-                    'শিক্ষার্থী',
-
-                'user' =>
-                    'ইউজার',
-            ];
-        }
 
         return view(
             'admin.users.edit',
             compact(
                 'user',
-                'roles',
                 'institutions',
                 'divisions',
                 'academicYears',
@@ -1792,229 +1544,33 @@ private function generateManualCode(
         );
     }
 
-public function update(
-    Request $request,
-    $username
-) {
-    $authUser = auth()->user();
 
-    $user = User::with([
-        'role',
-        'student',
-    ])->where('username', $username)->firstOrFail();
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE USER
+    |--------------------------------------------------------------------------
+    */
 
-        /*
-         * Switched Super Admin:
-         * only selected institution student/user.
-         */
-        if (
-            $authUser->is_super_admin
-            && session()->has(
-                'active_institution_id'
-            )
-        ) {
+    public function update(Request $request, $username)
+    {
+        $user = User::with([
+            'role',
+            'userType',
+            'student'
+        ])
+            ->where('username', $username)
+            ->firstOrFail();
 
-            if (
-                (string)$user->institution_id
-                !==
-                (string)session(
-                    'active_institution_id'
-                )
-            ) {
 
-                abort(
-                    403,
-                    'এই User update করার অনুমতি আপনার নেই।'
-                );
-            }
+        $this->authorizeManagedUser($user);
 
-            if (
-                !in_array(
-                    optional($user->role)->slug,
-                    ['student', 'user'],
-                    true
-                )
-            ) {
 
-                abort(
-                    403,
-                    'এই User update করার অনুমতি আপনার নেই।'
-                );
-            }
+        $validated = $request->validate([
 
-        } elseif (
-            $authUser->is_super_admin
-            && !session()->has(
-                'active_institution_id'
-            )
-        ) {
-
-            /*
-             * System Super Admin:
-             * Student cannot be updated.
-             */
-            if (
-                optional($user->role)->slug
-                === 'student'
-            ) {
-
-                abort(
-                    403,
-                    'এই User update করার অনুমতি আপনার নেই।'
-                );
-            }
-
-        } elseif (
-            !$authUser->is_super_admin
-            && !$authUser->is_support_admin
-            && $user->institution_id
-                !== $authUser->institution_id
-        ) {
-
-            abort(
-                403,
-                'এই User update করার অনুমতি আপনার নেই।'
-            );
-        }
-
-        if (
-            $authUser->is_support_admin
-            && optional($user->role)->slug
-                !== 'user_admin'
-        ) {
-
-            abort(
-                403,
-                'এই User update করার অনুমতি আপনার নেই।'
-            );
-        }
-
-        $role = Role::where(
-            'slug',
-            $request->user_type
-        )->firstOrFail();
-
-        $roleSlug = strtolower(
-            trim($role->slug)
-        );
-
-        $allowedRoles = [];
-
-        if ($authUser->is_super_admin) {
-
-            if (
-                session()->has(
-                    'active_institution_id'
-                )
-            ) {
-
-                $allowedRoles = [
-                    'student',
-                    'user',
-                ];
-
-            } else {
-
-                $allowedRoles = [
-                    'user_admin',
-                    'support_admin',
-                ];
-            }
-
-        } elseif ($authUser->is_support_admin) {
-
-            $allowedRoles = [
-                'user_admin',
-            ];
-
-        } elseif ($authUser->is_user_admin) {
-
-            $allowedRoles = [
-                'student',
-                'user',
-            ];
-        }
-
-        if (!in_array(
-            $roleSlug,
-            $allowedRoles,
-            true
-        )) {
-
-            return back()
-                ->with(
-                    'error',
-                    'এই Role assign করার অনুমতি আপনার নেই।'
-                )
-                ->withInput();
-        }
-
-        if (!in_array(
-            $roleSlug,
-            self::CODE_ROLES,
-            true
-        )) {
-
-            return back()
-                ->with(
-                    'error',
-                    'এই Role User Code System-এর অংশ নয়।'
-                )
-                ->withInput();
-        }
-
-        $isStudent =
-            $roleSlug === 'student';
-
-        $institutionRequired =
-            in_array(
-                $roleSlug,
-                self::INSTITUTION_CODE_ROLES,
-                true
-            );
-
-        /*
-         * Institution assignment.
-         */
-        if ($roleSlug === 'support_admin') {
-
-            $institutionId = null;
-
-        } elseif ($authUser->is_super_admin) {
-
-            if (
-                session()->has(
-                    'active_institution_id'
-                )
-            ) {
-
-                $institutionId =
-                    session(
-                        'active_institution_id'
-                    );
-
-            } else {
-
-                $institutionId =
-                    $request->institution_id;
-            }
-
-        } elseif ($authUser->is_support_admin) {
-
-            $institutionId =
-                $request->institution_id;
-
-        } else {
-
-            $institutionId =
-                $authUser->institution_id;
-        }
-
-        $rules = [
-
-            'user_type' => [
+            'user_type_id' => [
                 'required',
-                'exists:roles,slug'
+                'integer',
+                'exists:user_types,id'
             ],
 
             'name_bn' => [
@@ -2043,15 +1599,15 @@ public function update(
                 'unique:users,email,' . $user->id
             ],
 
-            'gender' => [
-                'required',
-                'in:male,female'
-            ],
-
             'password' => [
                 'nullable',
                 'string',
                 'min:6'
+            ],
+
+            'gender' => [
+                'required',
+                'in:male,female'
             ],
 
             'photo' => [
@@ -2061,40 +1617,35 @@ public function update(
                 'max:2048'
             ],
 
-            'date_of_birth' => [
-                'nullable',
-                'date'
-            ],
+            'date_of_birth' => ['nullable', 'date'],
 
-            'blood_group' => [
-                'nullable',
-                'string',
-                'max:10'
-            ],
+            'blood_group' => ['nullable', 'string', 'max:10'],
 
-            'religion' => [
-                'nullable',
-                'string',
-                'max:50'
-            ],
+            'religion' => ['nullable', 'string', 'max:50'],
 
-            'nid' => [
-                'nullable',
-                'string',
-                'max:100'
-            ],
+            'nid' => ['nullable', 'string', 'max:100'],
 
-            'birth_certificate' => [
-                'nullable',
-                'string',
-                'max:100'
-            ],
+            'birth_certificate' => ['nullable', 'string', 'max:100'],
 
-            'phone2' => [
-                'nullable',
-                'string',
-                'max:30'
-            ],
+            'phone2' => ['nullable', 'string', 'max:30'],
+
+            'phone_relation' => ['nullable', 'string', 'max:50'],
+
+            'phone2_relation' => ['nullable', 'string', 'max:50'],
+
+            'father_name' => ['nullable', 'string', 'max:255'],
+
+            'father_phone' => ['nullable', 'string', 'max:30'],
+
+            'mother_name' => ['nullable', 'string', 'max:255'],
+
+            'mother_phone' => ['nullable', 'string', 'max:30'],
+
+            'guardian_name' => ['nullable', 'string', 'max:255'],
+
+            'guardian_phone' => ['nullable', 'string', 'max:30'],
+
+            'guardian_relation' => ['nullable', 'string', 'max:50'],
 
             'code_generation_type' => [
                 'nullable',
@@ -2106,525 +1657,528 @@ public function update(
                 'string',
                 'max:100'
             ],
-        ];
+
+            'institution_id' => [
+                'nullable',
+                'exists:madrasas,id'
+            ],
+
+            'present_division_id' => ['nullable', 'exists:divisions,id'],
+
+            'present_district_id' => ['nullable', 'exists:districts,id'],
+
+            'present_upazila_id' => ['nullable', 'exists:upazilas,id'],
+
+            'present_union' => ['nullable', 'string', 'max:255'],
+
+            'present_post_office' => ['nullable', 'string', 'max:255'],
+
+            'present_village_road' => ['nullable', 'string', 'max:255'],
+
+            'present_postal_code' => ['nullable', 'string', 'max:20'],
+
+            'permanent_division_id' => ['nullable', 'exists:divisions,id'],
+
+            'permanent_district_id' => ['nullable', 'exists:districts,id'],
+
+            'permanent_upazila_id' => ['nullable', 'exists:upazilas,id'],
+
+            'permanent_union' => ['nullable', 'string', 'max:255'],
+
+            'permanent_post_office' => ['nullable', 'string', 'max:255'],
+
+            'permanent_village_road' => ['nullable', 'string', 'max:255'],
+
+            'permanent_postal_code' => ['nullable', 'string', 'max:20'],
+
+            'academic_year_id' => ['nullable', 'exists:academic_years,id'],
+
+            'class_id' => ['nullable', 'exists:classes,id'],
+
+            'section_id' => ['nullable', 'exists:sections,id'],
+
+            'guardian_user_id' => ['nullable', 'exists:users,id'],
+
+        ]);
+
+
+        $userType = $this->getUserTypeOrFail(
+            (int) $validated['user_type_id']
+        );
+
 
         /*
-         * Institution is required from request only
-         * in system mode.
+         * Role is deliberately preserved.
+         * Edit form cannot change Role.
          */
+        $role = $user->role;
+
+        if (!$role) {
+            abort(403, 'User-এর Role পাওয়া যায়নি।');
+        }
+
+        $roleSlug = $role->slug;
+
+
+        $authUser = auth()->user();
+
+
         if (
-            (
-                (
-                    $authUser->is_super_admin
-                    && !session()->has(
-                        'active_institution_id'
-                    )
-                )
-                || $authUser->is_support_admin
-            )
-            && $institutionRequired
+            !$request->filled('institution_id')
+            && $user->institution_id
         ) {
 
-            $rules['institution_id'] = [
-                'required',
-                'exists:madrasas,id',
-            ];
+            $request->merge([
+                'institution_id' => $user->institution_id
+            ]);
         }
 
-        if ($isStudent) {
 
-            $rules['academic_year_id'] = [
-                'nullable',
-                'exists:academic_years,id'
-            ];
+        $institutionId = $this->resolveInstitutionIdForRole(
+            $request,
+            $roleSlug
+        );
 
-            $rules['class_id'] = [
-                'nullable',
-                'exists:classes,id'
-            ];
-
-            $rules['section_id'] = [
-                'nullable',
-                'exists:sections,id'
-            ];
-
-            $rules['guardian_user_id'] = [
-                'nullable',
-                'exists:users,id'
-            ];
-        }
-
-        $validated =
-            $request->validate($rules);
 
         if (
-            $institutionRequired
+            $roleSlug !== 'support_admin'
             && !$institutionId
         ) {
 
             throw ValidationException::withMessages([
-                'institution_id' =>
-                    'প্রতিষ্ঠান নির্বাচন করা আবশ্যক।',
+                'institution_id' => 'প্রতিষ্ঠান নির্বাচন করা আবশ্যক।',
             ]);
         }
 
+
+        if (
+            $authUser->is_user_admin
+            && (int) $institutionId !==
+            (int) $authUser->institution_id
+        ) {
+
+            abort(
+                403,
+                'অন্য প্রতিষ্ঠানে User assign করার অনুমতি নেই।'
+            );
+        }
+
+
+        if (
+            $authUser->is_support_admin
+            && (int) $institutionId <= 0
+        ) {
+
+            throw ValidationException::withMessages([
+                'institution_id' => 'প্রতিষ্ঠান নির্বাচন করুন।',
+            ]);
+        }
+
+
+        $generationType = $validated['code_generation_type']
+            ?? ($user->code_generation_type ?: 'auto');
+
+
+        $customId = trim(
+            (string) ($validated['custom_id'] ?? '')
+        );
+
+
+        $sameUserType = (int) $user->user_type_id
+            === (int) $userType->id;
+
+        $sameInstitution = (string) $user->institution_id
+            === (string) $institutionId;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MANUAL CODE
+        |--------------------------------------------------------------------------
+        */
+
+        if ($generationType === 'manual') {
+
+            if ($customId === '') {
+
+                if (
+                    $sameUserType
+                    && $sameInstitution
+                    && $user->code_generation_type === 'manual'
+                    && $user->institution_user_id
+                ) {
+
+                    $customId = (string) $user->institution_user_id;
+
+                } else {
+
+                    $customId = $this->generateManualUserTypeCode(
+                        $institutionId,
+                        (int) $userType->id,
+                        $user->id
+                    );
+                }
+            }
+
+
+            if (!preg_match('/^[0-9]+$/', $customId)) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'User Code শুধুমাত্র সংখ্যা হতে হবে।',
+                ]);
+            }
+
+
+            $setting = $this->findUserTypeSetting(
+                $institutionId,
+                $userType
+            );
+
+
+            $minimumCode = (
+                $setting
+                && $setting->manual_start_code !== null
+            )
+                ? (int) $setting->manual_start_code
+                : $this->getConfiguredCodeStart(
+                    $institutionId,
+                    (int) $userType->id
+                );
+
+
+            if ((int) $customId < $minimumCode) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'এই User Type-এর Manual Code '
+                        . $minimumCode
+                        . ' থেকে শুরু হতে হবে।',
+                ]);
+            }
+
+
+            if (
+                $this->userCodeExists(
+                    $institutionId,
+                    $customId,
+                    $user->id
+                )
+            ) {
+
+                throw ValidationException::withMessages([
+                    'custom_id' => 'এই User Code অন্য একজন ব্যবহার করছেন।',
+                ]);
+            }
+
+        } else {
+
+            /*
+             * Preserve current Auto Code if:
+             * User Type and Institution remain unchanged.
+             */
+            if (
+                $sameUserType
+                && $sameInstitution
+                && $user->code_generation_type === 'auto'
+                && $user->institution_user_id
+            ) {
+
+                $customId = (string) $user->institution_user_id;
+
+            } else {
+
+                $customId = $this->generateUserTypeCode(
+                    $institutionId,
+                    (int) $userType->id,
+                    $user->id
+                );
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE USER
+        |--------------------------------------------------------------------------
+        */
+
         DB::beginTransaction();
 
-        $oldPhoto =
-            $user->photo;
+        $oldPhoto = $user->photo;
 
-        $photoPath =
-            $user->photo;
+        $newPhoto = $oldPhoto;
 
         try {
 
-            $generationType =
-                $validated['code_generation_type']
-                ?? 'auto';
+            $this->userTypeCodeScopeQuery($institutionId)
+                ->lockForUpdate()
+                ->get(['id']);
 
-            $gender =
-                $validated['gender'];
-
-            $customId = trim(
-                (string)(
-                    $validated['custom_id']
-                    ?? ''
-                )
-            );
 
             /*
-             * MANUAL CODE
+             * Recheck the selected code.
              */
-            if ($generationType === 'manual') {
+            if (
+                $this->userCodeExists(
+                    $institutionId,
+                    $customId,
+                    $user->id
+                )
+            ) {
 
-                if ($customId !== '') {
+                if ($generationType === 'manual') {
 
-                    if (!preg_match(
-                        '/^[0-9]+$/',
-                        $customId
-                    )) {
-
-                        throw ValidationException::withMessages([
-                            'custom_id' =>
-                                'User Code শুধুমাত্র সংখ্যা হতে হবে।',
-                        ]);
-                    }
-
-                    /*
-                     * Role starting number.
-                     */
-$minimumCode = $this->getConfiguredCodeStart(
-    $institutionId,
-    $roleSlug
-);
-                    if (
-                        (int)$customId
-                        < $minimumCode
-                    ) {
-
-                        throw ValidationException::withMessages([
-                            'custom_id' =>
-                                'এই Role-এর User Code '
-                                . $minimumCode
-                                . ' থেকে শুরু হতে হবে।',
-                        ]);
-                    }
-
-                    $codeQuery = User::query()
-                        ->where(
-                            'institution_user_id',
-                            $customId
-                        )
-                        ->where(
-                            'role_id',
-                            $role->id
-                        )
-                        ->where(
-                            'id',
-                            '!=',
-                            $user->id
-                        );
-
-                    if (
-                        in_array(
-                            $roleSlug,
-                            self::INSTITUTION_CODE_ROLES,
-                            true
-                        )
-                    ) {
-
-                        $codeQuery->where(
-                            'institution_id',
-                            $institutionId
-                        );
-
-                    } elseif (
-                        $roleSlug === 'support_admin'
-                    ) {
-
-                        $codeQuery->whereNull(
-                            'institution_id'
-                        );
-                    }
-
-                    if ($codeQuery->exists()) {
-
-                        throw ValidationException::withMessages([
-                            'custom_id' =>
-                                'এই Role ও প্রতিষ্ঠানের জন্য User Code ইতোমধ্যে ব্যবহার করা হয়েছে।',
-                        ]);
-                    }
-
-                    $institutionUserId =
-                        $customId;
+                    throw ValidationException::withMessages([
+                        'custom_id' => 'এই User Code অন্য একজন ব্যবহার করছেন।',
+                    ]);
 
                 } else {
 
-                    /*
-                     * Generate next MANUAL sequence.
-                     */
-                    $institutionUserId =
-                        $this->generateManualCode(
-                            $institutionId,
-                            $roleSlug,
-                            $user->id
-                        );
-                }
-
-            } else {
-
-                /*
-                 * AUTO CODE
-                 *
-                 * Existing auto code remains unchanged
-                 * when role + institution are unchanged.
-                 */
-                $sameRole =
-                    $user->role_id === $role->id;
-
-                $sameInstitution =
-                    (string)$user->institution_id
-                    ===
-                    (string)$institutionId;
-
-                if (
-                    $user->institution_user_id
-                    && $user->code_generation_type
-                        === 'auto'
-                    && $sameRole
-                    && $sameInstitution
-                ) {
-
-                    $institutionUserId =
-                        $user->institution_user_id;
-
-                } else {
-
-                    $institutionUserId =
-                        $this->generateRoleCode(
-                            $institutionId,
-                            $roleSlug,
-                            $user->id
-                        );
+                    $customId = $this->generateUserTypeCode(
+                        $institutionId,
+                        (int) $userType->id,
+                        $user->id
+                    );
                 }
             }
+
 
             if ($request->hasFile('photo')) {
 
-                if (
-                    $oldPhoto
-                    && Storage::disk('public')
-                        ->exists($oldPhoto)
-                ) {
-
-                    Storage::disk('public')
-                        ->delete($oldPhoto);
-                }
-
-                $photoPath =
-                    $request->file('photo')
-                        ->store(
-                            'users/photos',
-                            'public'
-                        );
+                $newPhoto = $request->file('photo')
+                    ->store('users/photos', 'public');
             }
+
 
             $data = [
 
-                'institution_id' =>
-                    $institutionId,
+                'institution_id' => $institutionId,
 
-                'role_id' =>
-                    $role->id,
+                'user_type_id' => $userType->id,
 
-                'institution_user_id' =>
-                    $institutionUserId,
+                /*
+                 * Do not update role_id here.
+                 */
 
-                'code_generation_type' =>
-                    $generationType,
+                'institution_user_id' => $customId,
 
-                'email' =>
-                    $request->email,
+                'code_generation_type' => $generationType,
 
-                'name' =>
-                    $request->name,
+                'email' => $request->email,
 
-                'name_bn' =>
-                    $request->name_bn,
+                'name' => $request->name,
 
-                'photo' =>
-                    $photoPath,
+                'name_bn' => $request->name_bn,
 
-                'phone' =>
-                    $request->phone,
+                'photo' => $newPhoto,
 
-                'phone2' =>
-                    $request->phone2,
+                'phone' => $request->phone,
 
-                'phone_owner' =>
-                    $request->phone_relation,
+                'phone2' => $request->phone2,
 
-                'gender' =>
-                    $gender,
+                'phone_owner' => $request->phone_relation,
 
-                'date_of_birth' =>
-                    $request->date_of_birth,
+                'gender' => $request->gender,
 
-                'age' =>
-                    $request->date_of_birth
-                        ? Carbon::parse(
-                            $request->date_of_birth
-                        )->age
-                        : null,
+                'date_of_birth' => $request->date_of_birth,
 
-                'blood_group' =>
-                    $request->blood_group,
+                'age' => $request->date_of_birth
+                    ? Carbon::parse($request->date_of_birth)->age
+                    : null,
 
-                'religion' =>
-                    $request->religion,
+                'blood_group' => $request->blood_group,
 
-                'nid' =>
-                    $request->nid,
+                'religion' => $request->religion,
 
-                'birth_certificate' =>
-                    $request->birth_certificate,
+                'nid' => $request->nid,
 
-                'father_name' =>
-                    $request->father_name,
+                'birth_certificate' => $request->birth_certificate,
 
-                'father_phone' =>
-                    $request->father_phone,
+                'father_name' => $request->father_name,
 
-                'mother_name' =>
-                    $request->mother_name,
+                'father_phone' => $request->father_phone,
 
-                'mother_phone' =>
-                    $request->mother_phone,
+                'mother_name' => $request->mother_name,
 
-                'guardian_name' =>
-                    $request->guardian_name,
+                'mother_phone' => $request->mother_phone,
 
-                'guardian_phone' =>
-                    $request->guardian_phone,
+                'guardian_name' => $request->guardian_name,
 
-                'guardian_relation' =>
-                    $request->guardian_relation,
+                'guardian_phone' => $request->guardian_phone,
 
-                'present_division_id' =>
-                    $request->present_division_id,
+                'guardian_relation' => $request->guardian_relation,
 
-                'present_district_id' =>
-                    $request->present_district_id,
+                'present_division_id' => $request->present_division_id,
 
-                'present_upazila_id' =>
-                    $request->present_upazila_id,
+                'present_district_id' => $request->present_district_id,
 
-                'present_union' =>
-                    $request->present_union,
+                'present_upazila_id' => $request->present_upazila_id,
 
-                'present_post_office' =>
-                    $request->present_post_office,
+                'present_union' => $request->present_union,
 
-                'present_village_road' =>
-                    $request->present_village_road,
+                'present_post_office' => $request->present_post_office,
 
-                'present_postal_code' =>
-                    $request->present_postal_code,
+                'present_village_road' => $request->present_village_road,
 
-                'present_address_full' =>
-                    $this->generateAddressString(
-                        $request,
-                        'present'
-                    ),
+                'present_postal_code' => $request->present_postal_code,
 
-                'permanent_division_id' =>
-                    $request->permanent_division_id,
+                'present_address_full' => $this->generateAddressString(
+                    $request,
+                    'present'
+                ),
 
-                'permanent_district_id' =>
-                    $request->permanent_district_id,
+                'permanent_division_id' => $request->permanent_division_id,
 
-                'permanent_upazila_id' =>
-                    $request->permanent_upazila_id,
+                'permanent_district_id' => $request->permanent_district_id,
 
-                'permanent_union' =>
-                    $request->permanent_union,
+                'permanent_upazila_id' => $request->permanent_upazila_id,
 
-                'permanent_post_office' =>
-                    $request->permanent_post_office,
+                'permanent_union' => $request->permanent_union,
 
-                'permanent_village_road' =>
-                    $request->permanent_village_road,
+                'permanent_post_office' => $request->permanent_post_office,
 
-                'permanent_postal_code' =>
-                    $request->permanent_postal_code,
+                'permanent_village_road' => $request->permanent_village_road,
 
-                'updated_by' =>
-                    auth()->id(),
+                'permanent_postal_code' => $request->permanent_postal_code,
+
+                'permanent_address_full' => $this->generateAddressString(
+                    $request,
+                    'permanent'
+                ),
+
+                'updated_by' => auth()->id(),
+
             ];
 
-            if ($request->filled('password')) {
 
-                $data['password'] =
-                    Hash::make(
-                        $request->password
-                    );
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($request->password);
             }
+
 
             $user->update($data);
 
-            if ($isStudent) {
+
+            /*
+             * Student Profile follows User Type, not Role.
+             *
+             * Existing student profile is not deleted
+             * when User Type changes.
+             */
+            if ($userType->slug === 'student') {
 
                 $studentData = [
 
-                    'institution_id' =>
-                        $institutionId,
+                    'institution_id' => $institutionId,
 
-                    'academic_year_id' =>
-                        $request->academic_year_id,
+                    'academic_year_id' => $request->academic_year_id,
 
-                    'class_id' =>
-                        $request->class_id,
+                    'class_id' => $request->class_id,
 
-                    'section_id' =>
-                        $request->section_id,
+                    'section_id' => $request->section_id,
 
-                    'guardian_user_id' =>
-                        $request->guardian_user_id,
+                    'guardian_user_id' => $request->guardian_user_id,
 
-                    'is_hostel' =>
-                        $request->boolean(
-                            'is_hostel'
-                        ),
+                    'is_hostel' => $request->boolean('is_hostel'),
 
-                    'is_transport' =>
-                        $request->boolean(
-                            'is_transport'
-                        ),
+                    'is_transport' => $request->boolean('is_transport'),
 
-                    'updated_by' =>
-                        auth()->id(),
+                    'updated_by' => auth()->id(),
+
                 ];
+
 
                 if ($user->student) {
 
-                    $user->student->update(
-                        $studentData
-                    );
+                    $user->student->update($studentData);
 
                 } else {
 
-                    $studentData['user_id'] =
-                        $user->id;
+                    $studentData['user_id'] = $user->id;
 
-                    $studentData['student_id'] =
-                        $this->generateStudentId(
-                            $institutionId,
-                            $request->academic_year_id
-                        );
+                    $studentData['student_id'] = $this->generateStudentId(
+                        $institutionId,
+                        $request->academic_year_id
+                    );
 
                     $studentData['status'] = 1;
 
-                    $studentData['created_by'] =
-                        auth()->id();
+                    $studentData['created_by'] = auth()->id();
 
-                    Student::create(
-                        $studentData
-                    );
-                }
-
-            } else {
-
-                if ($user->student) {
-                    $user->student->delete();
+                    Student::create($studentData);
                 }
             }
 
+
             DB::commit();
+
+
+            if (
+                $newPhoto
+                && $newPhoto !== $oldPhoto
+                && $oldPhoto
+                && Storage::disk('public')->exists($oldPhoto)
+            ) {
+
+                Storage::disk('public')->delete($oldPhoto);
+            }
+
 
             return redirect()
                 ->route('dashboard.user.index')
                 ->with(
                     'success',
-                    'ইউজার সফলভাবে আপডেট হয়েছে.'
+                    'ইউজার সফলভাবে আপডেট হয়েছে।'
                 );
 
-        } catch (ValidationException $e) {
+        } catch (\Throwable $e) {
 
             DB::rollBack();
 
-            if (
-                $photoPath
-                && $photoPath !== $oldPhoto
-                && Storage::disk('public')
-                    ->exists($photoPath)
-            ) {
-
-                Storage::disk('public')
-                    ->delete($photoPath);
-            }
-
-            throw $e;
-
-        } catch (\Exception $e) {
-
-            DB::rollBack();
 
             if (
-                $photoPath
-                && $photoPath !== $oldPhoto
-                && Storage::disk('public')
-                    ->exists($photoPath)
+                $newPhoto
+                && $newPhoto !== $oldPhoto
+                && Storage::disk('public')->exists($newPhoto)
             ) {
 
-                Storage::disk('public')
-                    ->delete($photoPath);
+                Storage::disk('public')->delete($newPhoto);
             }
+
+
+            if ($e instanceof ValidationException) {
+                throw $e;
+            }
+
 
             return back()
                 ->with(
                     'error',
-                    'আপডেট করতে সমস্যা হয়েছে: '
-                    . $e->getMessage()
+                    'আপডেট করতে সমস্যা হয়েছে: ' . $e->getMessage()
                 )
                 ->withInput();
         }
     }
 
-public function destroy($username)
-{
-    try {
 
-        $user = User::with([
-            'role',
-            'student'
-        ])
-            ->where('username', $username)
-            ->firstOrFail();
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE USER
+    |--------------------------------------------------------------------------
+    */
 
-            if (
-                optional($user->role)->slug
-                === 'super_admin'
-            ) {
+    public function destroy($username)
+    {
+        try {
+
+            $user = User::with([
+                'role',
+                'student'
+            ])
+                ->where('username', $username)
+                ->firstOrFail();
+
+
+            if (optional($user->role)->slug === 'super_admin') {
 
                 return back()->with(
                     'error',
@@ -2632,25 +2186,19 @@ public function destroy($username)
                 );
             }
 
+
             $authUser = auth()->user();
 
-            /*
-             * Switched Super Admin:
-             * only student/user of selected institution.
-             */
+
             if (
                 $authUser->is_super_admin
-                && session()->has(
-                    'active_institution_id'
-                )
+                && session()->has('active_institution_id')
             ) {
 
                 if (
-                    (string)$user->institution_id
+                    (string) $user->institution_id
                     !==
-                    (string)session(
-                        'active_institution_id'
-                    )
+                    (string) session('active_institution_id')
                 ) {
 
                     abort(
@@ -2675,19 +2223,10 @@ public function destroy($username)
 
             } elseif (
                 $authUser->is_super_admin
-                && !session()->has(
-                    'active_institution_id'
-                )
+                && !session()->has('active_institution_id')
             ) {
 
-                /*
-                 * System Super Admin:
-                 * Student cannot be deleted.
-                 */
-                if (
-                    optional($user->role)->slug
-                    === 'student'
-                ) {
+                if (optional($user->role)->slug === 'student') {
 
                     abort(
                         403,
@@ -2695,14 +2234,9 @@ public function destroy($username)
                     );
                 }
 
-            } elseif (
-                $authUser->is_support_admin
-            ) {
+            } elseif ($authUser->is_support_admin) {
 
-                if (
-                    optional($user->role)->slug
-                    !== 'user_admin'
-                ) {
+                if (optional($user->role)->slug !== 'user_admin') {
 
                     abort(
                         403,
@@ -2710,14 +2244,12 @@ public function destroy($username)
                     );
                 }
 
-            } elseif (
-                !$authUser->is_super_admin
-            ) {
+            } elseif (!$authUser->is_super_admin) {
 
                 if (
-                    $user->institution_id
+                    (int) $user->institution_id
                     !==
-                    $authUser->institution_id
+                    (int) $authUser->institution_id
                 ) {
 
                     abort(
@@ -2740,28 +2272,30 @@ public function destroy($username)
                     );
                 }
             }
+
 
             if ($user->student) {
                 $user->student->delete();
             }
 
+
             if (
                 $user->photo
-                && Storage::disk('public')
-                    ->exists($user->photo)
+                && Storage::disk('public')->exists($user->photo)
             ) {
 
-                Storage::disk('public')
-                    ->delete($user->photo);
+                Storage::disk('public')->delete($user->photo);
             }
 
+
             $user->delete();
+
 
             return redirect()
                 ->route('dashboard.user.index')
                 ->with(
                     'success',
-                    'ইউজার সফলভাবে ডিলিট হয়েছে.'
+                    'ইউজার সফলভাবে ডিলিট হয়েছে।'
                 );
 
         } catch (\Exception $e) {
@@ -2769,22 +2303,26 @@ public function destroy($username)
             return back()
                 ->with(
                     'error',
-                    'ডিলিট করতে সমস্যা হয়েছে: '
-                    . $e->getMessage()
+                    'ডিলিট করতে সমস্যা হয়েছে: ' . $e->getMessage()
                 );
         }
     }
 
-public function toggleStatus($username)
-{
-    $user = User::with('role')
-        ->where('username', $username)
-        ->firstOrFail();
 
-        if (
-            optional($user->role)->slug
-            === 'super_admin'
-        ) {
+    /*
+    |--------------------------------------------------------------------------
+    | TOGGLE USER STATUS
+    |--------------------------------------------------------------------------
+    */
+
+    public function toggleStatus($username)
+    {
+        $user = User::with('role')
+            ->where('username', $username)
+            ->firstOrFail();
+
+
+        if (optional($user->role)->slug === 'super_admin') {
 
             return back()->with(
                 'error',
@@ -2792,25 +2330,19 @@ public function toggleStatus($username)
             );
         }
 
+
         $authUser = auth()->user();
 
-        /*
-         * Switched Super Admin:
-         * only student/user of selected institution.
-         */
+
         if (
             $authUser->is_super_admin
-            && session()->has(
-                'active_institution_id'
-            )
+            && session()->has('active_institution_id')
         ) {
 
             if (
-                (string)$user->institution_id
+                (string) $user->institution_id
                 !==
-                (string)session(
-                    'active_institution_id'
-                )
+                (string) session('active_institution_id')
             ) {
 
                 abort(
@@ -2835,19 +2367,10 @@ public function toggleStatus($username)
 
         } elseif (
             $authUser->is_super_admin
-            && !session()->has(
-                'active_institution_id'
-            )
+            && !session()->has('active_institution_id')
         ) {
 
-            /*
-             * System Super Admin:
-             * Student status cannot be changed.
-             */
-            if (
-                optional($user->role)->slug
-                === 'student'
-            ) {
+            if (optional($user->role)->slug === 'student') {
 
                 abort(
                     403,
@@ -2855,14 +2378,9 @@ public function toggleStatus($username)
                 );
             }
 
-        } elseif (
-            $authUser->is_support_admin
-        ) {
+        } elseif ($authUser->is_support_admin) {
 
-            if (
-                optional($user->role)->slug
-                !== 'user_admin'
-            ) {
+            if (optional($user->role)->slug !== 'user_admin') {
 
                 abort(
                     403,
@@ -2870,14 +2388,12 @@ public function toggleStatus($username)
                 );
             }
 
-        } elseif (
-            !$authUser->is_super_admin
-        ) {
+        } elseif (!$authUser->is_super_admin) {
 
             if (
-                $user->institution_id
+                (int) $user->institution_id
                 !==
-                $authUser->institution_id
+                (int) $authUser->institution_id
             ) {
 
                 abort(
@@ -2901,15 +2417,15 @@ public function toggleStatus($username)
             }
         }
 
-        $user->update([
-            'status' =>
-                $user->status == 1
-                    ? 0
-                    : 1,
 
-            'updated_by' =>
-                auth()->id(),
+        $user->update([
+
+            'status' => $user->status == 1 ? 0 : 1,
+
+            'updated_by' => auth()->id(),
+
         ]);
+
 
         return back()->with(
             'success',
@@ -2917,41 +2433,68 @@ public function toggleStatus($username)
         );
     }
 
-   private function generateUsername($nameEn = null, $nameBn = null)
-{
-    $name = trim((string) $nameEn);
 
-    // English name থেকে username তৈরি
-    $baseName = Str::slug($name, '_');
-    $baseName = preg_replace('/[^a-z0-9_]/', '', $baseName);
-    $baseName = trim($baseName, '_');
+    /*
+    |--------------------------------------------------------------------------
+    | USERNAME GENERATOR
+    |--------------------------------------------------------------------------
+    */
 
-    // English name না থাকলে fallback
-    if ($baseName === '') {
-        $baseName = 'user';
-    } else {
-        $baseName = 'user_' . $baseName;
+    private function generateUsername(
+        $nameEn = null,
+        $nameBn = null
+    ) {
+
+        $name = trim((string) $nameEn);
+
+        $baseName = Str::slug($name, '_');
+
+        $baseName = preg_replace(
+            '/[^a-z0-9_]/',
+            '',
+            $baseName
+        );
+
+        $baseName = trim($baseName, '_');
+
+
+        if ($baseName === '') {
+
+            $baseName = 'user';
+
+        } else {
+
+            $baseName = 'user_' . $baseName;
+        }
+
+
+        $username = $baseName;
+
+        $counter = 2;
+
+
+        while (User::where('username', $username)->exists()) {
+
+            $username = $baseName . $counter;
+
+            $counter++;
+        }
+
+
+        return $username;
     }
 
-    $username = $baseName;
-    $counter = 2;
 
-    // Username unique রাখা
-    while (User::where('username', $username)->exists()) {
-        $username = $baseName . $counter;
-        $counter++;
-    }
-
-    return $username;
-}
+    /*
+    |--------------------------------------------------------------------------
+    | DISTRICT / UPAZILA / SECTION AJAX
+    |--------------------------------------------------------------------------
+    */
 
     public function getDistricts($divisionId)
     {
         return response()->json(
-            District::where(
-                'division_id',
-                $divisionId
-            )
+            District::where('division_id', $divisionId)
                 ->orderBy('name_bn')
                 ->get([
                     'id',
@@ -2959,14 +2502,12 @@ public function toggleStatus($username)
                 ])
         );
     }
+
 
     public function getUpazilas($districtId)
     {
         return response()->json(
-            Upazila::where(
-                'district_id',
-                $districtId
-            )
+            Upazila::where('district_id', $districtId)
                 ->orderBy('name_bn')
                 ->get([
                     'id',
@@ -2975,26 +2516,26 @@ public function toggleStatus($username)
         );
     }
 
+
     public function getSections($classId)
     {
         return response()->json(
-            Section::where(
-                'class_id',
-                $classId
-            )
-                ->where(
-                    'status',
-                    1
-                )
-                ->orderBy(
-                    'section_name'
-                )
+            Section::where('class_id', $classId)
+                ->where('status', 1)
+                ->orderBy('section_name')
                 ->get([
                     'id',
                     'section_name'
                 ])
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADDRESS GENERATOR
+    |--------------------------------------------------------------------------
+    */
 
     private function generateAddressString(
         Request $request,
@@ -3003,396 +2544,489 @@ public function toggleStatus($username)
 
         $parts = [];
 
-        $villageRoad =
-            $request->input(
-                "{$type}_village_road"
-            );
+
+        $villageRoad = $request->input(
+            "{$type}_village_road"
+        );
 
         if ($villageRoad) {
             $parts[] = $villageRoad;
         }
 
-        $union =
-            $request->input(
-                "{$type}_union"
-            );
+
+        $union = $request->input(
+            "{$type}_union"
+        );
 
         if ($union) {
             $parts[] = $union;
         }
 
-        $upazilaId =
-            $request->input(
-                "{$type}_upazila_id"
-            );
+
+        $upazilaId = $request->input(
+            "{$type}_upazila_id"
+        );
 
         if ($upazilaId) {
 
-            $upazila =
-                Upazila::find(
-                    $upazilaId
-                );
+            $upazila = Upazila::find($upazilaId);
 
             if ($upazila) {
-                $parts[] =
-                    $upazila->name_bn;
+                $parts[] = $upazila->name_bn;
             }
         }
 
-        $districtId =
-            $request->input(
-                "{$type}_district_id"
-            );
+
+        $districtId = $request->input(
+            "{$type}_district_id"
+        );
 
         if ($districtId) {
 
-            $district =
-                District::find(
-                    $districtId
-                );
+            $district = District::find($districtId);
 
             if ($district) {
-                $parts[] =
-                    $district->name_bn;
+                $parts[] = $district->name_bn;
             }
         }
 
-        $divisionId =
-            $request->input(
-                "{$type}_division_id"
-            );
+
+        $divisionId = $request->input(
+            "{$type}_division_id"
+        );
 
         if ($divisionId) {
 
-            $division =
-                Division::find(
-                    $divisionId
-                );
+            $division = Division::find($divisionId);
 
             if ($division) {
-                $parts[] =
-                    $division->name_bn;
+                $parts[] = $division->name_bn;
             }
         }
 
-        $postalCode =
-            $request->input(
-                "{$type}_postal_code"
-            );
+
+        $postalCode = $request->input(
+            "{$type}_postal_code"
+        );
 
         if ($postalCode) {
             $parts[] = $postalCode;
         }
 
-        return implode(
-            ', ',
-            $parts
+
+        return implode(', ', $parts);
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER CODE PREVIEW
+    |--------------------------------------------------------------------------
+    */
+
+    public function previewId(Request $request)
+    {
+        $generationType = $request->input(
+            'generation_type',
+            'auto'
         );
-    }
-/**
- * Get configurable starting code for an institution and role.
- *
- * Existing defaults are preserved when no setting exists.
- */
-private function getConfiguredCodeStart(
-    $institutionId,
-    string $roleSlug
-): int {
-    $defaults = [
-        'student' => 101,
-        'user'    => 201,
-    ];
 
-    // অন্যান্য Role-এর পুরোনো Starting Code অপরিবর্তিত।
-    if (!array_key_exists($roleSlug, $defaults)) {
-        return self::CODE_STARTS[$roleSlug] ?? 201;
-    }
 
-    // Institution না থাকলে default value।
-    if (!$institutionId) {
-        return $defaults[$roleSlug];
-    }
+        if (!in_array($generationType, ['auto', 'manual'], true)) {
 
-    $setting = UserCodeSetting::query()
-        ->where('institution_id', $institutionId)
-        ->where('role_slug', $roleSlug)
-        ->first();
-
-    return $setting
-        ? (int) $setting->start_code
-        : $defaults[$roleSlug];
-}
-public function previewId(Request $request)
-{
-    $userType = strtolower(trim(
-        (string) $request->input('user_type')
-    ));
-
-    $generationType = $request->input(
-        'generation_type',
-        'auto'
-    );
-
-    if (!in_array($generationType, ['auto', 'manual'], true)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Code Generation Type সঠিক নয়।',
-        ], 422);
-    }
-
-    if (!in_array($userType, self::CODE_ROLES, true)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'User Type সঠিক নয়।',
-        ], 422);
-    }
-
-    $authUser = auth()->user();
-
-    $allowedRoles = [];
-
-    if ($authUser->is_super_admin) {
-        if (session()->has('active_institution_id')) {
-            $allowedRoles = ['student', 'user'];
-        } else {
-            $allowedRoles = ['user_admin', 'support_admin'];
+            return response()->json([
+                'success' => false,
+                'message' => 'Code Generation Type সঠিক নয়।',
+            ], 422);
         }
-    } elseif ($authUser->is_support_admin) {
-        $allowedRoles = ['user_admin'];
-    } elseif ($authUser->is_user_admin) {
-        $allowedRoles = ['student', 'user'];
-    }
 
-    if (!in_array($userType, $allowedRoles, true)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'এই User Type-এর Code Preview দেখার অনুমতি নেই।',
-        ], 403);
-    }
 
-    /*
-     * Institution ID current user's context থেকে নির্ধারণ।
-     */
-    if ($userType === 'support_admin') {
-        $institutionId = null;
-    } elseif ($authUser->is_super_admin) {
-        if (session()->has('active_institution_id')) {
-            $institutionId = session('active_institution_id');
-        } else {
-            $institutionId = $request->input('institution_id');
+        $userType = null;
+
+
+        if ($request->filled('user_type_id')) {
+
+            $userType = UserType::active()
+                ->whereIn('slug', self::ALLOWED_USER_TYPE_SLUGS)
+                ->find($request->integer('user_type_id'));
+
+        } elseif ($request->filled('user_type')) {
+
+            $userType = UserType::active()
+                ->whereIn('slug', self::ALLOWED_USER_TYPE_SLUGS)
+                ->where('slug', $request->input('user_type'))
+                ->first();
         }
-    } elseif ($authUser->is_support_admin) {
-        $institutionId = $request->input('institution_id');
-    } else {
-        $institutionId = $authUser->institution_id;
+
+
+        if (!$userType) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'User Type সঠিক নয়।',
+            ], 422);
+        }
+
+
+        $authUser = auth()->user();
+
+
+        /*
+         * Role is no longer required from Preview AJAX.
+         */
+        if ($authUser->is_super_admin) {
+
+            $institutionId = session()->has('active_institution_id')
+                ? (int) session('active_institution_id')
+                : (
+                    $request->filled('institution_id')
+                        ? (int) $request->institution_id
+                        : null
+                );
+
+        } elseif ($authUser->is_support_admin) {
+
+            $institutionId = $request->filled('institution_id')
+                ? (int) $request->institution_id
+                : null;
+
+        } else {
+
+            $institutionId = $authUser->institution_id;
+        }
+
+
+        if (!$institutionId) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'প্রতিষ্ঠান নির্বাচন করুন।',
+            ], 422);
+        }
+
+
+        if (!Madrasa::where('id', $institutionId)->exists()) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'নির্বাচিত প্রতিষ্ঠান পাওয়া যায়নি।',
+            ], 422);
+        }
+
+
+        $previewId = $generationType === 'manual'
+
+            ? $this->generateManualUserTypeCode(
+                $institutionId,
+                (int) $userType->id
+            )
+
+            : $this->generateUserTypeCode(
+                $institutionId,
+                (int) $userType->id
+            );
+
+
+        return response()->json([
+
+            'success' => true,
+
+            'preview_id' => $previewId,
+
+        ]);
     }
+
 
     /*
-     * Institution-based Role-এর জন্য প্রতিষ্ঠানের ID আবশ্যক।
-     */
-    if (
-        in_array($userType, self::INSTITUTION_CODE_ROLES, true)
-        && !$institutionId
-    ) {
-        return response()->json([
-            'success' => false,
-            'message' => 'প্রতিষ্ঠান নির্বাচন করুন।',
-        ], 422);
-    }
+    |--------------------------------------------------------------------------
+    | USER CODE SETTING INSTITUTION
+    |--------------------------------------------------------------------------
+    */
 
-    /*
-     * Request থেকে আসা Institution ID অবশ্যই বৈধ হতে হবে।
-     */
-    if (
-        $institutionId
-        && !Madrasa::where('id', $institutionId)->exists()
-    ) {
-        return response()->json([
-            'success' => false,
-            'message' => 'নির্বাচিত প্রতিষ্ঠান পাওয়া যায়নি।',
-        ], 422);
-    }
+    private function getCodeSettingInstitutionId(): ?int
+    {
+        $authUser = auth()->user();
 
-    if ($generationType === 'manual') {
-        $previewId = $this->generateManualCode(
-            $institutionId,
-            $userType
-        );
-    } else {
-        $previewId = $this->previewRoleCode(
-            $institutionId,
-            $userType
-        );
-    }
-
-    return response()->json([
-        'success' => true,
-        'preview_id' => $previewId,
-    ]);
-}
-
-    private function previewRoleCode(
-        $institutionId,
-        string $roleSlug
-    ): ?string {
-
-        if (!in_array(
-            $roleSlug,
-            self::CODE_ROLES,
-            true
-        )) {
+        if (!$authUser) {
             return null;
         }
+
 
         if (
-            in_array(
-                $roleSlug,
-                self::INSTITUTION_CODE_ROLES,
-                true
-            )
-            && !$institutionId
+            $authUser->is_super_admin
+            || $authUser->is_support_admin
         ) {
-            return null;
+
+            $activeInstitutionId = session(
+                'active_institution_id'
+            );
+
+            return $activeInstitutionId
+                ? (int) $activeInstitutionId
+                : null;
         }
 
-        return $this->generateRoleCode(
-            $institutionId,
-            $roleSlug
-        );
-    }
-private function getCodeSettingInstitutionId(): ?int
-{
-    $user = auth()->user();
 
-    if (!$user) {
-        return null;
-    }
-
-    /*
-     * Super Admin যখন কোনো প্রতিষ্ঠানে প্রবেশ করেছেন,
-     * তখন সেই প্রতিষ্ঠানের Setting ব্যবহার হবে।
-     */
-    if ($user->is_super_admin) {
-        $institutionId = session('active_institution_id');
-
-        return $institutionId
-            ? (int) $institutionId
+        return $authUser->institution_id
+            ? (int) $authUser->institution_id
             : null;
     }
 
-    /*
-     * User Admin নিজের প্রতিষ্ঠানের Setting ব্যবহার করবেন।
-     */
-    if ($user->is_user_admin) {
-        return $user->institution_id
-            ? (int) $user->institution_id
-            : null;
-    }
 
     /*
-     * Support Admin-এর জন্য Student/User Setting
-     * অনুমোদিত নয়।
-     */
-    return null;
-}
-public function getCodeSetting()
-{
-    $institutionId = $this->getCodeSettingInstitutionId();
+    |--------------------------------------------------------------------------
+    | GET USER CODE SETTINGS
+    |--------------------------------------------------------------------------
+    */
 
-    if (!$institutionId) {
+    public function getCodeSetting()
+    {
+        $institutionId = $this->getCodeSettingInstitutionId();
+
+
+        if (!$institutionId) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
+            ], 422);
+        }
+
+
+        $userTypes = $this->getAllowedUserTypes();
+
+        $settings = [];
+
+
+        foreach ($userTypes as $userType) {
+
+            $setting = $this->findUserTypeSetting(
+                $institutionId,
+                $userType
+            );
+
+
+            $settings[$userType->id] = [
+
+                'user_type_id' => (int) $userType->id,
+
+                'user_type' => $userType->slug,
+
+                'name' => $userType->display_name,
+
+                'start_code' => $setting
+                    ? (int) $setting->start_code
+                    : $this->getDefaultUserTypeCodeStart($userType),
+
+                'manual_start_code' => (
+                    $setting
+                    && $setting->manual_start_code !== null
+                )
+                    ? (int) $setting->manual_start_code
+                    : null,
+
+                'gender_preference' => (
+                    $setting
+                    && in_array(
+                        $setting->gender_preference,
+                        ['male', 'female', 'entry'],
+                        true
+                    )
+                )
+                    ? $setting->gender_preference
+                    : 'male',
+
+            ];
+        }
+
+
         return response()->json([
-            'success' => false,
-            'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
-        ], 422);
+
+            'success' => true,
+
+            'user_types' => $userTypes,
+
+            'settings' => $settings,
+
+        ]);
     }
 
-    $defaults = [
-        'student' => 101,
-        'user'    => 201,
-    ];
 
-    $settings = [];
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE USER CODE SETTINGS
+    |--------------------------------------------------------------------------
+    */
 
-    foreach ($defaults as $roleSlug => $defaultStart) {
-        $setting = UserCodeSetting::query()
-            ->where('institution_id', $institutionId)
-            ->where('role_slug', $roleSlug)
-            ->first();
+    public function saveCodeSetting(Request $request)
+    {
+        $institutionId = $this->getCodeSettingInstitutionId();
 
-        $settings[$roleSlug] = [
-            'start_code' => $setting
-                ? (int) $setting->start_code
-                : $defaultStart,
-        ];
-    }
 
-    return response()->json([
-        'success' => true,
-        'settings' => $settings,
-    ]);
-}
-public function saveCodeSetting(Request $request)
-{
-    $institutionId = $this->getCodeSettingInstitutionId();
+        if (!$institutionId) {
 
-    if (!$institutionId) {
-        return response()->json([
-            'success' => false,
-            'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
-        ], 422);
-    }
+            return response()->json([
+                'success' => false,
+                'message' => 'প্রতিষ্ঠান নির্বাচন করা নেই।',
+            ], 422);
+        }
 
-    $validator = Validator::make($request->all(), [
-        'user_type' => [
-            'required',
-            'in:student,user',
-        ],
-        'start_code' => [
-            'required',
-            'integer',
-            'min:1',
-            'max:999999999',
-        ],
-    ], [
-        'user_type.required' => 'User Type নির্বাচন করুন।',
-        'user_type.in' => 'শুধু Student অথবা User নির্বাচন করা যাবে।',
-        'start_code.required' => 'Starting Code দিতে হবে।',
-        'start_code.integer' => 'Starting Code অবশ্যই পূর্ণসংখ্যা হতে হবে।',
-        'start_code.min' => 'Starting Code কমপক্ষে 1 হতে হবে।',
-        'start_code.max' => 'Starting Code অনেক বড় হয়ে গেছে।',
-    ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => $validator->errors()->first(),
-            'errors' => $validator->errors(),
-        ], 422);
-    }
+        $validator = Validator::make(
+            $request->all(),
+            [
 
-    $roleSlug = $request->input('user_type');
-    $startCode = (int) $request->input('start_code');
+                'user_type_id' => [
+                    'required',
+                    'integer',
+                    'exists:user_types,id'
+                ],
 
-    $setting = UserCodeSetting::updateOrCreate(
-        [
-            'institution_id' => $institutionId,
-            'role_slug' => $roleSlug,
-        ],
-        [
-            'start_code' => $startCode,
-        ]
-    );
+                'generation_type' => [
+                    'required',
+                    'in:auto,manual'
+                ],
 
-    return response()->json([
-        'success' => true,
-        'message' => 'User Code Setting সফলভাবে সংরক্ষণ করা হয়েছে।',
-        'settings' => [
-            $roleSlug => [
-                'start_code' => (int) $setting->start_code,
+                'start_code' => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    'max:999999999'
+                ],
+
+                'manual_start_code' => [
+                    'nullable',
+                    'integer',
+                    'min:1',
+                    'max:999999999'
+                ],
+
+                'gender_preference' => [
+                    'required',
+                    'in:male,female,entry'
+                ],
+
             ],
-        ],
-        'start_code' => (int) $setting->start_code,
-    ]);
-}
+            [
 
+                'user_type_id.required' => 'User Type নির্বাচন করুন।',
+
+                'user_type_id.exists' => 'নির্বাচিত User Type পাওয়া যায়নি।',
+
+                'generation_type.required' => 'Code Generation Type নির্বাচন করুন।',
+
+                'start_code.required' => 'Auto Starting Code দিতে হবে।',
+
+                'start_code.integer' => 'Starting Code অবশ্যই পূর্ণসংখ্যা হতে হবে।',
+
+                'manual_start_code.integer' => 'Manual Code অবশ্যই পূর্ণসংখ্যা হতে হবে।',
+
+                'gender_preference.required' => 'Gender Preference নির্বাচন করুন।',
+
+            ]
+        );
+
+
+        if ($validator->fails()) {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' => $validator->errors()->first(),
+
+                'errors' => $validator->errors(),
+
+            ], 422);
+        }
+
+
+        $userType = UserType::active()
+            ->whereIn('slug', self::ALLOWED_USER_TYPE_SLUGS)
+            ->find($request->integer('user_type_id'));
+
+
+        if (!$userType) {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' => 'নিষ্ক্রিয় অথবা অনুপস্থিত User Type নির্বাচন করা যাবে না।',
+
+            ], 422);
+        }
+
+
+        if (
+            $request->input('generation_type') === 'manual'
+            &&
+            (
+                !$request->filled('manual_start_code')
+                ||
+                (int) $request->manual_start_code < 1
+            )
+        ) {
+
+            return response()->json([
+
+                'success' => false,
+
+                'message' => 'Manual Starting Code দিতে হবে।',
+
+            ], 422);
+        }
+
+
+        $setting = $this->saveOrFindUserTypeSetting(
+            $institutionId,
+            $userType
+        );
+
+
+        if ($request->input('generation_type') === 'auto') {
+
+            $setting->start_code = (int) $request->start_code;
+
+        } else {
+
+            $setting->manual_start_code = (int) $request->manual_start_code;
+        }
+
+
+        $setting->gender_preference = $request->gender_preference;
+
+        $setting->save();
+
+
+        return response()->json([
+
+            'success' => true,
+
+            'message' => 'User Code Setting সফলভাবে সংরক্ষণ করা হয়েছে।',
+
+            'settings' => [
+
+                $userType->id => [
+
+                    'user_type_id' => (int) $userType->id,
+
+                    'user_type' => $userType->slug,
+
+                    'start_code' => (int) $setting->start_code,
+
+                    'manual_start_code' => (
+                        $setting->manual_start_code !== null
+                    )
+                        ? (int) $setting->manual_start_code
+                        : null,
+
+                    'gender_preference' => $setting->gender_preference,
+
+                ],
+
+            ],
+
+        ]);
+    }
 }

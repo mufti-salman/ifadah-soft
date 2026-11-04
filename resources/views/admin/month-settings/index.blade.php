@@ -255,6 +255,24 @@
 }
 .badge-bangla  { background: #dbeafe; color: #1d4ed8; }
 .badge-english { background: #d1fae5; color: #065f46; }
+.badge-arabic {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.calendar-type-badge {
+    display: inline-block;
+    padding: .25rem .55rem;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+.arabic-input {
+    direction: rtl;
+    text-align: right;
+    font-family: "Noto Naskh Arabic", "Amiri", serif;
+}
 .bottom-fields {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -378,6 +396,7 @@
                     <th>অ্যাকশন</th>
                     <th>শিক্ষাবর্ষ</th>
                     <th>ক্লাস</th>
+                    <th>ক্যালেন্ডার</th>
                     <th>১ম মাস</th>
                     <th>২য় মাস</th>
                     <th>৩য় মাস</th>
@@ -392,44 +411,95 @@
                     <th>১২তম মাস</th>
                 </tr>
             </thead>
-            <tbody>
-                @forelse($monthSettings as $ms)
-                <tr id="row-{{ $ms->id }}">
-                    <td class="action-col">
-                        <button class="btn-action btn-edit" data-id="{{ $ms->id }}" title="এডিট করুন">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                        </button>
-                    </td>
-                    <td>{{ $ms->academic_year }}</td>
-                    <td>{{ $ms->studentClass->name_bn ?: ($ms->studentClass->name ?? '—') }}</td>
-                    <td>{{ $ms->month_1 ?? '—' }}</td>
-                    <td>{{ $ms->month_2 ?? '—' }}</td>
-                    <td>{{ $ms->month_3 ?? '—' }}</td>
-                    <td>{{ $ms->month_4 ?? '—' }}</td>
-                    <td>{{ $ms->month_5 ?? '—' }}</td>
-                    <td>{{ $ms->month_6 ?? '—' }}</td>
-                    <td>{{ $ms->month_7 ?? '—' }}</td>
-                    <td>{{ $ms->month_8 ?? '—' }}</td>
-                    <td>{{ $ms->month_9 ?? '—' }}</td>
-                    <td>{{ $ms->month_10 ?? '—' }}</td>
-                    <td>{{ $ms->month_11 ?? '—' }}</td>
-                    <td>{{ $ms->month_12 ?? '—' }}</td>
-                </tr>
-                @empty
-                <tr id="emptyRow">
-                    <td colspan="15">
-                        <div class="ms-empty">
-                            <svg width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                            <p>কোনো মাসের তালিকা নেই। নতুন তৈরি করুন।</p>
-                        </div>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
+          <tbody>
+    @forelse($monthSettings as $ms)
+        <tr id="row-{{ $ms->id }}">
+
+            {{-- Action --}}
+            <td class="action-col">
+                <button class="btn-action btn-edit"
+                        data-id="{{ $ms->id }}"
+                        title="এডিট করুন">
+
+                    <svg width="14" height="14" fill="none"
+                         stroke="currentColor" stroke-width="2.2"
+                         viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+
+                    </svg>
+                </button>
+            </td>
+
+            {{-- Academic Year --}}
+            <td>{{ $ms->academic_year }}</td>
+
+            {{-- Class --}}
+            <td>
+                {{ $ms->studentClass->name_bn ?: ($ms->studentClass->name ?? '—') }}
+            </td>
+
+            {{-- Calendar Type --}}
+            <td>
+                @php
+                    $calendarLabels = [
+                        'bangla' => 'বাংলা',
+                        'english' => 'English',
+                        'arabic' => 'عربي (Hijri)',
+                    ];
+
+                    $calendarType = $ms->calendar_type ?? 'english';
+                @endphp
+
+                <span class="calendar-type-badge badge-{{ $calendarType }}">
+                    {{ $calendarLabels[$calendarType] ?? 'English' }}
+                </span>
+            </td>
+
+            {{-- Months --}}
+            <td>{{ $ms->month_1 ?? '—' }}</td>
+            <td>{{ $ms->month_2 ?? '—' }}</td>
+            <td>{{ $ms->month_3 ?? '—' }}</td>
+            <td>{{ $ms->month_4 ?? '—' }}</td>
+            <td>{{ $ms->month_5 ?? '—' }}</td>
+            <td>{{ $ms->month_6 ?? '—' }}</td>
+            <td>{{ $ms->month_7 ?? '—' }}</td>
+            <td>{{ $ms->month_8 ?? '—' }}</td>
+            <td>{{ $ms->month_9 ?? '—' }}</td>
+            <td>{{ $ms->month_10 ?? '—' }}</td>
+            <td>{{ $ms->month_11 ?? '—' }}</td>
+            <td>{{ $ms->month_12 ?? '—' }}</td>
+
+        </tr>
+
+    @empty
+
+        <tr id="emptyRow">
+            <td colspan="16">
+
+                <div class="ms-empty">
+
+                    <svg width="64" height="64"
+                         fill="none" stroke="currentColor"
+                         stroke-width="1.5" viewBox="0 0 24 24">
+
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+
+                    </svg>
+
+                    <p>কোনো মাসের তালিকা নেই। নতুন তৈরি করুন।</p>
+
+                </div>
+
+            </td>
+        </tr>
+
+    @endforelse
+</tbody>
         </table>
     </div>
 
@@ -452,7 +522,33 @@
             <div id="msForm" autocomplete="off">
                 <input type="hidden" id="recordId" value="">
                 <input type="hidden" id="formMethod" value="POST">
+                <div class="form-group" style="margin-bottom: 1.2rem;">
+                    <label class="form-label" for="calendarType">
+                        ক্যালেন্ডারের ধরন
+                        <span style="color:var(--danger)">*</span>
+                    </label>
 
+                    <select id="calendarType" name="calendar_type"
+                            class="ms-input ms-select" required>
+
+                        <option value="">ক্যালেন্ডার নির্বাচন করুন</option>
+
+                        <option value="bangla">বাংলা ক্যালেন্ডার</option>
+
+                        <option value="english">English Calendar (Gregorian)</option>
+
+                        <option value="arabic">التقويم الهجري (Arabic / Hijri)</option>
+
+                    </select>
+
+                    <div class="field-error" id="err_calendar_type"></div>
+
+                    <small id="calendarTypeHelp"
+                        style="display:block; margin-top:5px; color:#64748b;">
+                        ক্যালেন্ডার নির্বাচন করলে ১২ মাসের নাম স্বয়ংক্রিয়ভাবে বসবে।
+                        প্রয়োজনে প্রতিটি নাম পরিবর্তন করতে পারবেন।
+                    </small>
+                </div>
                 <div class="month-grid">
                     @php
                     $monthLabels = [
@@ -527,114 +623,312 @@
 
 @push('scripts')
 <script>
-// ── Wait for DOM ready ──────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    // ── Null-safe element getter ──────────────────────────────
+    /* ============================================================
+       ELEMENTS
+    ============================================================ */
+
     function el(id) {
         return document.getElementById(id);
     }
 
-    // ── Guard: all critical elements must exist ───────────────
     const overlay     = el('msOverlay');
     const recordId    = el('recordId');
     const formMethod  = el('formMethod');
     const btnSave     = el('btnSave');
-    const btnSaveText = el('btnSaveText');
-    const modalTitle  = el('modalTitle');
     const btnNew      = el('btnNewRecord');
     const btnClose    = el('btnCloseModal');
     const btnCancel   = el('btnCancelModal');
+    const btnSaveText = el('btnSaveText');
+    const modalTitle  = el('modalTitle');
 
-    if (!overlay || !btnSave || !btnNew) {
-        console.error('মাস সেটিং: Critical DOM elements missing!');
+    const calendarType = el('calendarType');
+
+    if (!overlay || !btnSave || !btnNew || !calendarType) {
+        console.error('Month Setting: Required elements missing.');
         return;
     }
 
-    // ── Routes ────────────────────────────────────────────────
-    const ROUTES = {
-        store:   '{{ route("dashboard.month.store") }}',
-    edit:   (id) => `{{ route("dashboard.month.edit", ":id") }}`.replace(':id', id),
-    update: (id) => `{{ route("dashboard.month.update", ":id") }}`.replace(':id', id),
-        suggest: '{{ route("dashboard.month.suggest") }}',
-    };
-    const CSRF = (document.querySelector('meta[name="csrf-token"]') || {}).getAttribute?.('content') || '';
+    /* ============================================================
+       ROUTES
+    ============================================================ */
 
-    // ── Toast ─────────────────────────────────────────────────
-    function showToast(msg, type = 'success') {
-        const icons = { success: '✓', error: '✕', warning: '⚠' };
+    const ROUTES = {
+        store: '{{ route("dashboard.month.store") }}',
+
+        edit: (id) =>
+            `{{ route("dashboard.month.edit", ":id") }}`.replace(':id', id),
+
+        update: (id) =>
+            `{{ route("dashboard.month.update", ":id") }}`.replace(':id', id),
+
+        suggest: '{{ route("dashboard.month.suggest") }}'
+    };
+
+    const CSRF =
+        document.querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') || '';
+
+    /* ============================================================
+       CALENDAR MONTHS
+    ============================================================ */
+
+    const calendarMonths = {
+        bangla: [
+            'বৈশাখ',
+            'জ্যৈষ্ঠ',
+            'আষাঢ়',
+            'শ্রাবণ',
+            'ভাদ্র',
+            'আশ্বিন',
+            'কার্তিক',
+            'অগ্রহায়ণ',
+            'পৌষ',
+            'মাঘ',
+            'ফাল্গুন',
+            'চৈত্র'
+        ],
+
+        english: [
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December'
+        ],
+
+        arabic: [
+            'محرم',
+            'صفر',
+            'ربيع الأول',
+            'ربيع الآخر',
+            'جمادى الأولى',
+            'جمادى الآخرة',
+            'رجب',
+            'شعبان',
+            'رمضان',
+            'شوال',
+            'ذو القعدة',
+            'ذو الحجة'
+        ]
+    };
+
+    const calendarLabels = {
+        bangla: 'বাংলা',
+        english: 'English',
+        arabic: 'Arabic / Hijri'
+    };
+
+    /* ============================================================
+       HELPERS
+    ============================================================ */
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    }
+
+    function showToast(message, type = 'success') {
         const container = el('toastContainer');
         if (!container) return;
+
+        const icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠'
+        };
+
         const toast = document.createElement('div');
         toast.className = `ms-toast ${type}`;
-        toast.innerHTML = `<span>${icons[type] || '!'}</span><span>${msg}</span>`;
+
+        const icon = document.createElement('span');
+        icon.textContent = icons[type] || '!';
+
+        const text = document.createElement('span');
+        text.textContent = message;
+
+        toast.append(icon, text);
         container.appendChild(toast);
+
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transition = 'opacity .3s';
+
             setTimeout(() => toast.remove(), 350);
         }, 3500);
     }
 
-    // ── Modal ─────────────────────────────────────────────────
-    function openModal(editMode = false) {
-        overlay.classList.add('active');
-        if (modalTitle) modalTitle.textContent = editMode ? 'মাসের তালিকা এডিট করুন' : 'মাসের নাম তৈরি করুন';
-        if (btnSaveText) btnSaveText.textContent = editMode ? 'আপডেট করুন' : 'সংরক্ষণ করুন';
-    }
-
-    function closeModal() {
-        overlay.classList.remove('active');
-        // Reset all month inputs
-        for (let i = 1; i <= 12; i++) {
-            const inp = el(`month${i}`);
-            if (inp) inp.value = '';
-        }
-        const yr = el('academicYear');
-        const cl = el('classId');
-        if (yr) yr.selectedIndex = 0;
-        if (cl) cl.value = '';
-        if (recordId)   recordId.value   = '';
-        if (formMethod) formMethod.value = 'POST';
-        clearErrors();
-        closeSuggestions();
-    }
-
-    // ── Errors ────────────────────────────────────────────────
     function clearErrors() {
-        document.querySelectorAll('.field-error').forEach(e => {
-            e.style.display = 'none';
-            e.textContent   = '';
+        document.querySelectorAll('.field-error').forEach(error => {
+            error.style.display = 'none';
+            error.textContent = '';
         });
-        document.querySelectorAll('.ms-input.is-invalid').forEach(e => {
-            e.classList.remove('is-invalid');
+
+        document.querySelectorAll('.ms-input.is-invalid').forEach(input => {
+            input.classList.remove('is-invalid');
         });
     }
 
     function showErrors(errors) {
         Object.entries(errors).forEach(([field, messages]) => {
-            const errEl   = el(`err_${field}`);
-            const inputEl = document.querySelector(`[name="${field}"]`);
-            if (errEl) {
-                errEl.textContent  = messages[0];
-                errEl.style.display = 'block';
+            const errorElement = el(`err_${field}`);
+
+            const inputElement =
+                document.querySelector(`[name="${field}"]`);
+
+            if (errorElement) {
+                errorElement.textContent = messages[0];
+                errorElement.style.display = 'block';
             }
-            if (inputEl) inputEl.classList.add('is-invalid');
+
+            if (inputElement) {
+                inputElement.classList.add('is-invalid');
+            }
         });
     }
-
-    // ── Smart suggestion ──────────────────────────────────────
-    let suggestTimer = null;
 
     function closeSuggestions() {
-        document.querySelectorAll('.suggestion-list').forEach(e => {
-            e.style.display = 'none';
-            e.innerHTML     = '';
+        document.querySelectorAll('.suggestion-list').forEach(list => {
+            list.style.display = 'none';
+            list.innerHTML = '';
         });
     }
 
-function setupSmartInputs() {
+    /* ============================================================
+       CALENDAR TYPE CHANGE
+    ============================================================ */
+
+    function updateMonthInputDirection(type) {
+        const isArabic = type === 'arabic';
+
+        document.querySelectorAll('.smart-month').forEach(input => {
+            input.classList.toggle('arabic-input', isArabic);
+
+            input.dir = isArabic ? 'rtl' : 'auto';
+
+            input.placeholder = isArabic
+                ? 'اسم الشهر أو رقمه'
+                : 'মাসের নাম বা নাম্বার লিখুন';
+        });
+    }
+
+    function fillCalendarMonths(type, overwrite = true) {
+        const months = calendarMonths[type];
+
+        if (!months) return;
+
+        for (let i = 1; i <= 12; i++) {
+            const input = el(`month${i}`);
+
+            if (!input) continue;
+
+            if (overwrite || !input.value.trim()) {
+                input.value = months[i - 1];
+            }
+        }
+
+        updateMonthInputDirection(type);
+        closeSuggestions();
+    }
+
+    calendarType.addEventListener('change', function () {
+        const type = this.value;
+
+        if (!calendarMonths[type]) {
+            updateMonthInputDirection('english');
+            return;
+        }
+
+        fillCalendarMonths(type, true);
+
+        const help = el('calendarTypeHelp');
+
+        if (help) {
+            help.textContent =
+                `${calendarLabels[type]} ক্যালেন্ডারের ১২ মাসের নাম বসানো হয়েছে। প্রয়োজনে নামগুলো পরিবর্তন করতে পারবেন।`;
+        }
+    });
+
+    /* ============================================================
+       MODAL
+    ============================================================ */
+
+    function openModal(editMode = false) {
+        overlay.classList.add('active');
+
+        if (modalTitle) {
+            modalTitle.textContent = editMode
+                ? 'মাসের তালিকা এডিট করুন'
+                : 'মাসের নাম তৈরি করুন';
+        }
+
+        if (btnSaveText) {
+            btnSaveText.textContent = editMode
+                ? 'আপডেট করুন'
+                : 'সংরক্ষণ করুন';
+        }
+    }
+
+    function resetModal() {
+        for (let i = 1; i <= 12; i++) {
+            const input = el(`month${i}`);
+
+            if (input) {
+                input.value = '';
+                input.classList.remove('arabic-input');
+                input.dir = 'auto';
+            }
+        }
+
+        calendarType.value = '';
+
+        const year = el('academicYear');
+        const classId = el('classId');
+
+        if (year) year.selectedIndex = 0;
+        if (classId) classId.value = '';
+
+        if (recordId) recordId.value = '';
+        if (formMethod) formMethod.value = 'POST';
+
+        const help = el('calendarTypeHelp');
+
+        if (help) {
+            help.textContent =
+                'ক্যালেন্ডার নির্বাচন করলে ১২ মাসের নাম স্বয়ংক্রিয়ভাবে বসবে। প্রয়োজনে প্রতিটি নাম পরিবর্তন করতে পারবেন।';
+        }
+
+        clearErrors();
+        closeSuggestions();
+    }
+
+    function closeModal() {
+        overlay.classList.remove('active');
+        resetModal();
+    }
+
+    /* ============================================================
+       SMART MONTH SUGGESTION
+    ============================================================ */
+
+    let suggestTimer = null;
+
     const banglaDigits = {
         '০': '0',
         '১': '1',
@@ -652,150 +946,318 @@ function setupSmartInputs() {
         return value.replace(/[০-৯]/g, digit => banglaDigits[digit]);
     }
 
-    document.querySelectorAll('.smart-month').forEach(input => {
-        const monthNum = input.dataset.month;
-        const suggestEl = el(`suggest${monthNum}`);
+    function setupSmartInputs() {
+        document.querySelectorAll('.smart-month').forEach(input => {
+            const monthNum = input.dataset.month;
+            const suggestionBox = el(`suggest${monthNum}`);
 
-        if (!suggestEl) return;
+            if (!suggestionBox) return;
 
-        input.addEventListener('input', function () {
-            const val = this.value.trim();
-            const normalizedVal = normalizeDigits(val);
+            input.addEventListener('input', function () {
+                const value = this.value.trim();
 
-            clearTimeout(suggestTimer);
+                clearTimeout(suggestTimer);
 
-            if (!val) {
-                suggestEl.style.display = 'none';
-                suggestEl.innerHTML = '';
-                return;
-            }
-
-            suggestTimer = setTimeout(() => {
-                fetch(
-                    `${ROUTES.suggest}?q=${encodeURIComponent(normalizedVal)}`,
-                    {
-                        headers: {
-                            'X-CSRF-TOKEN': CSRF,
-                            'Accept': 'application/json'
-                        }
-                    }
-                )
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Suggestion request failed');
-                    }
-
-                    return response.json();
-                })
-                .then(data => {
-                    if (!data.length) {
-                        suggestEl.style.display = 'none';
-                        suggestEl.innerHTML = '';
-                        return;
-                    }
-
-                    suggestEl.innerHTML = data.map(item => `
-                        <div
-                            class="suggestion-item"
-                            data-value="${item.value}"
-                        >
-                            <span>${item.label}</span>
-
-                            <span class="suggestion-badge badge-${item.type}">
-                                ${item.type === 'bangla' ? 'বাংলা' : 'English'}
-                            </span>
-                        </div>
-                    `).join('');
-
-                    suggestEl.style.display = 'block';
-
-                    suggestEl.querySelectorAll('.suggestion-item').forEach(item => {
-                        item.addEventListener('mousedown', function (event) {
-                            event.preventDefault();
-
-                            input.value = this.dataset.value;
-                            suggestEl.style.display = 'none';
-                            input.focus();
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.error('Month suggestion error:', error);
-                    suggestEl.style.display = 'none';
-                });
-            }, 180);
-        });
-
-        input.addEventListener('blur', function () {
-            setTimeout(() => {
-                suggestEl.style.display = 'none';
-            }, 220);
-        });
-
-        input.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-
-                const first = suggestEl.querySelector('.suggestion-item');
-
-                if (first) {
-                    input.value = first.dataset.value;
-                    suggestEl.style.display = 'none';
+                if (!value) {
+                    suggestionBox.style.display = 'none';
+                    suggestionBox.innerHTML = '';
+                    return;
                 }
-            }
 
-            if (event.key === 'Escape') {
-                suggestEl.style.display = 'none';
-            }
+                const selectedType = calendarType.value;
+
+                if (!selectedType) {
+                    suggestionBox.style.display = 'none';
+                    return;
+                }
+
+                const normalizedValue = normalizeDigits(value);
+
+                suggestTimer = setTimeout(async () => {
+                    try {
+                        const params = new URLSearchParams({
+                            q: normalizedValue,
+                            calendar_type: selectedType
+                        });
+
+                        const response = await fetch(
+                            `${ROUTES.suggest}?${params.toString()}`,
+                            {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': CSRF
+                                }
+                            }
+                        );
+
+                        if (!response.ok) {
+                            throw new Error('Suggestion request failed');
+                        }
+
+                        const data = await response.json();
+
+                        if (!Array.isArray(data) || !data.length) {
+                            suggestionBox.style.display = 'none';
+                            suggestionBox.innerHTML = '';
+                            return;
+                        }
+
+                        suggestionBox.innerHTML = data.map(item => {
+                            const type = item.type || selectedType;
+
+                            const badgeLabel = {
+                                bangla: 'বাংলা',
+                                english: 'English',
+                                arabic: 'عربي'
+                            };
+
+                            return `
+                                <div class="suggestion-item"
+                                     data-value="${escapeHtml(item.value)}">
+
+                                    <span>${escapeHtml(item.label)}</span>
+
+                                    <span class="suggestion-badge badge-${escapeHtml(type)}">
+                                        ${badgeLabel[type] || 'Month'}
+                                    </span>
+
+                                </div>
+                            `;
+                        }).join('');
+
+                        suggestionBox.style.display = 'block';
+
+                        suggestionBox.querySelectorAll('.suggestion-item')
+                            .forEach(item => {
+
+                                item.addEventListener('mousedown', function (event) {
+                                    event.preventDefault();
+
+                                    input.value = this.dataset.value;
+
+                                    suggestionBox.style.display = 'none';
+
+                                    input.focus();
+                                });
+                            });
+
+                    } catch (error) {
+                        console.error('Month suggestion error:', error);
+
+                        suggestionBox.style.display = 'none';
+                    }
+                }, 180);
+            });
+
+            input.addEventListener('blur', function () {
+                setTimeout(() => {
+                    suggestionBox.style.display = 'none';
+                }, 220);
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+
+                    const first =
+                        suggestionBox.querySelector('.suggestion-item');
+
+                    if (first) {
+                        input.value = first.dataset.value;
+                        suggestionBox.style.display = 'none';
+                    }
+                }
+
+                if (event.key === 'Escape') {
+                    suggestionBox.style.display = 'none';
+                }
+            });
         });
-    });
-}
+    }
 
-    // ── Save ──────────────────────────────────────────────────
-    async function saveRecord() {
-        clearErrors();
-        btnSave.disabled = true;
-        btnSave.innerHTML = `<span class="spinner"></span><span>অপেক্ষা করুন...</span>`;
+    /* ============================================================
+       TABLE HELPERS
+    ============================================================ */
 
-        const id     = recordId ? recordId.value : '';
-        const method = formMethod ? formMethod.value : 'POST';
-        const url    = method === 'POST' ? ROUTES.store : ROUTES.update(id);
-
-        // Build payload manually (no <form> needed)
-        const payload = { _token: CSRF };
-        if (method === 'PUT') payload['_method'] = 'PUT';
+    function buildMonthCells(ms) {
+        let html = '';
 
         for (let i = 1; i <= 12; i++) {
-            const inp = el(`month${i}`);
-            payload[`month_${i}`] = inp ? inp.value.trim() : '';
+            html += `<td>${escapeHtml(ms[`month_${i}`] || '—')}</td>`;
         }
-        const yr = el('academicYear');
-        const cl = el('classId');
-        payload['academic_year'] = yr ? yr.value : '';
-        payload['class_id']      = cl ? cl.value : '';
+
+        return html;
+    }
+
+    function getClassName(ms) {
+        return ms.student_class?.name_bn
+            || ms.student_class?.name
+            || ms.studentClass?.name_bn
+            || ms.studentClass?.name
+            || '—';
+    }
+
+    function getCalendarBadge(type) {
+        const labels = {
+            bangla: 'বাংলা',
+            english: 'English',
+            arabic: 'عربي (Hijri)'
+        };
+
+        const safeType = calendarMonths[type] ? type : 'english';
+
+        return `
+            <span class="calendar-type-badge badge-${safeType}">
+                ${labels[safeType]}
+            </span>
+        `;
+    }
+
+    function buildActionButton(id) {
+        return `
+            <button class="btn-action btn-edit"
+                    data-id="${escapeHtml(id)}"
+                    title="এডিট করুন">
+
+                <svg width="14" height="14" fill="none"
+                     stroke="currentColor" stroke-width="2.2"
+                     viewBox="0 0 24 24">
+
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+
+                </svg>
+            </button>
+        `;
+    }
+
+    function appendTableRow(ms) {
+        const tbody = document.querySelector('#msTable tbody');
+
+        if (!tbody) return;
+
+        const emptyRow = el('emptyRow');
+
+        if (emptyRow) emptyRow.remove();
+
+        const tr = document.createElement('tr');
+
+        tr.id = `row-${ms.id}`;
+
+        tr.innerHTML = `
+            <td class="action-col">
+                ${buildActionButton(ms.id)}
+            </td>
+
+            <td>${escapeHtml(ms.academic_year)}</td>
+
+            <td>${escapeHtml(getClassName(ms))}</td>
+
+            <td>${getCalendarBadge(ms.calendar_type)}</td>
+
+            ${buildMonthCells(ms)}
+        `;
+
+        tbody.prepend(tr);
+
+        bindEditButtons();
+    }
+
+    function updateTableRow(ms) {
+        const row = el(`row-${ms.id}`);
+
+        if (!row) return;
+
+        const cells = row.querySelectorAll('td');
+
+        if (cells[1]) {
+            cells[1].textContent = ms.academic_year;
+        }
+
+        if (cells[2]) {
+            cells[2].textContent = getClassName(ms);
+        }
+
+        if (cells[3]) {
+            cells[3].innerHTML = getCalendarBadge(ms.calendar_type);
+        }
+
+        for (let i = 1; i <= 12; i++) {
+            if (cells[i + 3]) {
+                cells[i + 3].textContent = ms[`month_${i}`] || '—';
+            }
+        }
+    }
+
+    /* ============================================================
+       SAVE RECORD
+    ============================================================ */
+
+    async function saveRecord() {
+        clearErrors();
+
+        btnSave.disabled = true;
+
+        btnSave.innerHTML =
+            '<span class="spinner"></span><span>অপেক্ষা করুন...</span>';
+
+        const id = recordId.value;
+        const method = formMethod.value || 'POST';
+
+        const url = method === 'POST'
+            ? ROUTES.store
+            : ROUTES.update(id);
+
+        const payload = {
+            _token: CSRF,
+            calendar_type: calendarType.value,
+            academic_year: el('academicYear').value,
+            class_id: el('classId').value
+        };
+
+        if (method === 'PUT') {
+            payload._method = 'PUT';
+        }
+
+        for (let i = 1; i <= 12; i++) {
+            const input = el(`month${i}`);
+
+            payload[`month_${i}`] = input
+                ? input.value.trim()
+                : '';
+        }
 
         try {
-            const res  = await fetch(url, {
+            const response = await fetch(url, {
                 method: 'POST',
+
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': CSRF,
-                    'Accept':       'application/json',
+                    'Accept': 'application/json'
                 },
-                body: JSON.stringify(payload),
-            });
-            const data = await res.json();
 
-            if (!res.ok) {
-                if (res.status === 422 && data.errors) {
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 422 && data.errors) {
                     showErrors(data.errors);
                 } else {
-                    showToast(data.message || 'কিছু একটা ভুল হয়েছে!', 'error');
+                    showToast(
+                        data.message || 'কিছু একটা ভুল হয়েছে!',
+                        'error'
+                    );
                 }
+
                 return;
             }
 
-            showToast(data.message, 'success');
+            showToast(data.message || 'সফলভাবে সংরক্ষণ হয়েছে।');
+
             closeModal();
 
             if (method === 'POST') {
@@ -804,124 +1266,148 @@ function setupSmartInputs() {
                 updateTableRow(data.data);
             }
 
-        } catch (err) {
-            showToast('নেটওয়ার্ক সমস্যা! আবার চেষ্টা করুন।', 'error');
+        } catch (error) {
+            console.error(error);
+
+            showToast('নেটওয়ার্ক সমস্যা! আবার চেষ্টা করুন।', 'error');
+
         } finally {
-            btnSave.disabled  = false;
-            const currentMethod = formMethod ? formMethod.value : 'POST';
+            btnSave.disabled = false;
+
             btnSave.innerHTML = `
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                <svg width="15" height="15" fill="none"
+                     stroke="currentColor" stroke-width="2.5"
+                     viewBox="0 0 24 24">
+
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M5 13l4 4L19 7"/>
+
                 </svg>
-                <span id="btnSaveText">${currentMethod === 'PUT' ? 'আপডেট করুন' : 'সংরক্ষণ করুন'}</span>
+
+                <span id="btnSaveText">
+                    ${formMethod.value === 'PUT'
+                        ? 'আপডেট করুন'
+                        : 'সংরক্ষণ করুন'}
+                </span>
             `;
         }
     }
 
-    // ── Table helpers ─────────────────────────────────────────
-    function buildCells(ms) {
-        return [1,2,3,4,5,6,7,8,9,10,11,12]
-            .map(n => `<td>${ms[`month_${n}`] || '—'}</td>`)
-            .join('');
-    }
+    /* ============================================================
+       LOAD EDIT
+    ============================================================ */
 
-    function appendTableRow(ms) {
-        const tbody   = document.querySelector('#msTable tbody');
-        if (!tbody) return;
-        const emptyTr = el('emptyRow');
-        if (emptyTr) emptyTr.remove();
-
-        const tr  = document.createElement('tr');
-        tr.id     = `row-${ms.id}`;
-        tr.innerHTML = `
-            <td class="action-col">
-                <button class="btn-action btn-edit" data-id="${ms.id}" title="এডিট করুন">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                </button>
-            </td>
-            <td>${ms.academic_year}</td>
-            <td>${ms.student_class?.name || ms.studentClass?.name || '—'}</td>
-            ${buildCells(ms)}
-        `;
-        tbody.prepend(tr);
-        bindEditButtons();
-    }
-
-    function updateTableRow(ms) {
-        const row = el(`row-${ms.id}`);
-        if (!row) return;
-        const cells = row.querySelectorAll('td');
-        if (cells[1]) cells[1].textContent = ms.academic_year;
-        if (cells[2]) cells[2].textContent = ms.student_class?.name || ms.studentClass?.name || '—';
-        [1,2,3,4,5,6,7,8,9,10,11,12].forEach((n, i) => {
-            if (cells[3 + i]) cells[3 + i].textContent = ms[`month_${n}`] || '—';
-        });
-    }
-
-    // ── Load edit ─────────────────────────────────────────────
     async function loadEdit(id) {
         try {
-            const res  = await fetch(ROUTES.edit(id), {
-                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF },
+            const response = await fetch(ROUTES.edit(id), {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': CSRF
+                }
             });
-            const data = await res.json();
-            if (!data.success) { showToast('ডেটা লোড করতে ব্যর্থ!', 'error'); return; }
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                showToast('ডেটা লোড করতে ব্যর্থ!', 'error');
+                return;
+            }
 
             const ms = data.data;
-            if (recordId)   recordId.value   = ms.id;
-            if (formMethod) formMethod.value  = 'PUT';
 
-            const yr = el('academicYear');
-            const cl = el('classId');
-            if (yr) yr.value = ms.academic_year;
-            if (cl) cl.value = ms.class_id;
+            resetModal();
+
+            recordId.value = ms.id;
+            formMethod.value = 'PUT';
+
+            el('academicYear').value = ms.academic_year;
+            el('classId').value = ms.class_id;
+
+            const type = calendarMonths[ms.calendar_type]
+                ? ms.calendar_type
+                : 'english';
+
+            calendarType.value = type;
+
+            updateMonthInputDirection(type);
 
             for (let i = 1; i <= 12; i++) {
-                const inp = el(`month${i}`);
-                if (inp) inp.value = ms[`month_${i}`] || '';
+                const input = el(`month${i}`);
+
+                if (input) {
+                    input.value = ms[`month_${i}`] || '';
+                }
             }
+
+            const help = el('calendarTypeHelp');
+
+            if (help) {
+                help.textContent =
+                    `${calendarLabels[type]} ক্যালেন্ডার নির্বাচিত আছে। মাসের নাম পরিবর্তন করতে পারবেন।`;
+            }
+
             openModal(true);
-        } catch {
-            showToast('নেটওয়ার্ক সমস্যা!', 'error');
+
+        } catch (error) {
+            console.error(error);
+
+            showToast('নেটওয়ার্ক সমস্যা!', 'error');
         }
     }
 
-    // ── Bind edit buttons ─────────────────────────────────────
+    /* ============================================================
+       EDIT BUTTONS
+    ============================================================ */
+
     function bindEditButtons() {
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            // Remove old listener to avoid duplicates
-            btn.replaceWith(btn.cloneNode(true));
-        });
-        document.querySelectorAll('.btn-edit').forEach(btn => {
-            btn.addEventListener('click', function () {
+        document.querySelectorAll('.btn-edit').forEach(button => {
+            button.onclick = function () {
                 loadEdit(this.dataset.id);
-            });
+            };
         });
     }
 
-    // ── Wire up all buttons ───────────────────────────────────
-    btnNew.addEventListener('click',    () => openModal(false));
-    btnClose.addEventListener('click',  closeModal);
+    /* ============================================================
+       BUTTON EVENTS
+    ============================================================ */
+
+    btnNew.addEventListener('click', function () {
+        resetModal();
+        openModal(false);
+    });
+
+    btnClose.addEventListener('click', closeModal);
+
     btnCancel.addEventListener('click', closeModal);
-    btnSave.addEventListener('click',   saveRecord);
 
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) closeModal();
+    btnSave.addEventListener('click', saveRecord);
+
+    overlay.addEventListener('click', function (event) {
+        if (event.target === overlay) {
+            closeModal();
+        }
     });
 
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.form-group')) closeSuggestions();
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.form-group')) {
+            closeSuggestions();
+        }
     });
 
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') closeModal();
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && overlay.classList.contains('active')) {
+            closeModal();
+        }
     });
 
-    // ── Init ──────────────────────────────────────────────────
+    /* ============================================================
+       INITIALIZE
+    ============================================================ */
+
     setupSmartInputs();
     bindEditButtons();
+
 });
 </script>
 @endpush
