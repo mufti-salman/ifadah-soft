@@ -641,26 +641,9 @@
                                     Auto Code
                                 </small>
 
-                                <div id="manualCodeField" class="manual-code-field">
-
-                                    <label for="manual_user_code" class="form-label">
-                                        ম্যানুয়াল ইউজার কোড
-                                    </label>
-
-                                    <input type="text"
-                                           id="manual_user_code"
-                                           class="form-control"
-                                           inputmode="numeric"
-                                           autocomplete="off"
-                                           placeholder="খালি রাখলে পরবর্তী Manual Code তৈরি হবে">
-
-                                    <small class="text-muted">
-                                        এখানে কোড দিলে এই ইউজারের জন্য সেটিই ব্যবহার হবে।
-                                    </small>
-
-                                </div>
-
-                                <div id="manualPreviewInfo" class="manual-preview-info"></div>
+                               <div id="manualPreviewInfo"
+                                class="manual-preview-info"
+                                style="display: none !important;"></div>
 
                             </div>
 
@@ -1572,14 +1555,19 @@ $(function () {
                     );
                 }
 
-                if (
-                    target.attr('id') === 'manualPreviewInfo' &&
-                    !currentMainManualCodeExplicit
-                ) {
-                    $('#custom_id').val(code);
+if (target.attr('id') === 'manualPreviewInfo') {
 
-                    mainManualPreviewOnly = true;
-                }
+    if (currentMainManualCodeExplicit) {
+
+        target.removeClass('show').text('');
+
+        return;
+    }
+
+    $('#custom_id').val(code);
+
+    mainManualPreviewOnly = true;
+}
             })
 
             .fail(function (xhr) {
@@ -1687,23 +1675,44 @@ $(function () {
     /* ============================================================
        MANUAL MAIN CODE INPUT
     ============================================================ */
+/* ============================================================
+   MANUAL MAIN CODE INPUT
+============================================================ */
 
-    $('#manual_user_code')
-        .off('input.manualMain')
-        .on('input.manualMain', function () {
+$('#manual_user_code')
+    .off('input.manualMain')
+    .on('input.manualMain', function () {
 
-            const value = String($(this).val() || '').replace(/\D/g, '');
+        const value = String($(this).val() || '').replace(/\D/g, '');
 
-            $(this).val(value);
+        $(this).val(value);
 
-            currentMainManualCode = value;
+        currentMainManualCode = value;
 
-            currentMainManualCodeExplicit = value.length > 0;
+        currentMainManualCodeExplicit = value.length > 0;
 
-            mainManualPreviewOnly = false;
+        mainManualPreviewOnly = false;
 
-            $('#custom_id').val(value);
-        });
+        // Custom ID update
+        $('#custom_id').val(value);
+
+        if (value.length > 0) {
+
+            // Manual code লিখলে শুধু Preview লেখাটি Hide হবে
+            $('#manualPreviewInfo')
+                .hide()
+                .removeClass('show')
+                .empty();
+
+        } else {
+
+            // Input খালি করলে Dynamic Preview আবার চালু হবে
+            $('#manualPreviewInfo').show();
+
+            prepareManualMainCode();
+        }
+
+    });
 
     /* ============================================================
        DISTRICT / UPAZILA AJAX
