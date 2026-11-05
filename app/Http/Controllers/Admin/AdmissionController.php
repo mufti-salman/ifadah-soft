@@ -311,6 +311,18 @@ class AdmissionController extends Controller
             ],
         ]);
 
+        // Block duplicate active admission
+        $alreadyAdmitted = Admission::where('institution_id', $institutionId)
+            ->where('student_id', $validated['student_id'])
+            ->where('status', 'active')
+            ->exists();
+
+        if ($alreadyAdmitted) {
+            return back()
+                ->with('error', 'এই শিক্ষার্থীর ইতোমধ্যে একটি সক্রিয় ভর্তি আছে।')
+                ->withInput();
+        }
+
         try {
             DB::beginTransaction();
 
@@ -320,8 +332,10 @@ class AdmissionController extends Controller
                 $institutionId
             )->findOrFail($validated['student_id']);
 
-            // Generate admission number
-            $lastAdmission = Admission::latest('id')->first();
+            // Generate admission number (institution wise)
+            $lastAdmission = Admission::where('institution_id', $institutionId)
+                ->latest('id')
+                ->first();
 
             $nextId = $lastAdmission
                 ? $lastAdmission->id + 1
@@ -611,7 +625,7 @@ class AdmissionController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Search Students
+    | Search Students (live search, only "student" user type)
     |--------------------------------------------------------------------------
     */
 
@@ -625,45 +639,35 @@ class AdmissionController extends Controller
             return response()->json([]);
         }
 
-        $students = Student::with([
-            'user',
-            'class',
-        ])
-        ->where('institution_id', $institutionId)
-        ->where(function ($query) use ($q) {
-            $query->where(
-                'student_id',
-                'like',
-                "%{$q}%"
-            )
-            ->orWhereHas(
-                'user',
-                function ($userQuery) use ($q) {
-                    $userQuery->where(
-                        'name',
-                        'like',
-                        "%{$q}%"
-                    )
-                    ->orWhere(
-                        'name_bn',
-                        'like',
-                        "%{$q}%"
-                    )
-                    ->orWhere(
-                        'phone',
-                        'like',
-                        "%{$q}%"
-                    )
-                    ->orWhere(
-                        'institution_user_id',
-                        'like',
-                        "%{$q}%"
-                    );
-                }
-            );
-        })
-        ->limit(20)
-        ->get();
+        $students = Student::with(['user', 'class'])
+            ->withCount([
+                'admissions as active_admissions_count' => function ($a) use ($institutionId) {
+                    $a->where('institution_id', $institutionId)
+                        ->where('status', 'active');
+                },
+                'admissions as total_admissions_count' => function ($a) use ($institutionId) {
+                    $a->where('institution_id', $institutionId);
+                },
+            ])
+            ->where('institution_id', $institutionId)
+            // Only users whose user type is "student"
+            ->whereHas('user', function ($u) {
+                $u->whereHas('userType', function ($t) {
+                    $t->where('slug', 'student');
+                });
+            })
+            ->where(function ($query) use ($q) {
+                $query->where('student_id', 'like', "%{$q}%")
+                    ->orWhereHas('user', function ($userQuery) use ($q) {
+                        $userQuery->where('name', 'like', "%{$q}%")
+                            ->orWhere('name_bn', 'like', "%{$q}%")
+                            ->orWhere('phone', 'like', "%{$q}%")
+                            ->orWhere('father_name', 'like', "%{$q}%")
+                            ->orWhere('institution_user_id', 'like', "%{$q}%");
+                    });
+            })
+            ->limit(20)
+            ->get();
 
         return response()->json(
             $students->map(function ($student) {
@@ -672,30 +676,28 @@ class AdmissionController extends Controller
                 return [
                     'id' => $student->id,
 
-                    'institution_user_id' =>
-                        $user?->institution_user_id ?? '',
+                    'institution_user_id' => $user?->institution_user_id ?? '',
 
-                    'student_id' =>
-                        $student->student_id ?? '',
+                    'student_id' => $student->student_id ?? '',
 
-                    'name' =>
-                        $user?->name_bn
-                        ?: ($user?->name ?? ''),
+                    'name' => $user?->name_bn ?: ($user?->name ?? ''),
 
-                    'father_name' =>
-                        $user?->father_name ?? '',
+                    'father_name' => $user?->father_name ?? '',
 
-                    'mobile' =>
-                        $user?->phone ?? '',
+                    'mobile' => $user?->phone ?? '',
 
-                    'class_name' =>
-                        $student->class?->name_bn
+                    'class_id' => $student->class_id,
+
+                    'class_name' => $student->class?->name_bn
                         ?: ($student->class?->name ?? ''),
 
-                    'photo' =>
-                        $user?->photo
-                            ? asset('storage/' . $user->photo)
-                            : asset('images/default-user.png'),
+                    'has_active_admission' => $student->active_admissions_count > 0,
+
+                    'is_old' => $student->total_admissions_count > 0,
+
+                    'photo' => $user?->photo
+                        ? asset('storage/' . $user->photo)
+                        : asset('images/default-user.png'),
                 ];
             })
         );

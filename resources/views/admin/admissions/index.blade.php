@@ -178,6 +178,33 @@
         color: #6b7280;
     }
 
+    .search-result-item.active {
+        background: #e8efff;
+    }
+
+    .search-result-item.disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    .search-result-item .badge-adm {
+        background: #fee2e2;
+        color: #b91c1c;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: .68rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .search-empty,
+    .search-loading {
+        padding: 12px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: .82rem;
+    }
+
     .radio-group {
         display: flex;
         gap: 16px;
@@ -303,6 +330,17 @@
     .badge-inactive {
         background: #d1fae5;
         color: #065f46;
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: .8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 6px;
+    }
+
+    .badge-old {
+        background: #fef3c7;
+        color: #92400e;
         border-radius: 20px;
         padding: 4px 14px;
         font-size: .8rem;
@@ -832,7 +870,7 @@
                             type="text"
                             id="student_search_input"
                             class="form-control"
-                            placeholder="শিক্ষার্থীর নাম, আইডি বা মোবাইল লিখুন..."
+                            placeholder="নাম, আইডি, পিতার নাম বা মোবাইল লিখুন..."
                             autocomplete="off"
                         >
 
@@ -849,6 +887,8 @@
                         >
                             <i class="fas fa-search"></i>
                         </button>
+
+                        <div class="search-results" id="searchResults"></div>
 
                     </div>
 
@@ -1681,454 +1721,453 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const searchInput =
-        document.getElementById('student_search_input');
+    const searchInput    = document.getElementById('student_search_input');
+    const searchBtn      = document.getElementById('searchStudentBtn');
+    const studentIdInput = document.getElementById('student_id');
+    const resultsBox     = document.getElementById('searchResults');
+    const admissionForm  = document.getElementById('admissionForm');
 
-    const searchBtn =
-        document.getElementById('searchStudentBtn');
+    const searchUrl = '{{ route("dashboard.admissions.search") }}';
 
-    const studentIdInput =
-        document.getElementById('student_id');
+    let debounceTimer = null;
+    let abortCtrl     = null;
+    let results       = [];
+    let activeIndex   = -1;
+
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML;
+    }
 
 
     /*
-    |--------------------------------------------------------------------------
-    | Update Selected Student
-    |--------------------------------------------------------------------------
-    |
-    | Search করলেও এই function ব্যবহার হবে।
-    | URL থেকে selectedStudent আসলেও এই function ব্যবহার হবে।
-    |
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
+    | Reset selected student (when user types again)
+    |----------------------------------------------------------------------
     */
+    function clearSelectedStudent() {
 
+        studentIdInput.value = '';
+
+        document.getElementById('studentName').textContent = 'শিক্ষার্থী নির্বাচন করুন';
+        document.getElementById('fatherName').textContent = '—';
+        document.getElementById('studentPhone').textContent = '—';
+        document.getElementById('studentID').textContent = '—';
+
+        document.getElementById('studentPhoto').innerHTML = '<i class="fas fa-user"></i>';
+
+        const badge = document.getElementById('studentStatusBadge');
+        badge.textContent = 'নতুন শিক্ষার্থী';
+        badge.className = 'badge-inactive';
+    }
+
+
+    /*
+    |----------------------------------------------------------------------
+    | Fill student information
+    |----------------------------------------------------------------------
+    */
     function setSelectedStudent(student) {
 
         if (!student) {
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Hidden Student ID
-        |--------------------------------------------------------------------------
-        */
-
         studentIdInput.value = student.id || '';
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Search Input
-        |--------------------------------------------------------------------------
-        */
-
-        searchInput.value =
-            student.name
+        searchInput.value = student.name
             || student.student_id
             || student.institution_user_id
             || '';
 
+        document.getElementById('studentName').textContent = student.name || '—';
+        document.getElementById('fatherName').textContent = student.father_name || '—';
+        document.getElementById('studentPhone').textContent = student.mobile || '—';
+        document.getElementById('studentID').textContent =
+            student.institution_user_id || student.student_id || '—';
 
-        /*
-        |--------------------------------------------------------------------------
-        | Middle Student Information
-        |--------------------------------------------------------------------------
-        */
-
-        document.getElementById('studentName').innerHTML =
-            student.name || '—';
-
-        document.getElementById('fatherName').innerHTML =
-            student.father_name || '—';
-
-        document.getElementById('studentPhone').innerHTML =
-            student.mobile || '—';
-
-        document.getElementById('studentID').innerHTML =
-            student.institution_user_id
-            || student.student_id
-            || '—';
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Student Photo
-        |--------------------------------------------------------------------------
-        */
-
-        const studentPhotoDiv =
-            document.getElementById('studentPhoto');
+        /* Photo */
+        const photoDiv = document.getElementById('studentPhoto');
 
         if (student.photo) {
 
-            studentPhotoDiv.innerHTML = `
-                <img
-                    src="${student.photo}"
-                    class="student-photo"
-                    style="width:110px;height:110px;border-radius:10px;object-fit:cover;"
-                    alt="Student Photo"
-                >
-            `;
+            photoDiv.innerHTML = '';
+
+            const img = document.createElement('img');
+            img.src = student.photo;
+            img.alt = 'Student Photo';
+            img.className = 'student-photo';
+            img.style.cssText = 'width:110px;height:110px;border-radius:10px;object-fit:cover;';
+            img.onerror = function () {
+                photoDiv.innerHTML = '<i class="fas fa-user"></i>';
+            };
+
+            photoDiv.appendChild(img);
 
         } else {
 
-            studentPhotoDiv.innerHTML =
-                '<i class="fas fa-user"></i>';
+            photoDiv.innerHTML = '<i class="fas fa-user"></i>';
         }
 
+        /* New / Old badge + admission type radio */
+        const badge = document.getElementById('studentStatusBadge');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Status
-        |--------------------------------------------------------------------------
-        */
+        if (student.is_old) {
 
-        const statusBadge =
-            document.getElementById(
-                'studentStatusBadge'
-            );
+            badge.textContent = 'পুরাতন শিক্ষার্থী';
+            badge.className = 'badge-old';
 
-        statusBadge.innerHTML =
-            'নতুন শিক্ষার্থী';
+            const oldRadio = document.querySelector('input[name="admission_type"][value="old"]');
+            if (oldRadio) oldRadio.checked = true;
 
-        statusBadge.className =
-            'badge-inactive';
+        } else {
+
+            badge.textContent = 'নতুন শিক্ষার্থী';
+            badge.className = 'badge-inactive';
+
+            const newRadio = document.querySelector('input[name="admission_type"][value="new"]');
+            if (newRadio) newRadio.checked = true;
+        }
+
+        /* Pre-select class if student already has one */
+        if (student.class_id) {
+
+            const classSelect = document.getElementById('class_id');
+
+            if (classSelect && classSelect.querySelector('option[value="' + student.class_id + '"]')) {
+                classSelect.value = student.class_id;
+            }
+        }
+
+        hideResults();
     }
 
 
     /*
-    |--------------------------------------------------------------------------
-    | AJAX Search
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
+    | Dropdown
+    |----------------------------------------------------------------------
     */
+    function hideResults() {
+        resultsBox.style.display = 'none';
+        resultsBox.innerHTML = '';
+        results = [];
+        activeIndex = -1;
+    }
 
+    function showMessage(cls, text) {
+        resultsBox.innerHTML = '<div class="' + cls + '">' + escapeHtml(text) + '</div>';
+        resultsBox.style.display = 'block';
+    }
+
+    function highlight(index) {
+
+        const items = resultsBox.querySelectorAll('.search-result-item');
+
+        items.forEach(function (el, i) {
+            el.classList.toggle('active', i === index);
+        });
+
+        if (items[index]) {
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+
+        activeIndex = index;
+    }
+
+    function renderResults(list) {
+
+        results = list;
+        activeIndex = -1;
+
+        if (!list.length) {
+            showMessage('search-empty', 'কোনো শিক্ষার্থী পাওয়া যায়নি');
+            return;
+        }
+
+        resultsBox.innerHTML = '';
+
+        list.forEach(function (s, index) {
+
+            const item = document.createElement('div');
+            item.className = 'search-result-item' + (s.has_active_admission ? ' disabled' : '');
+            item.dataset.index = index;
+
+            const subParts = [];
+
+            if (s.institution_user_id) subParts.push('আইডি: ' + s.institution_user_id);
+            if (s.father_name)         subParts.push('পিতা: ' + s.father_name);
+            if (s.mobile)              subParts.push(s.mobile);
+            if (s.class_name)          subParts.push(s.class_name);
+
+            item.innerHTML =
+                '<img src="' + escapeHtml(s.photo) + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
+                '<div class="info">' +
+                    '<strong>' + escapeHtml(s.name || '—') + '</strong>' +
+                    '<small>' + escapeHtml(subParts.join(' • ')) + '</small>' +
+                '</div>' +
+                (s.has_active_admission ? '<span class="badge-adm">ভর্তি আছে</span>' : '');
+
+            /* mousedown fires before input blur */
+            item.addEventListener('mousedown', function (e) {
+
+                e.preventDefault();
+
+                if (s.has_active_admission) {
+                    return;
+                }
+
+                setSelectedStudent(s);
+            });
+
+            item.addEventListener('mouseenter', function () {
+                highlight(index);
+            });
+
+            resultsBox.appendChild(item);
+        });
+
+        resultsBox.style.display = 'block';
+    }
+
+
+    /*
+    |----------------------------------------------------------------------
+    | Live search
+    |----------------------------------------------------------------------
+    */
     function searchStudents(query) {
 
         query = query.trim();
 
-        if (query.length < 2) {
-
-            alert(
-                'কমপক্ষে ২ অক্ষর লিখুন'
-            );
-
+        if (query.length < 1) {
+            hideResults();
             return;
         }
 
-        searchBtn.innerHTML =
-            '<div class="loading"></div>';
+        if (abortCtrl) {
+            abortCtrl.abort();
+        }
 
-        fetch(
-            '{{ route("dashboard.admissions.search") }}?q='
-            + encodeURIComponent(query)
-        )
+        abortCtrl = new AbortController();
 
-        .then(response => response.json())
+        showMessage('search-loading', 'খোঁজা হচ্ছে...');
 
-        .then(data => {
+        fetch(searchUrl + '?q=' + encodeURIComponent(query), {
+            signal: abortCtrl.signal,
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
+        .then(function (data) {
+            renderResults(Array.isArray(data) ? data : []);
+        })
+        .catch(function (err) {
 
-            searchBtn.innerHTML =
-                '<i class="fas fa-search"></i>';
-
-            if (data.length > 0) {
-
-                /*
-                |--------------------------------------------------------------------------
-                | Existing behavior:
-                | First search result automatically selected
-                |--------------------------------------------------------------------------
-                */
-
-                setSelectedStudent(data[0]);
-
-            } else {
-
-                alert(
-                    'কোন শিক্ষার্থী পাওয়া যায়নি'
-                );
+            if (err.name === 'AbortError') {
+                return;
             }
 
-        })
-
-        .catch(err => {
-
-            searchBtn.innerHTML =
-                '<i class="fas fa-search"></i>';
-
             console.error(err);
-
-            alert(
-                'সার্চ করতে সমস্যা হয়েছে'
-            );
+            showMessage('search-empty', 'সার্চ করতে সমস্যা হয়েছে');
         });
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Search Button
-    |--------------------------------------------------------------------------
-    */
+    searchInput.addEventListener('input', function () {
 
-    searchBtn.addEventListener(
-        'click',
-        function () {
-
-            searchStudents(
-                searchInput.value
-            );
-
+        /* typing again => previous selection is no longer valid */
+        if (studentIdInput.value) {
+            clearSelectedStudent();
         }
-    );
+
+        clearTimeout(debounceTimer);
+
+        debounceTimer = setTimeout(function () {
+            searchStudents(searchInput.value);
+        }, 250);
+    });
+
+    searchInput.addEventListener('focus', function () {
+
+        if (!studentIdInput.value && searchInput.value.trim() !== '') {
+            searchStudents(searchInput.value);
+        }
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+
+        const selectable = results
+            .map(function (s, i) { return s.has_active_admission ? -1 : i; })
+            .filter(function (i) { return i !== -1; });
+
+        if (e.key === 'ArrowDown') {
+
+            e.preventDefault();
+
+            if (!results.length) return;
+
+            highlight(Math.min(activeIndex + 1, results.length - 1));
+
+        } else if (e.key === 'ArrowUp') {
+
+            e.preventDefault();
+
+            if (!results.length) return;
+
+            highlight(Math.max(activeIndex - 1, 0));
+
+        } else if (e.key === 'Enter') {
+
+            /* Enter must never submit the admission form from the search box */
+            e.preventDefault();
+
+            if (activeIndex >= 0 && results[activeIndex] && !results[activeIndex].has_active_admission) {
+
+                setSelectedStudent(results[activeIndex]);
+
+            } else if (selectable.length === 1) {
+
+                setSelectedStudent(results[selectable[0]]);
+            }
+
+        } else if (e.key === 'Escape') {
+
+            hideResults();
+        }
+    });
+
+    searchBtn.addEventListener('click', function () {
+
+        clearTimeout(debounceTimer);
+
+        searchStudents(searchInput.value);
+
+        searchInput.focus();
+    });
+
+    /* Click outside closes the dropdown */
+    document.addEventListener('click', function (e) {
+
+        if (!e.target.closest('.id-search')) {
+            hideResults();
+        }
+    });
 
 
     /*
-    |--------------------------------------------------------------------------
-    | URL থেকে Selected Student
-    |--------------------------------------------------------------------------
-    |
-    | Controller থেকে $selectedStudent পাঠানো হলে
-    | page load হওয়ার সময় student automatically select হবে।
-    |
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
+    | Student must be selected before saving
+    |----------------------------------------------------------------------
     */
+    admissionForm.addEventListener('submit', function (e) {
 
+        if (!studentIdInput.value) {
+
+            e.preventDefault();
+
+            alert('অনুগ্রহ করে তালিকা থেকে একজন শিক্ষার্থী নির্বাচন করুন।');
+
+            searchInput.focus();
+        }
+    });
+
+
+    /*
+    |----------------------------------------------------------------------
+    | Selected student from URL (?student_id=)
+    |----------------------------------------------------------------------
+    */
     @if(isset($selectedStudent) && $selectedStudent)
 
         setSelectedStudent({
 
             id: @json($selectedStudent->id),
 
-            institution_user_id:
-                @json(
-                    $selectedStudent->user->institution_user_id
-                    ?? ''
-                ),
+            institution_user_id: @json($selectedStudent->user->institution_user_id ?? ''),
 
-            student_id:
-                @json(
-                    $selectedStudent->student_id
-                    ?? ''
-                ),
+            student_id: @json($selectedStudent->student_id ?? ''),
 
-            name:
-                @json(
-                    $selectedStudent->user->name_bn
-                    ?? $selectedStudent->user->name
-                    ?? ''
-                ),
+            name: @json($selectedStudent->user->name_bn ?? $selectedStudent->user->name ?? ''),
 
-            father_name:
-                @json(
-                    $selectedStudent->user->father_name
-                    ?? ''
-                ),
+            father_name: @json($selectedStudent->user->father_name ?? ''),
 
-            mobile:
-                @json(
-                    $selectedStudent->user->phone
-                    ?? ''
-                ),
+            mobile: @json($selectedStudent->user->phone ?? ''),
 
-            class_name:
-                @json(
-                    optional($selectedStudent->class)->name_bn
-                    ?? ''
-                ),
+            class_id: @json($selectedStudent->class_id ?? null),
 
-            photo:
-                @json(
-                    $selectedStudent->user->photo
-                    ? asset(
-                        'storage/' .
-                        $selectedStudent->user->photo
-                    )
-                    : asset(
-                        'images/default-user.png'
-                    )
-                )
+            class_name: @json(optional($selectedStudent->class)->name_bn ?? ''),
+
+            is_old: false,
+
+            photo: @json(
+                $selectedStudent->user->photo
+                    ? asset('storage/' . $selectedStudent->user->photo)
+                    : asset('images/default-user.png')
+            )
         });
 
     @endif
 
 
     /*
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     | Context Menu
-    |--------------------------------------------------------------------------
+    |----------------------------------------------------------------------
     */
-
-    const ctxMenu =
-        document.getElementById('ctxMenu');
+    const ctxMenu = document.getElementById('ctxMenu');
 
     let currentRowId = null;
 
+    document.querySelectorAll('.ctx-row').forEach(function (row) {
 
-    document
-        .querySelectorAll('.ctx-row')
-        .forEach(function (row) {
+        row.addEventListener('contextmenu', function (e) {
 
-            row.addEventListener(
-                'contextmenu',
-                function (e) {
+            e.preventDefault();
 
-                    e.preventDefault();
+            currentRowId = this.dataset.id;
 
-                    currentRowId =
-                        this.dataset.id;
+            ctxMenu.style.left = e.pageX + 'px';
+            ctxMenu.style.top = e.pageY + 'px';
 
-                    ctxMenu.style.left =
-                        e.pageX + 'px';
-
-                    ctxMenu.style.top =
-                        e.pageY + 'px';
-
-                    ctxMenu.classList.add(
-                        'show'
-                    );
-                }
-            );
-
+            ctxMenu.classList.add('show');
         });
+    });
 
+    document.addEventListener('click', function () {
+        ctxMenu.classList.remove('show');
+    });
 
-    document.addEventListener(
-        'click',
-        function () {
-
-            ctxMenu.classList.remove(
-                'show'
-            );
-
+    document.getElementById('ctx_fee_collection')?.addEventListener('click', function () {
+        if (currentRowId) {
+            window.location.href = '/dashboard/fee-collections/create?admission_id=' + currentRowId;
         }
-    );
+    });
 
+    document.getElementById('ctx_print_form')?.addEventListener('click', function () {
+        if (currentRowId) {
+            window.open('/dashboard/admissions/' + currentRowId + '/print', '_blank');
+        }
+    });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Fee Collection
-    |--------------------------------------------------------------------------
-    */
+    document.getElementById('ctx_view_profile')?.addEventListener('click', function () {
+        if (currentRowId) {
+            window.location.href = '/dashboard/admissions/' + currentRowId;
+        }
+    });
 
-    document
-        .getElementById('ctx_fee_collection')
-        ?.addEventListener(
-            'click',
-            function () {
-
-                if (currentRowId) {
-
-                    window.location.href =
-                        '/dashboard/fee-collections/create?admission_id='
-                        + currentRowId;
-                }
-
-            }
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Print Admission Form
-    |--------------------------------------------------------------------------
-    */
-
-    document
-        .getElementById('ctx_print_form')
-        ?.addEventListener(
-            'click',
-            function () {
-
-                if (currentRowId) {
-
-                    window.open(
-                        '/dashboard/admissions/'
-                        + currentRowId
-                        + '/print',
-                        '_blank'
-                    );
-                }
-
-            }
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | View Profile
-    |--------------------------------------------------------------------------
-    */
-
-    document
-        .getElementById('ctx_view_profile')
-        ?.addEventListener(
-            'click',
-            function () {
-
-                if (currentRowId) {
-
-                    window.location.href =
-                        '/dashboard/admissions/'
-                        + currentRowId;
-                }
-
-            }
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Change Class
-    |--------------------------------------------------------------------------
-    */
-
-    document
-        .getElementById('ctx_change_class')
-        ?.addEventListener(
-            'click',
-            function () {
-
-                if (currentRowId) {
-
-                    window.location.href =
-                        '/dashboard/admissions/'
-                        + currentRowId
-                        + '/change-class';
-                }
-
-            }
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Admission Form Submit Debug
-    |--------------------------------------------------------------------------
-    */
-
-    document
-        .getElementById('admissionForm')
-        .addEventListener(
-            'submit',
-            function () {
-
-                console.log(
-                    'student_id:',
-                    document.getElementById(
-                        'student_id'
-                    ).value
-                );
-
-                console.log(
-                    'academic_year_id:',
-                    document.getElementById(
-                        'academic_year_id'
-                    ).value
-                );
-
-            }
-        );
+    document.getElementById('ctx_change_class')?.addEventListener('click', function () {
+        if (currentRowId) {
+            window.location.href = '/dashboard/admissions/' + currentRowId + '/change-class';
+        }
+    });
 
 });
 </script>
