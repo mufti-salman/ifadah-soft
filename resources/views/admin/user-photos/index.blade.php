@@ -296,9 +296,61 @@
             </table>
         </div>
 
-        <div class="upm-pagination">
-            {{ $users->links() }}
+{{-- Custom Pagination --}}
+@if($users->hasPages())
+    <div class="upm-pagination">
+
+        {{-- Previous --}}
+        @if($users->onFirstPage())
+            <span class="upm-page-btn upm-page-disabled">
+                ← Previous
+            </span>
+        @else
+            <a href="{{ $users->previousPageUrl() }}"
+               class="upm-page-btn">
+                ← Previous
+            </a>
+        @endif
+
+        {{-- Page Numbers --}}
+        <div class="upm-page-numbers">
+
+            @php
+                $startPage = max(1, $users->currentPage() - 2);
+                $endPage = min($users->lastPage(), $users->currentPage() + 2);
+            @endphp
+
+            @for($page = $startPage; $page <= $endPage; $page++)
+
+                @if($page == $users->currentPage())
+                    <span class="upm-page-number active">
+                        {{ $page }}
+                    </span>
+                @else
+                    <a href="{{ $users->url($page) }}"
+                       class="upm-page-number">
+                        {{ $page }}
+                    </a>
+                @endif
+
+            @endfor
+
         </div>
+
+        {{-- Next --}}
+        @if($users->hasMorePages())
+            <a href="{{ $users->nextPageUrl() }}"
+               class="upm-page-btn">
+                Next →
+            </a>
+        @else
+            <span class="upm-page-btn upm-page-disabled">
+                Next →
+            </span>
+        @endif
+
+    </div>
+@endif
     </section>
 
 </div>
@@ -868,10 +920,103 @@
         font-size: 12px;
     }
 
+/* =========================================
+   CUSTOM PAGINATION
+========================================= */
+
+.upm-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    width: 100%;
+    padding: 18px 20px;
+
+    border-top: 1px solid #edf0f5;
+    background: #fff;
+}
+
+.upm-page-numbers {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.upm-page-btn,
+.upm-page-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    background: #fff;
+    color: #475569;
+
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none !important;
+
+    white-space: nowrap;
+    transition: all .2s ease;
+}
+
+.upm-page-btn:hover,
+.upm-page-number:hover {
+    background: #eef0ff;
+    border-color: #c7c9ff;
+    color: #4f46e5;
+}
+
+.upm-page-number.active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #fff;
+    cursor: default;
+}
+
+.upm-page-disabled {
+    background: #f8fafc;
+    color: #c0c6d2;
+    border-color: #edf0f5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+
     .upm-pagination {
-        padding: 16px 22px;
-        border-top: 1px solid #edf0f5;
+        gap: 7px;
+        padding: 14px 10px;
     }
+
+    .upm-page-btn {
+        min-width: 35px;
+        height: 35px;
+        padding: 0 9px;
+        font-size: 11px;
+    }
+
+    .upm-page-number {
+        min-width: 34px;
+        height: 35px;
+        padding: 0 8px;
+    }
+
+    .upm-page-numbers {
+        gap: 4px;
+    }
+}
 
     .upm-alert {
         padding: 12px 15px;
