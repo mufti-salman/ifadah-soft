@@ -44,8 +44,8 @@
     ];
 
     $statusLabels = [
-        'active' => 'সক্রিয়',
-        'inactive' => 'নিষ্ক্রিয়',
+        'active' => 'সক্রিয়',
+        'inactive' => 'নিষ্ক্রিয়',
     ];
 
     $selectedUserType = $userTypes->firstWhere('id', (int) $userTypeId);
@@ -78,6 +78,55 @@
         }
 
         return $default;
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helper: first non-empty value from several models
+    |--------------------------------------------------------------------------
+    */
+
+    $firstFilled = function (array $sources, array $keys, $default = '—') {
+
+        foreach ($sources as $source) {
+
+            if (!$source) {
+                continue;
+            }
+
+            foreach ($keys as $key) {
+
+                $value = data_get($source, $key);
+
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return $default;
+    };
+
+    $nameKeys = [
+        'name',
+        'name_bn',
+        'full_name',
+        'display_name',
+        'user_name',
+        'student_name',
+        'teacher_name',
+        'first_name',
+        'username',
+    ];
+
+    $userTypeLabelFor = function ($type) {
+
+        return match ($type->slug ?? null) {
+            'student' => 'শিক্ষার্থী',
+            'teacher' => 'শিক্ষক/স্টাফ',
+            'donor_member' => 'দাতা সদস্য',
+            default => ($type->name_bn ?? $type->name ?? $type->slug ?? 'ইউজার'),
+        };
     };
 
     /*
@@ -135,11 +184,11 @@
 
             <h2 class="ur-page-title">
                 <i class="fa fa-file-text-o"></i>
-                ইউজার রিপোর্ট
+                ব্যবহারকারী ভিত্তিক প্রতিবেদন
             </h2>
 
             <p class="ur-page-subtitle">
-                রিপোর্ট নির্বাচন করে প্রয়োজনীয় তথ্য দিন এবং একই পেজে প্রিভিউ দেখুন।
+                রিপোর্ট নির্বাচন করলেই নিচে স্বয়ংক্রিয়ভাবে প্রিভিউ দেখাবে।
             </p>
 
         </div>
@@ -197,7 +246,7 @@
                 <h3>রিপোর্ট সেটিংস</h3>
 
                 <p>
-                    আপনার প্রয়োজন অনুযায়ী রিপোর্টের ধরন ও ফিল্টার নির্বাচন করুন।
+                    আপনার প্রয়োজন অনুযায়ী রিপোর্টের ধরন ও ফিল্টার নির্বাচন করুন।
                 </p>
 
             </div>
@@ -219,7 +268,7 @@
                 <div class="ur-form-group ur-form-group-full">
 
                     <label for="report_type">
-                        রিপোর্টের ধরন
+                        রিপোর্টসমূহ
                         <span class="ur-required">*</span>
                     </label>
 
@@ -231,19 +280,19 @@
                     >
 
                         <option value="1" {{ $reportType === 1 ? 'selected' : '' }}>
-                            ১. ইউজার তালিকা রিপোর্ট
+                            আইডি সিরিয়াল ইউজার ডাটা তালিকা
                         </option>
 
                         <option value="2" {{ $reportType === 2 ? 'selected' : '' }}>
-                            ২. ইউজার পরিসংখ্যান রিপোর্ট
+                            ইউজার পরিসংখ্যান
                         </option>
 
                         <option value="3" {{ $reportType === 3 ? 'selected' : '' }}>
-                            ৩. শিক্ষার্থীর ভর্তি ফরম
+                            শিক্ষার্থীর ভর্তির ফরম
                         </option>
 
                         <option value="4" {{ $reportType === 4 ? 'selected' : '' }}>
-                            ৪. ভর্তি সম্পন্ন হয়নি এমন শিক্ষার্থীর তালিকা
+                            ভর্তি বিহীন শিক্ষার্থীর তালিকা
                         </option>
 
                     </select>
@@ -278,12 +327,7 @@
                                 data-slug="{{ $type->slug }}"
                                 {{ (string) $userTypeId === (string) $type->id ? 'selected' : '' }}
                             >
-
-                                {{ $type->slug === 'teacher'
-                                    ? 'শিক্ষক/স্টাফ'
-                                    : ($type->name_bn ?? $type->name ?? $type->slug)
-                                }}
-
+                                {{ $userTypeLabelFor($type) }}
                             </option>
 
                         @endforeach
@@ -309,7 +353,7 @@
                         class="ur-form-control"
                     >
 
-                        <option value="">সকল</option>
+                        <option value="">উভয়</option>
 
                         <option value="male" {{ $gender === 'male' ? 'selected' : '' }}>
                             পুরুষ
@@ -319,7 +363,7 @@
                             মহিলা
                         </option>
 
-                        <option value="other" {{ $gender === 'other' ? 'selected' : '' }}>
+                        <option value="other" data-only-list="1" {{ $gender === 'other' ? 'selected' : '' }}>
                             অন্যান্য
                         </option>
 
@@ -335,7 +379,7 @@
                 >
 
                     <label for="status">
-                        অ্যাকাউন্টের অবস্থা
+                        ব্যবহারকারীর অবস্থা
                     </label>
 
                     <select
@@ -344,14 +388,14 @@
                         class="ur-form-control"
                     >
 
-                        <option value="">সকল অবস্থা</option>
+                        <option value="">উভয়</option>
 
                         <option value="active" {{ $status === 'active' ? 'selected' : '' }}>
-                            সক্রিয়
+                            সক্রিয়
                         </option>
 
                         <option value="inactive" {{ $status === 'inactive' ? 'selected' : '' }}>
-                            নিষ্ক্রিয়
+                            নিষ্ক্রিয়
                         </option>
 
                     </select>
@@ -476,7 +520,7 @@
                     </h3>
 
                     <p>
-                        নিচে নির্বাচিত রিপোর্টটি দেখুন। প্রয়োজনে প্রিন্ট করতে পারবেন।
+                        নিচে নির্বাচিত রিপোর্টটি দেখুন। প্রয়োজনে প্রিন্ট করতে পারবেন।
                     </p>
 
                 </div>
@@ -556,6 +600,7 @@
                                     @php
 
                                         $student = $user->student ?? null;
+                                        $teacher = $user->teacher ?? null;
 
                                         $userTypeSlug = $user->userType?->slug;
 
@@ -592,14 +637,15 @@
                                         $entryDate = $user->created_at
                                             ?? $student?->created_at;
 
-                                        $mobile = $user->phone
-                                            ?? $user->mobile
-                                            ?? $user->phone_number
-                                            ?? '—';
+                                        $mobile = $firstFilled(
+                                            [$user, $student, $teacher],
+                                            ['phone', 'mobile', 'phone_number', 'guardian_mobile']
+                                        );
 
-                                        $userName = $user->name
-                                            ?? $user->full_name
-                                            ?? '—';
+                                        $userName = $firstFilled(
+                                            [$user, $student, $teacher],
+                                            $nameKeys
+                                        );
 
                                         $userId = $user->institution_user_id
                                             ?? '—';
@@ -654,7 +700,7 @@
 
                                         <td colspan="7" class="ur-empty-cell">
 
-                                            নির্বাচিত শর্ত অনুযায়ী কোনো ইউজার পাওয়া যায়নি।
+                                            নির্বাচিত শর্ত অনুযায়ী কোনো ইউজার পাওয়া যায়নি।
 
                                         </td>
 
@@ -704,6 +750,18 @@
 
             @if($reportType === 2)
 
+                @php
+                    $statFilterParts = [];
+
+                    if (!empty($gender) && isset($genderLabels[$gender])) {
+                        $statFilterParts[] = 'লিঙ্গ: ' . $genderLabels[$gender];
+                    }
+
+                    if (!empty($status) && isset($statusLabels[$status])) {
+                        $statFilterParts[] = 'অবস্থা: ' . $statusLabels[$status];
+                    }
+                @endphp
+
                 <div class="ur-report-paper">
 
                     <div class="ur-report-heading">
@@ -715,127 +773,25 @@
                         @endif
 
                         @if($institutionPhone)
-                            <p>যোগাযোগ: {{ $institutionPhone }}</p>
+                            <p>{{ $institutionPhone }}</p>
                         @endif
 
                         <h3>
-                            {{ $reportTitle ?: 'ইউজার পরিসংখ্যান রিপোর্ট' }}
+                            {{ $reportTitle ?: 'সকল ইউজারের পরিসংখ্যান' }}
                         </h3>
 
-                        <p class="ur-report-date">
-                            রিপোর্ট তৈরির তারিখ: {{ $reportDate }}
-                        </p>
+                        @if(count($statFilterParts))
+                            <p class="ur-report-date">
+                                {{ implode(' | ', $statFilterParts) }}
+                            </p>
+                        @endif
 
                     </div>
-
-
-                    <div class="ur-stat-grid">
-
-                        <div class="ur-stat-card">
-
-                            <div class="ur-stat-icon ur-stat-blue">
-                                <i class="fa fa-users"></i>
-                            </div>
-
-                            <div>
-
-                                <span>মোট ইউজার</span>
-
-                                <strong>
-                                    {{ data_get($statistics, 'total', 0) }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="ur-stat-card">
-
-                            <div class="ur-stat-icon ur-stat-green">
-                                <i class="fa fa-check-circle"></i>
-                            </div>
-
-                            <div>
-
-                                <span>সক্রিয় ইউজার</span>
-
-                                <strong>
-                                    {{ data_get($statistics, 'active', 0) }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="ur-stat-card">
-
-                            <div class="ur-stat-icon ur-stat-red">
-                                <i class="fa fa-ban"></i>
-                            </div>
-
-                            <div>
-
-                                <span>নিষ্ক্রিয় ইউজার</span>
-
-                                <strong>
-                                    {{ data_get($statistics, 'inactive', 0) }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="ur-stat-card">
-
-                            <div class="ur-stat-icon ur-stat-purple">
-                                <i class="fa fa-male"></i>
-                            </div>
-
-                            <div>
-
-                                <span>পুরুষ</span>
-
-                                <strong>
-                                    {{ data_get($statistics, 'male', 0) }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="ur-stat-card">
-
-                            <div class="ur-stat-icon ur-stat-orange">
-                                <i class="fa fa-female"></i>
-                            </div>
-
-                            <div>
-
-                                <span>মহিলা</span>
-
-                                <strong>
-                                    {{ data_get($statistics, 'female', 0) }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <h4 class="ur-section-heading">
-                        ইউজারের ধরন অনুযায়ী পরিসংখ্যান
-                    </h4>
 
 
                     <div class="ur-table-responsive">
 
-                        <table class="ur-report-table">
+                        <table class="ur-report-table ur-stat-table">
 
                             <thead>
 
@@ -845,7 +801,7 @@
 
                                     <th>ইউজারের ধরন</th>
 
-                                    <th>মোট</th>
+                                    <th>ইউজারের সংখ্যা</th>
 
                                 </tr>
 
@@ -854,11 +810,13 @@
 
                             <tbody>
 
-                                @forelse($byRole as $index => $item)
+                                @forelse($byRole as $item)
 
                                     <tr>
 
-                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            {{ data_get($item, 'serial') }}
+                                        </td>
 
                                         <td>
                                             {{ data_get($item, 'name_bn')
@@ -878,12 +836,24 @@
                                     <tr>
 
                                         <td colspan="3" class="ur-empty-cell">
-                                            পরিসংখ্যানের কোনো তথ্য পাওয়া যায়নি।
+                                            পরিসংখ্যানের কোনো তথ্য পাওয়া যায়নি।
                                         </td>
 
                                     </tr>
 
                                 @endforelse
+
+                                <tr class="ur-stat-total-row">
+
+                                    <th colspan="2" class="ur-stat-total-label">
+                                        মোট =
+                                    </th>
+
+                                    <th>
+                                        {{ data_get($statistics, 'total', 0) }}
+                                    </th>
+
+                                </tr>
 
                             </tbody>
 
@@ -1010,17 +980,17 @@
                         <p>{{ $institutionName }}</p>
 
                         <p>
-                            বিষয়: মাদরাসায় ভর্তি হওয়ার আবেদন।
+                            বিষয়: মাদরাসায় ভর্তি হওয়ার আবেদন।
                         </p>
 
                         <p>
-                            আসসালামু আলাইকুম ওয়া রহমাতুল্লাহ।
+                            আসসালামু আলাইকুম ওয়া রহমাতুল্লাহ।
                         </p>
 
                         <p>
-                            বিনীত নিবেদন এই যে, আমি আপনার মাদরাসায় ভর্তি হয়ে
+                            বিনীত নিবেদন এই যে, আমি আপনার মাদরাসায় ভর্তি হয়ে
                             দ্বীনি শিক্ষা অর্জন করতে ইচ্ছুক। অতএব, আমাকে
-                            আপনার মাদরাসায় ভর্তি হওয়ার সুযোগ দিয়ে বাধিত করবেন।
+                            আপনার মাদরাসায় ভর্তি হওয়ার সুযোগ দিয়ে বাধিত করবেন।
                         </p>
 
                         <p>নিবেদক</p>
@@ -1075,7 +1045,7 @@
 
                     <div class="ur-admission-section">
 
-                        <h3>স্থায়ী ঠিকানা</h3>
+                        <h3>স্থায়ী ঠিকানা</h3>
 
                         <div class="ur-admission-grid ur-grid-two">
 
@@ -1260,7 +1230,7 @@
                             </div>
 
                             <div class="ur-line-field">
-                                <label>গড়:</label>
+                                <label>গড়:</label>
                                 <span></span>
                             </div>
 
@@ -1292,7 +1262,7 @@
                             <span>সচ্ছল ☐</span>
                             <span>এতিম ☐</span>
                             <span>গরিব ☐</span>
-                            <span>অসহায় ☐</span>
+                            <span>অসহায় ☐</span>
 
                         </div>
 
@@ -1356,10 +1326,10 @@
                         <h3>মুহতামিম সাহেবের অনুমোদন</h3>
 
                         <p>
-                            ভর্তি অনুমোদিত / অনুমোদিত নয়:
+                            ভর্তি অনুমোদিত / অনুমোদিত নয়:
                             ☐ অনুমোদিত
                             &nbsp;&nbsp;
-                            ☐ অনুমোদিত নয়
+                            ☐ অনুমোদিত নয়
                         </p>
 
                         <div class="ur-signature-row">
@@ -1406,7 +1376,7 @@
                         @endif
 
                         <h3>
-                            {{ $reportTitle ?: 'ভর্তি সম্পন্ন হয়নি এমন শিক্ষার্থীর তালিকা' }}
+                            {{ $reportTitle ?: 'ভর্তি সম্পন্ন হয়নি এমন শিক্ষার্থীর তালিকা' }}
                         </h3>
 
                     </div>
@@ -1443,6 +1413,16 @@
 
                                     @php
                                         $studentUser = $student->user;
+
+                                        $studentName = $firstFilled(
+                                            [$studentUser, $student],
+                                            $nameKeys
+                                        );
+
+                                        $studentMobile = $firstFilled(
+                                            [$studentUser, $student],
+                                            ['phone', 'mobile', 'phone_number', 'guardian_mobile']
+                                        );
                                     @endphp
 
                                     <tr>
@@ -1460,15 +1440,11 @@
                                         </td>
 
                                         <td>
-                                            {{ $studentUser->name
-                                                ?? $student->name
-                                                ?? '—' }}
+                                            {{ $studentName }}
                                         </td>
 
                                         <td>
-                                            {{ $studentUser->phone
-                                                ?? $studentUser->mobile
-                                                ?? '—' }}
+                                            {{ $studentMobile }}
                                         </td>
 
                                         <td>
@@ -1490,7 +1466,7 @@
                                     <tr>
 
                                         <td colspan="6" class="ur-empty-cell">
-                                            নির্বাচিত শর্ত অনুযায়ী কোনো শিক্ষার্থী পাওয়া যায়নি।
+                                            নির্বাচিত শর্ত অনুযায়ী কোনো শিক্ষার্থী পাওয়া যায়নি।
                                         </td>
 
                                     </tr>
@@ -1868,6 +1844,40 @@
         overflow-wrap: anywhere;
     }
 
+    /* Statistics table */
+
+    .ur-stat-table {
+        table-layout: fixed;
+        font-size: 15px;
+    }
+
+    .ur-stat-table th:nth-child(1) {
+        width: 15%;
+    }
+
+    .ur-stat-table th:nth-child(2) {
+        width: 55%;
+    }
+
+    .ur-stat-table th:nth-child(3) {
+        width: 30%;
+    }
+
+    .ur-stat-table td,
+    .ur-stat-table th {
+        padding: 12px 10px;
+    }
+
+    .ur-stat-table .ur-stat-total-row th {
+        background: #f1f5f9;
+        font-size: 16px;
+    }
+
+    .ur-stat-table .ur-stat-total-label {
+        text-align: right;
+        padding-right: 18px;
+    }
+
     .ur-user-type-sub {
         display: block;
         margin-top: 3px;
@@ -1903,72 +1913,6 @@
         min-width: 150px;
         padding-top: 8px;
         border-top: 1px solid #333;
-    }
-
-    .ur-stat-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 15px;
-        margin-bottom: 30px;
-    }
-
-    .ur-stat-card {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        padding: 18px;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        background: #fff;
-    }
-
-    .ur-stat-icon {
-        width: 45px;
-        height: 45px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 19px;
-        flex-shrink: 0;
-    }
-
-    .ur-stat-blue {
-        background: #dbeafe;
-        color: #1d4ed8;
-    }
-
-    .ur-stat-green {
-        background: #dcfce7;
-        color: #15803d;
-    }
-
-    .ur-stat-red {
-        background: #fee2e2;
-        color: #b91c1c;
-    }
-
-    .ur-stat-purple {
-        background: #ede9fe;
-        color: #6d28d9;
-    }
-
-    .ur-stat-orange {
-        background: #ffedd5;
-        color: #c2410c;
-    }
-
-    .ur-stat-card span {
-        display: block;
-        margin-bottom: 5px;
-        color: #64748b;
-        font-size: 12px;
-    }
-
-    .ur-stat-card strong {
-        display: block;
-        font-size: 25px;
-        color: #172b4d;
     }
 
     .ur-section-heading {
@@ -2209,10 +2153,6 @@
             padding: 0 17px 17px;
         }
 
-        .ur-stat-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
         .ur-report-paper,
         .ur-admission-paper {
             padding: 16px;
@@ -2256,10 +2196,6 @@
 
     @media (max-width: 480px) {
 
-        .ur-stat-grid {
-            grid-template-columns: 1fr;
-        }
-
         .ur-page-title {
             font-size: 21px;
         }
@@ -2289,10 +2225,13 @@
 <script>
 
     /**
-     * Print only the report.
+     * Print only the report (A4 Portrait).
      *
-     * Dashboard, sidebar, navbar and filter form
-     * will not be included.
+     * - Dashboard, sidebar, navbar and filter form are NOT included.
+     * - @page margin is 0, so the browser's own header / footer /
+     *   page number / URL are not printed.
+     * - Page margins are created with a repeating spacer table
+     *   (thead / tfoot), so every page keeps top & bottom space.
      */
     async function printUserReport() {
 
@@ -2300,7 +2239,7 @@
 
         if (!report) {
 
-            alert('প্রিন্ট করার মতো কোনো রিপোর্ট পাওয়া যায়নি।');
+            alert('প্রিন্ট করার মতো কোনো রিপোর্ট পাওয়া যায়নি।');
 
             return;
         }
@@ -2313,7 +2252,7 @@
 
         if (!printWindow) {
 
-            alert('Popup blocked হয়েছে। Browser থেকে popup allow করুন।');
+            alert('Popup blocked হয়েছে। Browser থেকে popup allow করুন।');
 
             return;
         }
@@ -2334,7 +2273,7 @@
 
 
         /*
-         * Copy inline styles.
+         * Copy inline styles (the report CSS above).
          */
         const inlineStyles = Array.from(
             document.querySelectorAll('style')
@@ -2346,9 +2285,16 @@
 
 
         /*
-         * Only report content.
+         * Only the report content, without the toolbar.
          */
-        const reportHTML = report.innerHTML;
+        const clone = report.cloneNode(true);
+
+        clone.querySelectorAll('.no-print, .ur-preview-toolbar')
+            .forEach(function (el) {
+                el.remove();
+            });
+
+        const reportHTML = clone.innerHTML;
 
 
         /*
@@ -2371,15 +2317,24 @@
                     content="width=device-width, initial-scale=1.0"
                 >
 
-                <title>রিপোর্ট</title>
+                <title>&nbsp;</title>
 
                 ${styles}
 
                 <style>
 
+                    ${inlineStyles}
+
+                </style>
+
+                <style>
+
+                    /*
+                     * margin: 0  =>  browser header/footer/page number hidden.
+                     */
                     @page {
                         size: A4 portrait;
-                        margin: 10mm;
+                        margin: 0;
                     }
 
                     * {
@@ -2393,15 +2348,37 @@
                         padding: 0 !important;
                         background: #fff !important;
                         color: #111827 !important;
-                        font-family: Arial, sans-serif;
+                        font-family: "Noto Sans Bengali", "SolaimanLipi", Arial, sans-serif;
                     }
 
-                    /*
-                     * Override any old print visibility rules.
-                     */
                     body,
                     body * {
                         visibility: visible !important;
+                    }
+
+                    table.print-wrap {
+                        width: 100%;
+                        border-collapse: collapse;
+                        border: 0 !important;
+                    }
+
+                    table.print-wrap > thead > tr > td,
+                    table.print-wrap > tfoot > tr > td,
+                    table.print-wrap > tbody > tr > td {
+                        border: 0 !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                    }
+
+                    table.print-wrap > thead { display: table-header-group; }
+                    table.print-wrap > tfoot { display: table-footer-group; }
+
+                    .print-spacer {
+                        height: 12mm;
+                    }
+
+                    .print-body {
+                        padding: 0 14mm;
                     }
 
                     #userReportPreview {
@@ -2414,9 +2391,6 @@
                         background: #fff !important;
                     }
 
-                    /*
-                     * Hide preview controls.
-                     */
                     .no-print,
                     .ur-preview-toolbar,
                     button,
@@ -2424,9 +2398,6 @@
                         display: none !important;
                     }
 
-                    /*
-                     * Report paper.
-                     */
                     .ur-report-paper,
                     .ur-admission-paper {
                         width: 100% !important;
@@ -2439,9 +2410,11 @@
                         background: #fff !important;
                     }
 
-                    /*
-                     * Institution heading.
-                     */
+                    .ur-admission-paper {
+                        font-size: 12px !important;
+                        line-height: 1.55 !important;
+                    }
+
                     .ur-report-heading {
                         text-align: center !important;
                         margin-bottom: 15px !important;
@@ -2465,9 +2438,6 @@
                         color: #222 !important;
                     }
 
-                    /*
-                     * Table layout.
-                     */
                     .ur-table-responsive {
                         width: 100% !important;
                         overflow: visible !important;
@@ -2509,14 +2479,26 @@
                         font-size: 9px !important;
                     }
 
+                    .ur-stat-table {
+                        font-size: 14px !important;
+                    }
+
+                    .ur-stat-table th,
+                    .ur-stat-table td {
+                        padding: 10px 8px !important;
+                        font-size: 14px !important;
+                    }
+
+                    .ur-stat-table .ur-stat-total-label {
+                        text-align: right !important;
+                        padding-right: 16px !important;
+                    }
+
                     .ur-user-type-sub {
                         display: block !important;
                         font-size: 8px !important;
                     }
 
-                    /*
-                     * Footer.
-                     */
                     .ur-report-footer {
                         margin-top: 12px !important;
                         padding-top: 8px !important;
@@ -2524,30 +2506,12 @@
                         font-size: 11px !important;
                     }
 
-                    /*
-                     * Signature.
-                     */
                     .ur-report-signatures {
                         margin-top: 55px !important;
                         display: flex !important;
                         justify-content: space-between !important;
                     }
 
-                    /*
-                     * Statistics.
-                     */
-                    .ur-stat-grid {
-                        display: grid !important;
-                        grid-template-columns: repeat(3, 1fr) !important;
-                    }
-
-                    .ur-stat-card {
-                        break-inside: avoid !important;
-                    }
-
-                    /*
-                     * Admission form.
-                     */
                     .ur-admission-section,
                     .ur-office-section,
                     .ur-previous-info,
@@ -2556,30 +2520,14 @@
                         page-break-inside: avoid !important;
                     }
 
-                    /*
-                     * Remove unnecessary page breaks.
-                     */
                     .ur-report-paper {
                         break-after: auto !important;
                         page-break-after: auto !important;
                     }
 
-                    /*
-                     * Bengali text and colors.
-                     */
                     * {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
-                    }
-
-                    @media print {
-
-                        html,
-                        body {
-                            margin: 0 !important;
-                            padding: 0 !important;
-                        }
-
                     }
 
                 </style>
@@ -2588,9 +2536,29 @@
 
             <body>
 
-                <div id="userReportPreview">
-                    ${reportHTML}
-                </div>
+                <table class="print-wrap">
+
+                    <thead>
+                        <tr><td><div class="print-spacer"></div></td></tr>
+                    </thead>
+
+                    <tfoot>
+                        <tr><td><div class="print-spacer"></div></td></tr>
+                    </tfoot>
+
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="print-body">
+                                    <div id="userReportPreview">
+                                        ${reportHTML}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
 
             </body>
 
@@ -2601,41 +2569,6 @@
         printWindow.document.close();
 
 
-        /*
-         * Wait for images.
-         */
-        const waitForImages = async function () {
-
-            const images = Array.from(
-                printWindow.document.images
-            );
-
-            await Promise.all(
-
-                images.map(function (img) {
-
-                    if (img.complete) {
-                        return Promise.resolve();
-                    }
-
-                    return new Promise(function (resolve) {
-
-                        img.onload = resolve;
-
-                        img.onerror = resolve;
-
-                    });
-
-                })
-
-            );
-
-        };
-
-
-        /*
-         * Wait for stylesheets.
-         */
         const waitForStylesheets = async function () {
 
             const links = Array.from(
@@ -2667,9 +2600,35 @@
         };
 
 
-        /*
-         * Wait for fonts, CSS and images.
-         */
+        const waitForImages = async function () {
+
+            const images = Array.from(
+                printWindow.document.images
+            );
+
+            await Promise.all(
+
+                images.map(function (img) {
+
+                    if (img.complete) {
+                        return Promise.resolve();
+                    }
+
+                    return new Promise(function (resolve) {
+
+                        img.onload = resolve;
+
+                        img.onerror = resolve;
+
+                    });
+
+                })
+
+            );
+
+        };
+
+
         await waitForStylesheets();
 
         await waitForImages();
@@ -2689,9 +2648,6 @@
         }
 
 
-        /*
-         * Wait until browser renders document.
-         */
         setTimeout(function () {
 
             printWindow.focus();
@@ -2701,9 +2657,6 @@
         }, 800);
 
 
-        /*
-         * Close after printing.
-         */
         printWindow.onafterprint = function () {
 
             printWindow.close();
@@ -2715,25 +2668,67 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Report Filter Controls
+    | Report Filter Controls + Auto Preview
     |--------------------------------------------------------------------------
+    |
+    | Report 1 : all filters
+    | Report 2 : gender + status only (auto update on change)
+    | Report 3 : no filters (blank admission form)
+    | Report 4 : all filters
+    |
+    | Selecting a report from "রিপোর্টসমূহ" submits the form automatically.
+    | Hidden fields are also disabled, so they are not submitted.
     */
 
     document.addEventListener('DOMContentLoaded', function () {
 
+        const form = document.getElementById('userReportForm');
+
         const reportTypeSelect = document.getElementById('report_type');
 
-        const userTypeField = document.getElementById('userTypeField');
-
-        const genderField = document.getElementById('genderField');
-
-        const statusField = document.getElementById('statusField');
-
-        const userIdFromField = document.getElementById('userIdFromField');
-
-        const userIdToField = document.getElementById('userIdToField');
+        const fields = {
+            userType: document.getElementById('userTypeField'),
+            gender: document.getElementById('genderField'),
+            status: document.getElementById('statusField'),
+            idFrom: document.getElementById('userIdFromField'),
+            idTo: document.getElementById('userIdToField'),
+        };
 
         const admissionNotice = document.getElementById('admissionFormNotice');
+
+        const genderSelect = document.getElementById('gender');
+
+        const statusSelect = document.getElementById('status');
+
+
+        function toggleField(field, show) {
+
+            if (!field) {
+                return;
+            }
+
+            field.style.display = show ? '' : 'none';
+
+            field.querySelectorAll('input, select').forEach(function (el) {
+                el.disabled = !show;
+            });
+
+        }
+
+
+        function submitReportForm() {
+
+            if (!form) {
+                return;
+            }
+
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
+
+        }
 
 
         function updateReportFields() {
@@ -2744,75 +2739,68 @@
 
             const type = parseInt(reportTypeSelect.value, 10);
 
+            let visible = {
+                userType: true,
+                gender: true,
+                status: true,
+                idFrom: true,
+                idTo: true,
+            };
 
-            /*
-             * Show all filters first.
-             */
-            [
-                userTypeField,
-                genderField,
-                statusField,
-                userIdFromField,
-                userIdToField
-            ].forEach(function (field) {
+            if (type === 2) {
 
-                if (field) {
-                    field.style.display = '';
-                }
+                visible = {
+                    userType: false,
+                    gender: true,
+                    status: true,
+                    idFrom: false,
+                    idTo: false,
+                };
 
+            }
+
+            if (type === 3) {
+
+                visible = {
+                    userType: false,
+                    gender: false,
+                    status: false,
+                    idFrom: false,
+                    idTo: false,
+                };
+
+            }
+
+            Object.keys(fields).forEach(function (key) {
+                toggleField(fields[key], visible[key]);
             });
 
 
-            if (admissionNotice) {
-                admissionNotice.style.display = 'none';
-            }
-
-
             /*
-             * Report 2: Statistics.
+             * "অন্যান্য" gender option only for list reports.
              */
-            if (type === 2) {
+            if (genderSelect) {
 
-                [
-                    userTypeField,
-                    genderField,
-                    statusField,
-                    userIdFromField,
-                    userIdToField
-                ].forEach(function (field) {
+                const otherOption = genderSelect.querySelector('option[value="other"]');
 
-                    if (field) {
-                        field.style.display = 'none';
+                if (otherOption) {
+
+                    const hideOther = (type === 2);
+
+                    otherOption.hidden = hideOther;
+                    otherOption.disabled = hideOther;
+
+                    if (hideOther && genderSelect.value === 'other') {
+                        genderSelect.value = '';
                     }
 
-                });
-
-            }
-
-
-            /*
-             * Report 3: Admission form.
-             */
-            if (type === 3) {
-
-                [
-                    userTypeField,
-                    genderField,
-                    statusField,
-                    userIdFromField,
-                    userIdToField
-                ].forEach(function (field) {
-
-                    if (field) {
-                        field.style.display = 'none';
-                    }
-
-                });
-
-                if (admissionNotice) {
-                    admissionNotice.style.display = 'flex';
                 }
 
+            }
+
+
+            if (admissionNotice) {
+                admissionNotice.style.display = (type === 3) ? 'flex' : 'none';
             }
 
         }
@@ -2820,14 +2808,40 @@
 
         if (reportTypeSelect) {
 
-            reportTypeSelect.addEventListener(
-                'change',
-                updateReportFields
-            );
-
             updateReportFields();
 
+            /*
+             * Select a report => preview opens automatically.
+             */
+            reportTypeSelect.addEventListener('change', function () {
+
+                updateReportFields();
+
+                submitReportForm();
+
+            });
+
         }
+
+
+        /*
+         * Statistics report: gender / status change => auto refresh.
+         */
+        [genderSelect, statusSelect].forEach(function (el) {
+
+            if (!el) {
+                return;
+            }
+
+            el.addEventListener('change', function () {
+
+                if (reportTypeSelect && parseInt(reportTypeSelect.value, 10) === 2) {
+                    submitReportForm();
+                }
+
+            });
+
+        });
 
 
         /*

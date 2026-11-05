@@ -20,38 +20,22 @@ class UserReportController extends Controller
     {
         $institutionId = auth()->user()?->active_institution_id;
 
-        abort_if(
-            !$institutionId,
-            403,
-            'প্রতিষ্ঠান নির্বাচন করা হয়নি।'
-        );
+        abort_if(!$institutionId, 403, 'প্রতিষ্ঠান নির্বাচন করা হয়নি।');
 
         return (int) $institutionId;
     }
 
     /**
-     * Get allowed user types.
-     *
-     * Allowed:
-     * student
-     * teacher
-     * donor_member
+     * Allowed user types (student, teacher, donor_member).
      */
     private function getUserTypes(): Collection
     {
         return UserType::query()
-            ->whereIn('slug', [
-                'student',
-                'teacher',
-                'donor_member',
-            ])
+            ->whereIn('slug', ['student', 'teacher', 'donor_member'])
             ->orderBy('id')
             ->get();
     }
 
-    /**
-     * Get allowed user type IDs.
-     */
     private function getAllowedUserTypeIds(): array
     {
         return $this->getUserTypes()
@@ -70,8 +54,8 @@ class UserReportController extends Controller
         }
 
         return match ($userType->slug) {
-            'student' => 'শিক্ষার্থী',
-            'teacher' => 'শিক্ষক/স্টাফ',
+            'student'      => 'শিক্ষার্থী',
+            'teacher'      => 'শিক্ষক/স্টাফ',
             'donor_member' => 'দাতা সদস্য',
 
             default => (
@@ -88,18 +72,11 @@ class UserReportController extends Controller
      */
     public function index()
     {
-        $institutionId = $this->institutionId();
-
-        $institution = Madrasa::findOrFail($institutionId);
-
-        $userTypes = $this->getUserTypes();
+        $institution = Madrasa::findOrFail($this->institutionId());
 
         return view('admin.user-reports.index', [
-
             'institution' => $institution,
-
-            // User type dropdown
-            'userTypes' => $userTypes,
+            'userTypes' => $this->getUserTypes(),
 
             'reportType' => 1,
             'reportTitle' => '',
@@ -107,23 +84,18 @@ class UserReportController extends Controller
             'userTypeId' => '',
             'gender' => '',
             'status' => '',
-
             'userIdFrom' => '',
             'userIdTo' => '',
 
             'users' => collect(),
             'students' => collect(),
-
             'studentsWithoutAdmission' => collect(),
-
             'selectedStudent' => null,
 
             'statistics' => [],
-
             'byRole' => collect(),
 
             'validated' => [],
-
             'previewGenerated' => false,
         ]);
     }
@@ -134,453 +106,193 @@ class UserReportController extends Controller
     public function preview(Request $request)
     {
         $institutionId = $this->institutionId();
-
         $institution = Madrasa::findOrFail($institutionId);
 
         $userTypes = $this->getUserTypes();
-
-        $allowedUserTypeIds = $userTypes
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
+        $allowedUserTypeIds = $userTypes->pluck('id')->map(fn ($id) => (int) $id)->toArray();
 
         $validated = $request->validate([
-
-            'report_type' => [
-                'required',
-                'integer',
-                'in:1,2,3,4',
-            ],
-
-            'user_type_id' => [
-                'nullable',
-                'integer',
-                Rule::in($allowedUserTypeIds),
-            ],
-
-            'gender' => [
-                'nullable',
-                'in:male,female,other,all',
-            ],
-
-            'status' => [
-                'nullable',
-                'in:active,inactive,all',
-            ],
-
-            'user_id_from' => [
-                'nullable',
-                'integer',
-                'min:1',
-            ],
-
-            'user_id_to' => [
-                'nullable',
-                'integer',
-                'min:1',
-            ],
-
+            'report_type'  => ['required', 'integer', 'in:1,2,3,4'],
+            'user_type_id' => ['nullable', 'integer', Rule::in($allowedUserTypeIds)],
+            'gender'       => ['nullable', 'in:male,female,other,all'],
+            'status'       => ['nullable', 'in:active,inactive,all'],
+            'user_id_from' => ['nullable', 'integer', 'min:1'],
+            'user_id_to'   => ['nullable', 'integer', 'min:1'],
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Filter values
-        |--------------------------------------------------------------------------
-        */
-
-        $reportType = (int) $validated['report_type'];
-
-        $userTypeId = $validated['user_type_id'] ?? '';
-
-        $gender = $validated['gender'] ?? '';
-
-        $status = $validated['status'] ?? '';
-
-        $userIdFrom = $validated['user_id_from'] ?? '';
-
-        $userIdTo = $validated['user_id_to'] ?? '';
-
-        /*
-        |--------------------------------------------------------------------------
-        | Report titles
-        |--------------------------------------------------------------------------
-        */
+        $reportType  = (int) $validated['report_type'];
+        $userTypeId  = $validated['user_type_id'] ?? '';
+        $gender      = $validated['gender'] ?? '';
+        $status      = $validated['status'] ?? '';
+        $userIdFrom  = $validated['user_id_from'] ?? '';
+        $userIdTo    = $validated['user_id_to'] ?? '';
 
         $reportTitles = [
-
             1 => 'ইউজার তালিকা রিপোর্ট',
-
-            2 => 'ইউজার পরিসংখ্যান রিপোর্ট',
-
+            2 => 'সকল ইউজারের পরিসংখ্যান',
             3 => 'ভর্তি ফরম',
-
-            4 => 'ভর্তি হয়নি এমন শিক্ষার্থী',
-
+            4 => 'ভর্তি হয়নি এমন শিক্ষার্থী',
         ];
 
         $reportTitle = $reportTitles[$reportType] ?? '';
 
-        /*
-        |--------------------------------------------------------------------------
-        | Default data
-        |--------------------------------------------------------------------------
-        */
-
         $users = collect();
-
         $students = collect();
-
         $studentsWithoutAdmission = collect();
-
         $selectedStudent = null;
-
         $statistics = [];
-
         $byRole = collect();
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | Report 1: User List
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         */
-
         if ($reportType === 1) {
 
             $query = User::query()
+                ->with(['userType', 'student', 'teacher']);
 
-                ->where('institution_id', $institutionId)
-
-                ->whereIn(
-                    'user_type_id',
-                    $allowedUserTypeIds
-                )
-
-                ->with([
-                    'userType',
-                    'student',
-                    'teacher',
-                ]);
-
-            $this->applyUserFilters(
-                $query,
-                $validated,
-                $institutionId
-            );
+            $this->applyUserFilters($query, $validated, $institutionId);
 
             $users = $query
-
-                ->orderByRaw(
-                    'CAST(institution_user_id AS UNSIGNED) ASC'
-                )
-
+                ->orderByRaw('CAST(institution_user_id AS UNSIGNED) ASC')
                 ->get();
 
-            /*
-             * Attach Bengali user type label.
-             */
             foreach ($users as $user) {
-
-                $user->user_type_label = $this->getUserTypeLabel(
-                    $user->userType
-                );
-
+                $user->user_type_label = $this->getUserTypeLabel($user->userType);
             }
         }
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | Report 2: User Statistics
-        |--------------------------------------------------------------------------
+        | Only: student, teacher, donor_member
+        | Gender / status filters are dynamic.
+        |----------------------------------------------------------------------
         */
-
         if ($reportType === 2) {
 
-            $query = User::query()
+            $query = User::query();
 
-                ->where('institution_id', $institutionId)
+            $this->applyUserFilters($query, $validated, $institutionId);
 
-                ->whereIn(
-                    'user_type_id',
-                    $allowedUserTypeIds
-                );
+            $statUsers = $query->get();
 
-            $this->applyUserFilters(
-                $query,
-                $validated,
-                $institutionId
-            );
+            // Count in PHP (safe against grouping / casting problems)
+            $typeCounts = $statUsers->groupBy(fn ($u) => (int) $u->user_type_id);
 
-            $users = $query->get();
-
-            /*
-             * Basic statistics.
-             */
-            $totalUsers = $users->count();
-
-            $activeUsers = $users
-                ->where('status', 1)
-                ->count();
-
-            $inactiveUsers = $users
-                ->where('status', 0)
-                ->count();
-
-            $maleUsers = $users
-                ->where('gender', 'male')
-                ->count();
-
-            $femaleUsers = $users
-                ->where('gender', 'female')
-                ->count();
+            $byRole = $userTypes->values()->map(function ($type, $index) use ($typeCounts) {
+                return (object) [
+                    'serial'  => $index + 1,
+                    'id'      => $type->id,
+                    'name'    => $type->name ?? '',
+                    'name_bn' => $this->getUserTypeLabel($type),
+                    'slug'    => $type->slug ?? '',
+                    'total'   => $typeCounts->get((int) $type->id, collect())->count(),
+                ];
+            });
 
             $statistics = [
-
-                'total' => $totalUsers,
-
-                'active' => $activeUsers,
-
-                'inactive' => $inactiveUsers,
-
-                'male' => $maleUsers,
-
-                'female' => $femaleUsers,
-
+                'total' => (int) $byRole->sum('total'),
             ];
-
-            /*
-             * Group users by user type.
-             */
-            $typeCounts = $users->groupBy('user_type_id');
-
-            $byRole = $userTypes->map(function ($type) use ($typeCounts) {
-
-                $typeUsers = $typeCounts->get(
-                    $type->id,
-                    collect()
-                );
-
-                return (object) [
-
-                    'id' => $type->id,
-
-                    'name' => $type->name ?? '',
-
-                    'name_bn' => $this->getUserTypeLabel($type),
-
-                    'slug' => $type->slug ?? '',
-
-                    'total' => $typeUsers->count(),
-
-                ];
-
-            });
         }
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | Report 3: Admission Form
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         */
-
         if ($reportType === 3) {
 
             $students = Student::query()
-
                 ->where('institution_id', $institutionId)
-
-                ->with([
-                    'user',
-                ])
-
+                ->with(['user'])
                 ->orderBy('id')
-
                 ->get();
 
-            /*
-             * Keep admission form blank by default.
-             */
             $selectedStudent = null;
         }
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | Report 4: Students Without Admission
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         */
-
         if ($reportType === 4) {
 
             $query = Student::query()
-
                 ->where('institution_id', $institutionId)
-
                 ->whereHas('user', function ($q) use ($institutionId) {
-
                     $q->where('institution_id', $institutionId)
-
                         ->where('user_type_id', 1);
-
                 })
-
                 ->whereDoesntHave('admissions', function ($q) {
-
                     $q->where('status', 'active');
-
                 })
+                ->with(['user']);
 
-                ->with([
-                    'user',
-                ]);
-
-            /*
-             * User type filter.
-             *
-             * This report only contains students.
-             */
-            if (
-                !empty($userTypeId) &&
-                (int) $userTypeId !== 1
-            ) {
-
+            if (!empty($userTypeId) && (int) $userTypeId !== 1) {
                 $query->whereRaw('1 = 0');
-
             }
 
-            /*
-             * Gender filter.
-             */
             if (!empty($gender) && $gender !== 'all') {
-
-                $query->whereHas('user', function ($q) use (
-                    $gender,
-                    $institutionId
-                ) {
-
+                $query->whereHas('user', function ($q) use ($gender, $institutionId) {
                     $q->where('institution_id', $institutionId)
-
                         ->where('gender', $gender);
-
                 });
-
             }
 
-            /*
-             * Status filter.
-             */
             if (!empty($status) && $status !== 'all') {
-
                 $statusValue = $status === 'active' ? 1 : 0;
 
-                $query->whereHas('user', function ($q) use (
-                    $statusValue,
-                    $institutionId
-                ) {
-
+                $query->whereHas('user', function ($q) use ($statusValue, $institutionId) {
                     $q->where('institution_id', $institutionId)
-
                         ->where('status', $statusValue);
-
                 });
-
             }
 
-            /*
-             * User ID range filter.
-             */
             if (!empty($userIdFrom)) {
-
-                $query->whereHas('user', function ($q) use (
-                    $userIdFrom,
-                    $institutionId
-                ) {
-
+                $query->whereHas('user', function ($q) use ($userIdFrom, $institutionId) {
                     $q->where('institution_id', $institutionId)
-
-                        ->whereRaw(
-                            'CAST(institution_user_id AS UNSIGNED) >= ?',
-                            [(int) $userIdFrom]
-                        );
-
+                        ->whereRaw('CAST(institution_user_id AS UNSIGNED) >= ?', [(int) $userIdFrom]);
                 });
-
             }
 
             if (!empty($userIdTo)) {
-
-                $query->whereHas('user', function ($q) use (
-                    $userIdTo,
-                    $institutionId
-                ) {
-
+                $query->whereHas('user', function ($q) use ($userIdTo, $institutionId) {
                     $q->where('institution_id', $institutionId)
-
-                        ->whereRaw(
-                            'CAST(institution_user_id AS UNSIGNED) <= ?',
-                            [(int) $userIdTo]
-                        );
-
+                        ->whereRaw('CAST(institution_user_id AS UNSIGNED) <= ?', [(int) $userIdTo]);
                 });
-
             }
 
-            $studentsWithoutAdmission = $query
-
-                ->orderBy('id')
-
-                ->get();
-
+            $studentsWithoutAdmission = $query->orderBy('id')->get();
             $students = $studentsWithoutAdmission;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Return report view
-        |--------------------------------------------------------------------------
-        */
-
         return view('admin.user-reports.index', [
-
             'institution' => $institution,
-
-            // Important: Blade dropdown uses $userTypes
             'userTypes' => $userTypes,
 
             'reportType' => $reportType,
-
             'reportTitle' => $reportTitle,
 
             'userTypeId' => $userTypeId,
-
             'gender' => $gender,
-
             'status' => $status,
-
             'userIdFrom' => $userIdFrom,
-
             'userIdTo' => $userIdTo,
 
             'users' => $users,
-
             'students' => $students,
-
             'studentsWithoutAdmission' => $studentsWithoutAdmission,
-
             'selectedStudent' => $selectedStudent,
 
             'statistics' => $statistics,
-
             'byRole' => $byRole,
 
             'validated' => $validated,
-
             'previewGenerated' => true,
-
         ]);
     }
 
@@ -593,89 +305,34 @@ class UserReportController extends Controller
         int $institutionId
     ): void {
 
-        /*
-         * Institution restriction.
-         */
         $query->where('institution_id', $institutionId);
 
-        /*
-         * Allowed user types.
-         */
-        $allowedUserTypeIds = $this->getAllowedUserTypeIds();
+        $query->whereIn('user_type_id', $this->getAllowedUserTypeIds());
 
-        $query->whereIn(
-            'user_type_id',
-            $allowedUserTypeIds
-        );
-
-        /*
-         * User type filter.
-         */
         if (!empty($filters['user_type_id'])) {
-
-            $query->where(
-                'user_type_id',
-                (int) $filters['user_type_id']
-            );
-
+            $query->where('user_type_id', (int) $filters['user_type_id']);
         }
 
-        /*
-         * Gender filter.
-         */
-        if (
-            !empty($filters['gender']) &&
-            $filters['gender'] !== 'all'
-        ) {
-
-            $query->where(
-                'gender',
-                $filters['gender']
-            );
-
+        if (!empty($filters['gender']) && $filters['gender'] !== 'all') {
+            $query->where('gender', $filters['gender']);
         }
 
-        /*
-         * Status filter.
-         */
-        if (
-            !empty($filters['status']) &&
-            $filters['status'] !== 'all'
-        ) {
-
-            $statusValue = $filters['status'] === 'active'
-                ? 1
-                : 0;
-
-            $query->where(
-                'status',
-                $statusValue
-            );
-
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            $query->where('status', $filters['status'] === 'active' ? 1 : 0);
         }
 
-        /*
-         * Institution User ID - From.
-         */
         if (!empty($filters['user_id_from'])) {
-
             $query->whereRaw(
                 'CAST(institution_user_id AS UNSIGNED) >= ?',
                 [(int) $filters['user_id_from']]
             );
-
         }
 
-        /*
-         * Institution User ID - To.
-         */
         if (!empty($filters['user_id_to'])) {
-
             $query->whereRaw(
                 'CAST(institution_user_id AS UNSIGNED) <= ?',
                 [(int) $filters['user_id_to']]
             );
-
         }
     }
 }
