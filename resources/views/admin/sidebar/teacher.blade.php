@@ -117,6 +117,29 @@
 
                 @endsidebarPermission
 
+                {{-- =====================================================
+                | ক্লাস রুটিন
+                ====================================================== --}}
+
+                @sidebarPermission('teacher.edit')
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link text-white-50
+                            {{ request()->routeIs('dashboard.class-routines.*') ? 'active' : '' }}"
+                            href="{{ route('dashboard.class-routines.index') }}"
+                        >
+
+                            <i class="fas fa-calendar-alt me-2"></i>
+
+                            ক্লাস রুটিন
+
+                        </a>
+
+                    </li>
+
+                @endsidebarPermission
 
 
                 {{-- =====================================================

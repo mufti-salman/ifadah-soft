@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\SubLedgerController;
 use App\Http\Controllers\Admin\FundController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\CashierController;
+use App\Http\Controllers\Admin\ClassRoutineController;
+use App\Http\Controllers\Admin\ClassTimeSlotController;
 
 use App\Http\Controllers\Admin\MonthSettingController;
 use App\Http\Controllers\Admin\InstitutionMonthController;
@@ -957,46 +959,52 @@ Route::prefix('user-reports')
 
             });
 
-
 Route::prefix('students')
     ->middleware('permission:student.view')
     ->group(function () {
 
-        // Existing student routes থাকবে
-
+        // Data Export Page
         Route::get(
             'data-export',
             [DataExportController::class, 'index']
         )->name('students.data-export');
 
+        // Store Export Report
         Route::post(
             'data-export/reports',
             [DataExportController::class, 'store']
         )->name('students.data-export.store');
 
+        // Save Student Value
+        Route::post(
+            'data-export/student-value',
+            [DataExportController::class, 'saveStudentValue']
+        )->name('students.data-export.student-value');
+
+        // Clear All Export Reports
         Route::delete(
             'data-export/reports/clear-all',
             [DataExportController::class, 'clearAll']
         )->name('students.data-export.clear-all');
 
+        // Delete Single Export Report
         Route::delete(
             'data-export/reports/{id}',
             [DataExportController::class, 'destroy']
-        )->whereNumber('id')->name('students.data-export.destroy');
+        )->name('students.data-export.destroy');
 
+        // Store Custom Column
         Route::post(
             'data-export/custom-columns',
             [DataExportController::class, 'storeCustomColumn']
         )->name('students.data-export.custom-columns.store');
 
-        Route::post(
-            'data-export/student-values',
-            [DataExportController::class, 'saveStudentValue']
-        )->name('students.data-export.student-values');
+        // Delete Custom Column
         Route::delete(
-            '/students/data-export/custom-columns/{column}',
+            'data-export/custom-columns/{column}',
             [DataExportController::class, 'destroyCustomColumn']
         )->name('students.data-export.custom-columns.destroy');
+
     });
 
         /*
@@ -1657,111 +1665,66 @@ Route::prefix('students')
 
             });
 
+
 Route::prefix('teachers')
     ->middleware('permission:teacher.view')
     ->group(function () {
 
-        /*
-        |--------------------------------------------------------------------------
-        | Teacher List
-        |--------------------------------------------------------------------------
-        */
+        Route::get('/', [TeacherController::class, 'index'])
+            ->name('teacher.index');
 
-        Route::get(
-            '/',
-            [TeacherController::class, 'index']
-        )->name('teacher.index');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Teacher
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get(
-            'create',
-            [TeacherController::class, 'create']
-        )
+        Route::get('create', [TeacherController::class, 'create'])
             ->middleware('permission:teacher.create')
             ->name('teacher.create');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Store Teacher
-        |--------------------------------------------------------------------------
-        */
-
-        Route::post(
-            'store',
-            [TeacherController::class, 'store']
-        )
+        Route::post('store', [TeacherController::class, 'store'])
             ->middleware('permission:teacher.create')
             ->name('teacher.store');
 
-        /*
-        |--------------------------------------------------------------------------
-        | AJAX District
-        |--------------------------------------------------------------------------
-        */
+        // Address AJAX
+        Route::get('get-districts/{divisionId}', [TeacherController::class, 'getDistricts'])
+            ->name('teacher.get.districts');
 
-        Route::get(
-            'get-districts/{divisionId}',
-            [TeacherController::class, 'getDistricts']
-        )->name('teacher.get.districts');
+        Route::get('get-upazilas/{districtId}', [TeacherController::class, 'getUpazilas'])
+            ->name('teacher.get.upazilas');
 
-        /*
-        |--------------------------------------------------------------------------
-        | AJAX Upazila
-        |--------------------------------------------------------------------------
-        */
+        // Code preview + Code setting
+        Route::get('preview-codes', [TeacherController::class, 'previewCodes'])
+            ->middleware('permission:teacher.create')
+            ->name('teacher.preview-codes');
 
-        Route::get(
-            'get-upazilas/{districtId}',
-            [TeacherController::class, 'getUpazilas']
-        )->name('teacher.get.upazilas');
+        Route::get('code-settings', [TeacherController::class, 'getCodeSetting'])
+            ->middleware('permission:teacher.create')
+            ->name('teacher.code-settings.get');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Teacher ID
-        |--------------------------------------------------------------------------
-        */
+        Route::post('code-settings', [TeacherController::class, 'saveCodeSetting'])
+            ->middleware('permission:teacher.create')
+            ->name('teacher.code-settings.save');
 
+        // Individual teacher
         Route::prefix('{id}')->group(function () {
 
-            Route::get(
-                '/',
-                [TeacherController::class, 'show']
-            )->name('teacher.show');
+            Route::get('/', [TeacherController::class, 'show'])
+                ->name('teacher.show');
 
-            Route::get(
-                'edit',
-                [TeacherController::class, 'edit']
-            )
+            Route::get('edit', [TeacherController::class, 'edit'])
                 ->middleware('permission:teacher.edit')
                 ->name('teacher.edit');
 
-            Route::post(
-                '/',
-                [TeacherController::class, 'update']
-            )
+            Route::match(['put', 'post'], '/', [TeacherController::class, 'update'])
                 ->middleware('permission:teacher.edit')
                 ->name('teacher.update');
 
-            Route::delete(
-                '/',
-                [TeacherController::class, 'destroy']
-            )
+            Route::delete('/', [TeacherController::class, 'destroy'])
                 ->middleware('permission:teacher.delete')
                 ->name('teacher.destroy');
 
-            Route::patch(
-                'toggle-status',
-                [TeacherController::class, 'toggleStatus']
-            )
+            Route::patch('toggle-status', [TeacherController::class, 'toggleStatus'])
                 ->middleware('permission:teacher.edit')
                 ->name('teacher.toggle-status');
         });
     });
+
         /*
         |--------------------------------------------------------------------------
         | ACCOUNTING
@@ -2345,7 +2308,22 @@ Route::prefix('database-system-status')
 
             });
 
-    });
+            // Time slots (page is the 2nd tab of class-routines)
+Route::get('class-routines/time-slots', [ClassTimeSlotController::class, 'index'])->name('class-time-slots.index');
+Route::post('class-routines/time-slots', [ClassTimeSlotController::class, 'store'])->name('class-time-slots.store');
+Route::put('class-routines/time-slots/{slot}', [ClassTimeSlotController::class, 'update'])->name('class-time-slots.update');
+Route::delete('class-routines/time-slots/{slot}', [ClassTimeSlotController::class, 'destroy'])->name('class-time-slots.destroy');
+
+// Subjects (AJAX)
+Route::get('class-routines/subjects', [ClassRoutineController::class, 'subjects'])->name('class-routines.subjects');
+
+// Class routines
+Route::get('class-routines', [ClassRoutineController::class, 'index'])->name('class-routines.index');
+Route::post('class-routines', [ClassRoutineController::class, 'store'])->name('class-routines.store');
+Route::put('class-routines/{routine}', [ClassRoutineController::class, 'update'])->name('class-routines.update');
+Route::delete('class-routines/{routine}', [ClassRoutineController::class, 'destroy'])->name('class-routines.destroy');
+
+});
 
 
 /*
